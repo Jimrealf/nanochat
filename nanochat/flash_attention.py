@@ -222,8 +222,36 @@ def flash_attn_func(q, k, v, causal=False, window_size=(-1, -1)):
     return y.transpose(1, 2)  # back to (B, T, H, D)
 
 
+def _kvcache_attention_graph_safe(q, k_cache, v_cache, k, v, cache_seqlens, window_size):
+    """SDPA over the whole pre-allocated cache with a position mask.
+
+    No host sync and static shapes, so a decode step built on it can be captured in a CUDA
+    graph. The cost is attention over T_max keys instead of the filled prefix, which is
+    noise at decode-benchmark lengths. Same causal and sliding-window semantics as the
+    fallback below (a query at position p sees keys p - window ... p).
+    """
+    B, T_new = q.shape[0], q.shape[1]
+    T_max = k_cache.size(1)
+    dev = q.device
+    pos = cache_seqlens.to(torch.long)[:, None] + torch.arange(T_new, device=dev)[None, :]
+    if k is not None and v is not None:
+        idx = pos[:, :, None, None]
+        k_cache.scatter_(1, idx.expand(B, T_new, k.size(2), k.size(3)), k.to(k_cache.dtype))
+        v_cache.scatter_(1, idx.expand(B, T_new, v.size(2), v.size(3)), v.to(v_cache.dtype))
+    kpos = torch.arange(T_max, device=dev)
+    mask = kpos[None, None, :] <= pos[:, :, None]
+    if window_size[0] >= 0:
+        mask = mask & (kpos[None, None, :] >= pos[:, :, None] - window_size[0])
+    qs, ks, vs = q.transpose(1, 2), k_cache.transpose(1, 2), v_cache.transpose(1, 2)
+    if qs.dtype != ks.dtype:
+        qs = qs.to(ks.dtype)
+    y = F.scaled_dot_product_attention(qs, ks, vs, attn_mask=mask[:, None],
+                                       enable_gqa=qs.size(1) != ks.size(1))
+    return y.transpose(1, 2)
+
+
 def flash_attn_with_kvcache(q, k_cache, v_cache, k=None, v=None, cache_seqlens=None,
-                            causal=False, window_size=(-1, -1)):
+                            causal=False, window_size=(-1, -1), graph_safe=False):
     """
     Flash Attention with KV cache for inference.
 
@@ -248,6 +276,11 @@ def flash_attn_with_kvcache(q, k_cache, v_cache, k=None, v=None, cache_seqlens=N
         )
     # FA4 does not yet implement flash_attn_with_kvcache — fall through to SDPA.
     # Training still uses FA4's flash_attn_func (the hot path), so this is fine.
+
+    # FA3 above already takes cache_seqlens on device; the SDPA fallback below reads the
+    # position on the host, which a CUDA graph cannot capture.
+    if graph_safe:
+        return _kvcache_attention_graph_safe(q, k_cache, v_cache, k, v, cache_seqlens, window_size)
 
     # SDPA fallback: manually manage KV cache
     B, T_new, H, D = q.shape

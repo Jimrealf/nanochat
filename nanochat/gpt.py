@@ -749,6 +749,29 @@ class GPTConfig:
     sch_rerank_rank: int = 32                       # r; 0 reduces the head to dense exactly
     sch_nfh_smooth: int = 0                         # interpolate a static per-token prior into the mixture (Jelinek-Mercer). V params, one gather/token
     sch_nfh_chunk: int = 256                        # tokens per chunk on the EVAL path only; the training path builds no V-wide tensor
+    # --- SAP: sampling-aware block head (nanochat/block_head.py, sap_research_plan.md) ---
+    # One head emits the next T tokens per trunk pass. A plan latent drawn once per block is
+    # what makes the T tokens agree; the trunk keeps its ordinary next-token loss.
+    sap_block_T: int = 0                            # tokens per block; 0 disables the head entirely
+    sap_block_mode: str = 'indep'                   # indep | p1_discrete | p2_gauss | p3_energy | cp | local | inv_head | plain_noise | wta
+    sap_block_frac: float = 0.125                   # fraction of positions carrying a block in training; the head's cost scales with it
+    sap_lambda: float = 1.0                         # weight of the block loss next to the next-token loss
+    sap_head_layers: int = 2                        # attention layers in the slot decoder
+    sap_head_heads: int = 0                         # 0 = n_embd // 64
+    sap_head_mlp_mult: int = 2                      # MLP width multiple inside the head
+    sap_enc_layers: int = 1                         # posterior encoder layers (p1, p2)
+    sap_ctx_window: int = 16                        # trunk positions the slots cross-attend to (0 = h_t only)
+    sap_latent_groups: int = 4                      # G code groups (p1); free-bits groups (p2)
+    sap_latent_codes: int = 16                      # C codes per group (p1): C^G joint plans
+    sap_latent_dim: int = 64                        # z dim (p2) and noise dim (p3, plain_noise, wta)
+    sap_free_bits: float = 0.25                     # nats of KL per group that are not penalised
+    sap_kl_anneal_steps: int = 2000                 # micro-steps to ramp the KL weight from 0 to 1
+    sap_gumbel_tau: float = 1.0                     # straight-through Gumbel temperature (p1)
+    sap_cp_components: int = 8                      # R for the cp mixture baseline
+    sap_wta_k: int = 4                              # noise draws for the winner-take-all control
+    sap_u_freqs: int = 24                           # sinusoidal frequencies resolving u (inv_head)
+    sap_u_interior: float = 0.8                     # central fraction of a CDF bin u is drawn from (inv_head)
+    sap_logit_chunk: int = 8192                     # slot rows per checkpointed readout chunk
 
 
 # Used by notebooks to validate kwargs passed to GPTConfig.
@@ -855,6 +878,12 @@ RESEARCH_ALLOWED_KEYS = {
     "sch_nfh_views", "sch_nfh_perm", "sch_nfh_perm_path", "sch_nfh_g_type",
     "sch_nfh_g_hidden", "sch_nfh_chunk", "sch_nfh_smooth",
     "sch_rerank_mode", "sch_rerank_k", "sch_rerank_rank",
+    # SAP: sampling-aware block head
+    "sap_block_T", "sap_block_mode", "sap_block_frac", "sap_lambda", "sap_head_layers",
+    "sap_head_heads", "sap_head_mlp_mult", "sap_enc_layers", "sap_ctx_window",
+    "sap_latent_groups", "sap_latent_codes", "sap_latent_dim", "sap_free_bits",
+    "sap_kl_anneal_steps", "sap_gumbel_tau", "sap_cp_components", "sap_wta_k",
+    "sap_u_freqs", "sap_u_interior", "sap_logit_chunk",
     "use_mol", "mol_n_blocks", "mol_n_shared", "mol_topk", "mol_thin_dim",
     "mol_head_dim", "mol_ffn_mult", "mol_router_aux", "mol_routed_attn",
     "mol_dispatch", "mol_capacity_factor", "mol_block_lr_scale", "mol_per_block_ve",
@@ -8164,6 +8193,7 @@ class CausalSelfAttention(nn.Module):
                 cache_seqlens=kv_cache.cache_seqlens,
                 causal=True,
                 window_size=window_size,
+                graph_safe=getattr(kv_cache, 'graph_safe', False),
             )
             # Advance position after last layer processes
             if self.layer_idx == kv_cache.n_layers - 1:
@@ -10178,6 +10208,17 @@ class GPT(nn.Module):
                        f"in_dim={self.transformer.wte.in_dim}")
         else:
             self.lm_head = Linear(config.n_embd, padded_vocab_size, bias=False)
+        # SAP: the block head reads out through this same lm_head, so it adds no second
+        # unembedding. It needs a dense V x d head to read out through.
+        self.sap_head = None
+        if int(getattr(config, 'sap_block_T', 0)) > 0:
+            assert not self.use_code_head, \
+                "the SAP block head reads out through the dense lm_head; do not combine it with use_code_head"
+            from nanochat.block_head import BlockHead
+            self.sap_head = BlockHead(config, config.vocab_size)
+            print0(f"[SAP] block head: mode={self.sap_head.mode} T={self.sap_head.T} "
+                   f"frac={self.sap_head.frac} window={self.sap_head.W} "
+                   f"layers={len(self.sap_head.dec)} params={sum(p.numel() for p in self.sap_head.parameters()):,}")
         # Design 10 (auxiliary objective): lightweight head predicts boundary or entropy from
         # the mean context vector across all RemixedBlocks. Forces context to encode
         # non-trivial information and prevents gradient-collapse to identity.
@@ -10739,6 +10780,10 @@ class GPT(nn.Module):
         cos, sin = self._precompute_rotary_embeddings(self.rotary_seq_len, head_dim)
         self.cos, self.sin = cos, sin
 
+        # SAP block head: last, so no generic research-module pass can overwrite it.
+        if getattr(self, 'sap_head', None) is not None:
+            self.sap_head.init_weights()
+
         # Cast embeddings to COMPUTE_DTYPE: optimizer can tolerate reduced-precision
         # embeddings and it saves memory. Exception: fp16 requires fp32 embeddings
         # because GradScaler cannot unscale fp16 gradients.
@@ -10893,6 +10938,12 @@ class GPT(nn.Module):
             sch_head_flops += self.lm_head.flops_per_token()
         if not isinstance(self.transformer.wte, nn.Embedding):
             sch_head_flops += self.transformer.wte.flops_per_token()
+        # SAP: the block head runs on sap_block_frac of the positions, T slot rows each, and
+        # reads out through the shared V x d head per slot row. 6N over its parameters would
+        # charge it as if it ran once on every token, so it is priced explicitly instead.
+        if getattr(self, 'sap_head', None) is not None:
+            nparams_exclude += sum(p.numel() for p in self.sap_head.parameters())
+            sch_head_flops += self.sap_head.flops_per_token(self.config.vocab_size)
         h, q, t = self.config.n_head, self.config.n_embd // self.config.n_head, self.config.sequence_len
         # Sum attention FLOPs per layer, accounting for sliding window
         attn_flops = 0
@@ -11065,6 +11116,8 @@ class GPT(nn.Module):
             research += sum(p.numel() for p in self.embedding_model.parameters())
         if self.aux_head is not None:
             research += sum(p.numel() for p in self.aux_head.parameters())
+        if getattr(self, 'sap_head', None) is not None:
+            research += sum(p.numel() for p in self.sap_head.parameters())
         # AG-CCL: ctx_from_attn and ctx_ema_gate live inside transformer.h (RemixedBlock)
         # and are already counted in transformer_matrices above.
         scalars = self.resid_lambdas.numel() + self.x0_lambdas.numel()
@@ -11327,10 +11380,21 @@ class GPT(nn.Module):
             for p in self.aux_head.parameters():
                 (struct_matrix_params if p.ndim == 2 else struct_adamw_params).append(p)
 
+        # SAP block head: its lookup tables (slot, code and window-position embeddings) train
+        # like embeddings with AdamW; its projections are matrices for Muon.
+        sap_embedding_params = []
+        if getattr(self, 'sap_head', None) is not None:
+            _sap_emb_ids = {id(p) for p in self.sap_head.embedding_parameters()}
+            for p in self.sap_head.parameters():
+                if id(p) in _sap_emb_ids:
+                    sap_embedding_params.append(p)
+                else:
+                    (struct_matrix_params if p.ndim == 2 else struct_adamw_params).append(p)
+
         research_adamw_params = gate_adamw_params + struct_adamw_params
 
         value_embeds_params = list(self.value_embeds.parameters())
-        embedding_params = list(self.transformer.wte.parameters())
+        embedding_params = list(self.transformer.wte.parameters()) + sap_embedding_params
         if "wpe" in self.transformer:
             embedding_params += list(self.transformer.wpe.parameters())
         lm_head_params = list(self.lm_head.parameters())
@@ -11581,14 +11645,26 @@ class GPT(nn.Module):
             group["initial_lr"] = group["lr"]
         return optimizer
 
-    def forward(self, idx, targets=None, kv_cache=None, loss_reduction='mean'):
+    def forward(self, idx, targets=None, kv_cache=None, loss_reduction='mean',
+                skip_logits=False, return_hidden=False):
+        """skip_logits returns the final normalised hidden states (B, T, d) without the
+        lm_head, which is all block decoding needs from a trunk pass. return_hidden makes
+        the inference path return (logits, hidden)."""
         B, T = idx.size()
 
         # Grab the rotary embeddings for the current sequence length (they are of shape (1, seq_len, 1, head_dim/2))
-        T0 = 0 if kv_cache is None else kv_cache.get_pos()
-        T_total = T0 + T
+        if kv_cache is not None and getattr(kv_cache, 'graph_safe', False):
+            # CUDA-graph decode: positions come from the cache on the device, with no host
+            # sync, so the step can be captured once and replayed. The rotary cache must
+            # already cover the whole generation (sequence_len * 10 by construction).
+            pos = kv_cache.cache_seqlens[0].to(torch.long) + torch.arange(T, device=idx.device)
+            cos_sin = self.cos.index_select(1, pos), self.sin.index_select(1, pos)
+            T0, T_total = None, None
+        else:
+            T0 = 0 if kv_cache is None else kv_cache.get_pos()
+            T_total = T0 + T
 
-        if T_total > self.cos.size(1):
+        if T_total is not None and T_total > self.cos.size(1):
             # Dynamic cache growth: double the cache or use T_total, whichever is larger
             new_len = max(T_total, self.cos.size(1) * 2)
             print0(f"Growing rotary embeddings cache from {self.cos.size(1)} to {new_len}")
@@ -11598,7 +11674,8 @@ class GPT(nn.Module):
             self.register_buffer("cos", cos, persistent=False)
             self.register_buffer("sin", sin, persistent=False)
 
-        cos_sin = self.cos[:, T0:T_total], self.sin[:, T0:T_total] # truncate cache to current sequence length
+        if T_total is not None:
+            cos_sin = self.cos[:, T0:T_total], self.sin[:, T0:T_total] # truncate cache to current sequence length
 
         # Forward the trunk of the Transformer
         if self.embedding_model is None:
@@ -11606,8 +11683,11 @@ class GPT(nn.Module):
         else:
             x, _ = self.embedding_model(idx)
         if "wpe" in self.transformer:
-            assert T_total <= self.config.sequence_len, f"use_pos_embed=True requires sequence <= {self.config.sequence_len}, got {T_total}"
-            positions = torch.arange(T0, T_total, device=idx.device)
+            if T_total is None:  # graph-safe decode: positions already on the device
+                positions = pos
+            else:
+                assert T_total <= self.config.sequence_len, f"use_pos_embed=True requires sequence <= {self.config.sequence_len}, got {T_total}"
+                positions = torch.arange(T0, T_total, device=idx.device)
             x = x + self.transformer.wpe(positions)
         x = x.to(COMPUTE_DTYPE) # ensure activations are in compute dtype (no-op usually, but active for fp16 code path)
         x = norm(x)
@@ -11682,6 +11762,8 @@ class GPT(nn.Module):
                 if collect_sim:
                     self._layer_outputs.append(x.detach())
         x = norm(x)
+        if skip_logits:
+            return x
 
         # Forward the lm_head (compute logits)
         softcap = 20 # smoothly cap the logits to the range [-softcap, softcap]
@@ -11737,6 +11819,15 @@ class GPT(nn.Module):
             if _ds_lambda > 0.0 and self.training and loss_reduction == 'mean':
                 n_sup = max(1, len(self.transformer.h) - 1)
                 loss = loss + _ds_lambda * (_ds_loss / n_sup)
+
+            # SAP: the block loss rides on the next-token loss in training only, so every
+            # bpb evaluation (loss_reduction='none') still measures the trunk's next-token
+            # quality and the block head is evaluated separately (sap_block_eval).
+            if self.sap_head is not None and self.training and loss_reduction == 'mean':
+                _sap_loss, _sap_stats = self._sap_block_loss(x, targets, logits)
+                loss = loss + float(self.config.sap_lambda) * _sap_loss
+                if not torch.compiler.is_compiling():
+                    self._sap_stats = _sap_stats
 
             # Design 10: Auxiliary context objective
             # Reads _last_ctx stored on each RemixedBlock during this forward pass.
@@ -11841,7 +11932,97 @@ class GPT(nn.Module):
             return loss
         else:
             # inference: just return the logits directly
+            if return_hidden:
+                return logits, x
             return logits
+
+    # ------------------------------------------------------------------ SAP block head
+    def _sap_readout(self, s):
+        """Slot states (rows, d) -> softcapped logits (rows, V), exactly as the main head."""
+        logits = self.lm_head(norm(s))[..., :self.config.vocab_size].float()
+        return 20.0 * torch.tanh(logits / 20.0)
+
+    def _sap_window(self, x, b, t):
+        """The W trunk states ending at position t of row b, front-padded. (N, W, d), (N, W)."""
+        W = self.sap_head.W
+        if W == 0:
+            return None, None
+        offs = torch.arange(W - 1, -1, -1, device=x.device)
+        pos = t[:, None] - offs[None, :]
+        valid = pos >= 0
+        return x[b[:, None], pos.clamp_min(0)], valid
+
+    def _sap_block_loss(self, x, targets, logits):
+        """Block loss on a random sap_block_frac of the positions of this batch.
+
+        x: (B, Tq, d) final normalised hidden states; targets: (B, Tq) where
+        targets[:, j] is the token after position j; logits: next-token logits (only the
+        inv_head competitor reads them, to invert the data tokens into noise).
+        """
+        head = self.sap_head
+        B, Tq, _ = x.shape
+        Tb = head.T
+        n_start = Tq - Tb + 1
+        assert n_start > 0, f"sap_block_T={Tb} longer than the sequence ({Tq})"
+        N = max(1, int(round(head.frac * B * Tq)))
+        flat = torch.randint(0, B * n_start, (N,), device=x.device)
+        b, t = flat // n_start, flat % n_start
+        ks = torch.arange(Tb, device=x.device)
+        y = targets[b[:, None], t[:, None] + ks[None, :]]                  # (N, Tb)
+        h = x[b, t]                                                         # (N, d)
+        ctx, ctx_valid = self._sap_window(x, b, t)
+        u_bins = None
+        if head.mode == 'inv_head':
+            from nanochat.block_head import target_bins
+            with torch.no_grad():
+                fb = b[:, None].expand(N, Tb - 1).reshape(-1)
+                ft = (t[:, None] + ks[None, :Tb - 1]).reshape(-1)
+                yy = y[:, :Tb - 1].reshape(-1).clamp_min(0)
+                lo, width = [], []
+                for i in range(0, fb.numel(), 4096):
+                    l_i, w_i = target_bins(logits[fb[i:i + 4096], ft[i:i + 4096]], yy[i:i + 4096])
+                    lo.append(l_i)
+                    width.append(w_i)
+                u_bins = (torch.cat(lo).view(N, Tb - 1), torch.cat(width).view(N, Tb - 1)) \
+                    if lo else (x.new_zeros(N, 0, dtype=torch.float32),) * 2
+        return head.loss(h, ctx, ctx_valid, y, self._sap_readout,
+                         embed=self.transformer.wte, u_bins=u_bins)
+
+    def _sap_last(self, hist, h_last):
+        """Head inputs for the next block from the most recent trunk states."""
+        W = self.sap_head.W
+        if W == 0:
+            return h_last, None, None
+        n = hist.size(1)
+        if n >= W:
+            return h_last, hist[:, -W:], torch.ones(hist.size(0), W, dtype=torch.bool, device=hist.device)
+        pad = hist.new_zeros(hist.size(0), W - n, hist.size(2))
+        valid = torch.cat([torch.zeros(hist.size(0), W - n, dtype=torch.bool, device=hist.device),
+                           torch.ones(hist.size(0), n, dtype=torch.bool, device=hist.device)], dim=1)
+        return h_last, torch.cat([pad, hist], dim=1), valid
+
+    @torch.inference_mode()
+    def generate_block(self, tokens, max_tokens, temperature=1.0, seed=42):
+        """Block generation without a KV cache: one trunk pass per T tokens.
+
+        The reference path (it recomputes the prefix every block); engine.generate_block_kv
+        is the one to time. Yields the T new token ids of each block. batch size 1.
+        """
+        assert self.sap_head is not None, "generate_block needs sap_block_T > 0"
+        device = self.get_device()
+        gen = torch.Generator(device=device)
+        gen.manual_seed(seed)
+        ids = torch.tensor([tokens], dtype=torch.long, device=device)
+        produced = 0
+        while produced < max_tokens:
+            x = self.forward(ids, skip_logits=True)
+            h, ctx, valid = self._sap_last(x, x[:, -1])
+            blk = self.sap_head.sample(h, ctx, valid, self._sap_readout, embed=self.transformer.wte,
+                                       embed_table=self.transformer.wte.weight,
+                                       temperature=temperature, generator=gen)
+            ids = torch.cat([ids, blk], dim=1)
+            produced += blk.size(1)
+            yield blk[0].tolist()
 
     @torch.inference_mode()
     def generate(self, tokens, max_tokens, temperature=1.0, top_k=None, seed=42):

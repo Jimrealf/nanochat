@@ -803,6 +803,23 @@ parser.add_argument("--sch-holdout-mode", type=str, default="target", choices=li
 parser.add_argument("--sch-decile-metrics", type=int, default=0, choices=[0, 1], help="SCH: report validation bpb per token-frequency decile at the end of training. DEFAULT 0: this defaulted to 1, which made the end-of-training SCH diagnostics block run for EVERY architecture (the trigger at the bottom of this file is an OR over the sch_* flags), and it OOMs. All 16 c0*/c1* sweeps pass this flag explicitly, so none of them depended on the default.")
 parser.add_argument("--sch-rank-probe", type=int, default=0, help="SCH: contexts to use for the end-of-training logit-rank SVD (0 = skip; 50000 is the Phase 0 setting)")
 parser.add_argument("--sch-eval-steps", type=int, default=100, help="SCH: validation batches used by the end-of-training diagnostics")
+# SAP: sampling-aware block head (nanochat/block_head.py, sap_research_plan.md)
+parser.add_argument("--sap-block-t", type=int, default=0, help="SAP: tokens emitted per block by the head (0 = off)")
+parser.add_argument("--sap-block-mode", type=str, default="indep", choices=["indep", "p1_discrete", "p2_gauss", "p3_energy", "cp", "local", "inv_head", "plain_noise", "wta"], help="SAP: indep (independent slots), p1_discrete / p2_gauss (plan-latent ELBO), p3_energy (energy score), cp / local / inv_head (baselines), plain_noise / wta (controls)")
+parser.add_argument("--sap-block-frac", type=float, default=0.125, help="SAP: fraction of positions carrying a block in training; the head's FLOPs scale with it")
+parser.add_argument("--sap-lambda", type=float, default=1.0, help="SAP: weight of the block loss next to the next-token loss")
+parser.add_argument("--sap-head-layers", type=int, default=2, help="SAP: attention layers in the slot decoder")
+parser.add_argument("--sap-head-mlp-mult", type=int, default=2, help="SAP: MLP width multiple inside the head")
+parser.add_argument("--sap-enc-layers", type=int, default=1, help="SAP: posterior encoder layers (p1, p2)")
+parser.add_argument("--sap-ctx-window", type=int, default=16, help="SAP: trunk positions the slots cross-attend to (0 = h_t only)")
+parser.add_argument("--sap-latent-groups", type=int, default=4, help="SAP: G code groups (p1), free-bits groups (p2)")
+parser.add_argument("--sap-latent-codes", type=int, default=16, help="SAP: C codes per group (p1)")
+parser.add_argument("--sap-latent-dim", type=int, default=64, help="SAP: z dim (p2) and noise dim (p3, plain_noise, wta)")
+parser.add_argument("--sap-free-bits", type=float, default=0.25, help="SAP: unpenalised KL nats per group")
+parser.add_argument("--sap-kl-anneal-steps", type=int, default=2000, help="SAP: micro-steps over which the KL weight ramps to 1")
+parser.add_argument("--sap-cp-components", type=int, default=8, help="SAP: R for the cp mixture baseline")
+parser.add_argument("--sap-wta-k", type=int, default=4, help="SAP: noise draws for the winner-take-all control")
+parser.add_argument("--sap-eval-steps", type=int, default=20, help="SAP: validation batches for the block bpb at each eval (0 = skip)")
 parser.add_argument("--seed", type=int, default=-1, help="RNG seed for weight init and data-order-independent randomness (-1 = unseeded, the historical default). Needed for seed-variance runs; note the dataloader order is not seeded by this.")
 parser.add_argument("--early-stop-tokens", type=int, default=-1, help="terminate training after this many tokens without affecting the LR schedule (-1 = disabled)")
 parser.add_argument("--step-loss-file", type=str, default="", help="optional JSONL file to write per-step training loss for external sweep plotting")
@@ -1413,6 +1430,22 @@ def build_model_meta(depth, apply_dim_override=True):
         sch_rerank_mode=str(getattr(args, 'sch_rerank_mode', 'topk')),
         sch_rerank_k=int(getattr(args, 'sch_rerank_k', 64)),
         sch_rerank_rank=int(getattr(args, 'sch_rerank_rank', 32)),
+        # SAP: sampling-aware block head
+        sap_block_T=int(getattr(args, 'sap_block_t', 0)),
+        sap_block_mode=str(getattr(args, 'sap_block_mode', 'indep')),
+        sap_block_frac=float(getattr(args, 'sap_block_frac', 0.125)),
+        sap_lambda=float(getattr(args, 'sap_lambda', 1.0)),
+        sap_head_layers=int(getattr(args, 'sap_head_layers', 2)),
+        sap_head_mlp_mult=int(getattr(args, 'sap_head_mlp_mult', 2)),
+        sap_enc_layers=int(getattr(args, 'sap_enc_layers', 1)),
+        sap_ctx_window=int(getattr(args, 'sap_ctx_window', 16)),
+        sap_latent_groups=int(getattr(args, 'sap_latent_groups', 4)),
+        sap_latent_codes=int(getattr(args, 'sap_latent_codes', 16)),
+        sap_latent_dim=int(getattr(args, 'sap_latent_dim', 64)),
+        sap_free_bits=float(getattr(args, 'sap_free_bits', 0.25)),
+        sap_kl_anneal_steps=int(getattr(args, 'sap_kl_anneal_steps', 2000)),
+        sap_cp_components=int(getattr(args, 'sap_cp_components', 8)),
+        sap_wta_k=int(getattr(args, 'sap_wta_k', 4)),
 
     )
     # Stash tokenizer_dir on config for lazy prior loading in EET
@@ -2358,6 +2391,19 @@ while True:
                     eval_kwargs['eet_phase'] = 1
             val_bpb, val_loss = evaluate_bpb(model, val_loader, eval_steps, token_bytes, **eval_kwargs)
         print0(f"Step {step:05d} | Validation bpb: {val_bpb:.6f} | val_loss: {val_loss:.6f}")
+        # SAP: the block head's bpb next to the trunk's next-token bpb on the same tokens.
+        # Run on the uncompiled module: block shapes differ from the training shapes.
+        if getattr(orig_model, 'sap_head', None) is not None and args.sap_eval_steps > 0:
+            from nanochat.block_head import evaluate_block_bpb
+            with disable_fp8(model):
+                _sap_eval = evaluate_block_bpb(orig_model, build_val_loader(), args.sap_eval_steps, token_bytes)
+            _bb = _sap_eval["block_bpb"]
+            print0(f"Step {step:05d} | SAP block bpb: {'n/a' if _bb is None else f'{_bb:.6f}'} "
+                   f"| next-token bpb on the same tokens: {_sap_eval['ntp_bpb_same_tokens']:.6f} "
+                   f"| latent sensitivity: {_sap_eval['latent_sensitivity_nats']} nats")
+            print0(f"SAP_EVAL_JSON {json.dumps({'step': step, **_sap_eval})}")
+            wandb_run.log({"step": step, "total_training_flops": flops_so_far,
+                           **{f"sap/{k}": v for k, v in _sap_eval.items() if v is not None}})
         # EET P02 T0B: per-layer vocabulary coverage of the routing policy
         if getattr(args, 'eet_coverage_diag', 0):
             _cov_model = model.module if hasattr(model, 'module') else model
@@ -2966,6 +3012,12 @@ while True:
     lr_msg = f"lr(adamw:{(sum(adamw_lrs)/len(adamw_lrs)) if adamw_lrs else 0:.3e}, muon:{(sum(muon_lrs)/len(muon_lrs)) if muon_lrs else 0:.3e})"
     if step % args.log_every == 0 or step == num_iterations - 1 or last_step:
         print0(f"step {step:05d}/{num_iterations:05d} ({pct_done:.2f}%) | loss: {debiased_smooth_loss:.6f} | lrm: {lrm:.2f} | {lr_msg} | dt: {dt * 1000:.2f}ms | tok/sec: {tok_per_sec:,} | bf16_mfu: {mfu:.2f} | epoch: {epoch} | total time: {total_training_time/60:.2f}m{eta_str}")
+        # SAP block-head diagnostics (recorded in eager mode only; compiled runs report
+        # the block head through the SAP eval instead).
+        _sap_stats = getattr(orig_model, '_sap_stats', None)
+        if _sap_stats:
+            print0("SAP train | " + " | ".join(
+                f"{k}: {v.tolist() if v.numel() > 1 else round(v.item(), 4)}" for k, v in _sap_stats.items()))
         # Phase 17: Modulation diagnostics at log intervals
         if mod_diag is not None:
             diag_metrics = mod_diag.collect()

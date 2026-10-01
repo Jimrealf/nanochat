@@ -101,6 +101,9 @@ class KVCache:
         self.v_cache = torch.zeros(num_layers, batch_size, seq_len, num_heads, self.v_head_dim, device=device, dtype=dtype)
         # Current sequence length per batch element (FA3 needs int32)
         self.cache_seqlens = torch.zeros(batch_size, dtype=torch.int32, device=device)
+        # True when a decode step must be CUDA-graph capturable: the model then reads
+        # positions from cache_seqlens on the device instead of via get_pos() on the host.
+        self.graph_safe = False
 
     def reset(self):
         """Reset cache to empty state."""
@@ -307,6 +310,82 @@ class Engine:
             if all(completed):
                 break
         return results, masks
+
+
+# -----------------------------------------------------------------------------
+# SAP: block decoding against a plain autoregressive loop, both with a KV cache.
+#
+# These two loops are deliberately symmetric (same prefill, same cache, no tool-use state
+# machine) so that tokens/sec measures one thing: one trunk pass per token versus one trunk
+# pass per T tokens. Both read out through the same lm_head, T rows per block versus one row
+# per token, so the unembedding work per generated token is the same.
+
+def _prompt_ids(tokens, num_samples, device):
+    """A list of ids is one prompt repeated num_samples times; a (B, L) tensor is B prompts."""
+    if torch.is_tensor(tokens):
+        return tokens.to(device=device, dtype=torch.long)
+    return torch.tensor([tokens] * num_samples, dtype=torch.long, device=device)
+
+
+def _kv_cache_for(model, batch_size, seq_len, device, dtype):
+    m = model.config
+    head_dim = m.n_embd // m.n_head
+    return KVCache(batch_size=batch_size, seq_len=seq_len, num_heads=m.n_kv_head,
+                   head_dim=head_dim, num_layers=m.n_layer, device=device, dtype=dtype)
+
+
+@torch.inference_mode()
+def generate_ar_kv(model, tokens, max_tokens, num_samples=1, temperature=1.0, seed=42):
+    """Next-token decoding with a KV cache: one trunk pass per token. Returns (B, max_tokens).
+
+    tokens: one prompt (list of ids, repeated num_samples times) or a (B, L) tensor of
+    equal-length prompts."""
+    device = model.get_device()
+    dtype = torch.bfloat16 if device.type == "cuda" else torch.float32
+    rng = torch.Generator(device=device)
+    rng.manual_seed(seed)
+    ids = _prompt_ids(tokens, num_samples, device)
+    kv = _kv_cache_for(model, ids.size(0), ids.size(1) + max_tokens + 1, device, dtype)
+    logits = model.forward(ids, kv_cache=kv)[:, -1, :]
+    out = []
+    for _ in range(max_tokens):
+        nxt = sample_next_token(logits, rng, temperature)
+        out.append(nxt)
+        logits = model.forward(nxt, kv_cache=kv)[:, -1, :]
+    return torch.cat(out, dim=1)
+
+
+@torch.inference_mode()
+def generate_block_kv(model, tokens, max_tokens, num_samples=1, temperature=1.0, seed=42):
+    """SAP block decoding with a KV cache: one trunk pass per T tokens. Returns (B, max_tokens).
+
+    Each step feeds the T tokens of the previous block through the trunk (extending the
+    cache), and the block head turns the last hidden state, plus a rolling window of recent
+    hidden states, into the next T tokens.
+    """
+    head = model.sap_head
+    assert head is not None, "generate_block_kv needs a model built with sap_block_T > 0"
+    device = model.get_device()
+    dtype = torch.bfloat16 if device.type == "cuda" else torch.float32
+    gen = torch.Generator(device=device)
+    gen.manual_seed(seed)
+    ids = _prompt_ids(tokens, num_samples, device)
+    kv = _kv_cache_for(model, ids.size(0), ids.size(1) + max_tokens + head.T + 1, device, dtype)
+    x = model.forward(ids, kv_cache=kv, skip_logits=True)
+    hist = x[:, -head.W:] if head.W > 0 else x[:, -1:]
+    out, n = [], 0
+    while n < max_tokens:
+        h, ctx, valid = model._sap_last(hist, x[:, -1])
+        blk = head.sample(h, ctx, valid, model._sap_readout, embed=model.transformer.wte,
+                          embed_table=model.transformer.wte.weight,
+                          temperature=temperature, generator=gen)
+        out.append(blk)
+        n += blk.size(1)
+        if n >= max_tokens:
+            break
+        x = model.forward(blk, kv_cache=kv, skip_logits=True)
+        hist = torch.cat([hist, x], dim=1)[:, -max(head.W, 1):]
+    return torch.cat(out, dim=1)[:, :max_tokens]
 
 
 if __name__ == "__main__":
