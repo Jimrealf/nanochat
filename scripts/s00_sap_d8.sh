@@ -187,8 +187,16 @@ run() {
                 python3 -m scripts.sap_decode_bench --checkpoint-dir "${dir}/${t}" \
                     --gen-tokens "${BENCH_TOKENS:-256}" --no-graphs \
                     --out "${OUT_BASE}/decode_${t}_d${DEPTH}.json" 2>&1 | tee -a "$LOGFILE"
+                local ref_dir="${REF_DIR:-${dir}/B1_dense_s${s}}"
+                if [ ! -d "$ref_dir" ] && [ -d "/vol/out/s00_sap/d${DEPTH}/B1_dense_s${s}" ]; then
+                    ref_dir="/vol/out/s00_sap/d${DEPTH}/B1_dense_s${s}"
+                fi
+                local ref_arg=""
+                if [ -d "$ref_dir" ]; then
+                    ref_arg="--reference-dir $ref_dir"
+                fi
                 python3 -m scripts.sap_eval_generation --checkpoint-dir "${dir}/${t}" \
-                    --reference-dir "${dir}/B1_dense_s${s}" --tokenizer-dir "$TOK" \
+                    $ref_arg --tokenizer-dir "$TOK" \
                     --data-dir "${DATA_DIR:-data}" --n-prefixes "${GEN_PREFIXES:-1024}" \
                     --gen-tokens "${GEN_TOKENS:-128}" \
                     --out "${OUT_BASE}/gen_${t}_d${DEPTH}.jsonl" 2>&1 | tee -a "$LOGFILE"
@@ -206,7 +214,9 @@ echo "  block fraction ${FRAC} (for T=L: 1/${SEQ_LEN}), GPUs ${NPROC_PER_NODE}"
 echo "  target FLOPs ${DENSE_FLOPS} per arm (the dense arm's)   post-run evals: ${POST}"
 echo "============================================================"
 
-run "B1_dense"
+if [ "${RUN_DENSE:-0}" -eq 1 ]; then
+    run "B1_dense"
+fi
 for T_SPEC in $TS; do
     for arm in $ARMS; do
         if [ "$T_SPEC" = "L" ] || [ "$T_SPEC" = "l" ] || [ "$T_SPEC" = "$SEQ_LEN" ]; then
