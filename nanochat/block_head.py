@@ -768,6 +768,7 @@ def evaluate_block_bpb(model, batches, steps, token_bytes, blocks_per_row=8, n_s
         x, y = next(it)
         hid = model(x, skip_logits=True)
         B, Tq = x.shape
+        n_start = Tq - T + 1
         eff_blocks = max(1, min(blocks_per_row, n_start))
         if n_start <= 1:
             starts = torch.zeros(1, dtype=torch.long, device=device)
