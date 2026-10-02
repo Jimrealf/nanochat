@@ -753,7 +753,7 @@ class GPTConfig:
     # One head emits the next T tokens per trunk pass. A plan latent drawn once per block is
     # what makes the T tokens agree; the trunk keeps its ordinary next-token loss.
     sap_block_T: int = 0                            # tokens per block; 0 disables the head entirely
-    sap_block_mode: str = 'indep'                   # indep | p1_discrete | p2_gauss | p3_energy | cp | local | inv_head | plain_noise | wta
+    sap_block_mode: str = 'indep'                   # indep | p1_discrete | p2_gauss | p3_energy | cp | local | local_jacobi | inv_head | plain_noise | wta
     sap_block_frac: float = 0.125                   # fraction of positions carrying a block in training; the head's cost scales with it
     sap_lambda: float = 1.0                         # weight of the block loss next to the next-token loss
     sap_head_layers: int = 2                        # attention layers in the slot decoder
@@ -772,6 +772,7 @@ class GPTConfig:
     sap_u_freqs: int = 24                           # sinusoidal frequencies resolving u (inv_head)
     sap_u_interior: float = 0.8                     # central fraction of a CDF bin u is drawn from (inv_head)
     sap_logit_chunk: int = 8192                     # slot rows per checkpointed readout chunk
+    sap_jacobi_sweeps: int = 2                      # parallel refinement sweeps for local_jacobi (or local)
 
 
 # Used by notebooks to validate kwargs passed to GPTConfig.
@@ -883,7 +884,7 @@ RESEARCH_ALLOWED_KEYS = {
     "sap_head_heads", "sap_head_mlp_mult", "sap_enc_layers", "sap_ctx_window",
     "sap_latent_groups", "sap_latent_codes", "sap_latent_dim", "sap_free_bits",
     "sap_kl_anneal_steps", "sap_gumbel_tau", "sap_cp_components", "sap_wta_k",
-    "sap_u_freqs", "sap_u_interior", "sap_logit_chunk",
+    "sap_u_freqs", "sap_u_interior", "sap_logit_chunk", "sap_jacobi_sweeps",
     "use_mol", "mol_n_blocks", "mol_n_shared", "mol_topk", "mol_thin_dim",
     "mol_head_dim", "mol_ffn_mult", "mol_router_aux", "mol_routed_attn",
     "mol_dispatch", "mol_capacity_factor", "mol_block_lr_scale", "mol_per_block_ve",

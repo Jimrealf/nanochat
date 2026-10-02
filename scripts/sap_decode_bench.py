@@ -128,10 +128,10 @@ def graph_block_seconds(model, prompts, n_tokens, temperature, warmup=3):
     return (time.perf_counter() - t0) * n_tokens / (n_blocks * T)
 
 
-def smoke_model(device):
+def smoke_model(device, mode="p1_discrete"):
     from nanochat.gpt import GPT, GPTConfig
     cfg = GPTConfig(sequence_len=512, vocab_size=1024, n_layer=2, n_head=2, n_kv_head=2,
-                    n_embd=128, window_pattern="L", sap_block_T=4, sap_block_mode="p1_discrete")
+                    n_embd=128, window_pattern="L", sap_block_T=4, sap_block_mode=mode)
     with torch.device("meta"):
         model = GPT(cfg)
     model.to_empty(device=device)
@@ -152,13 +152,15 @@ def main():
     p.add_argument("--repeats", type=int, default=3)
     p.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     p.add_argument("--out", type=str, default=None)
+    p.add_argument("--override-mode", type=str, default="", help="override block head mode (e.g. local_jacobi)")
+    p.add_argument("--jacobi-sweeps", type=int, default=None, help="override jacobi sweeps")
     p.add_argument("--no-graphs", action="store_true", help="eager loops only")
     p.add_argument("--smoke", action="store_true")
     args = p.parse_args()
     device = torch.device(args.device)
 
     if args.smoke:
-        model = smoke_model(device)
+        model = smoke_model(device, mode=args.override_mode or "p1_discrete")
         args.batch_sizes, args.gen_tokens, args.repeats = [1, 4], 32, 1
     else:
         from nanochat.checkpoint_manager import build_model, find_last_step
@@ -167,6 +169,10 @@ def main():
                                          tokenizer_dir=args.tokenizer_dir)
     model.eval()
     assert model.sap_head is not None, "this checkpoint has no block head (sap_block_T=0)"
+    if args.override_mode:
+        model.sap_head.mode = args.override_mode
+    if args.jacobi_sweeps is not None:
+        model.sap_head.jacobi_sweeps = args.jacobi_sweeps
     T = model.sap_head.T
 
     g = torch.Generator().manual_seed(0)

@@ -194,22 +194,28 @@ def stage_b_train(tag: str, train_args: list, depth: int) -> dict:
 
 @app.function(gpu="H100", timeout=3 * 3600, volumes={VOL: VOLUME})
 def stage_b_post(tag: str, ref_tag: str, depth: int, gen_prefixes: int, gen_tokens: int,
-                 bench_tokens: int) -> dict:
+                 bench_tokens: int, override_mode: str = "", jacobi_sweeps: int = None) -> dict:
     _workdir()
     base = f"{VOL}/out/s00_sap"
     ckdir = f"{base}/d{depth}"
-    dec_json = f"{base}/decode_{tag}_d{depth}.json"
+    suffix = f"_{override_mode}" if override_mode else ""
+    dec_json = f"{base}/decode_{tag}{suffix}_d{depth}.json"
+    extra_args = []
+    if override_mode:
+        extra_args += ["--override-mode", override_mode]
+    if jacobi_sweeps is not None:
+        extra_args += ["--jacobi-sweeps", str(jacobi_sweeps)]
     code_a, text_a = _run_logged(
         [sys.executable, "-m", "scripts.sap_decode_bench", "--checkpoint-dir", f"{ckdir}/{tag}",
          "--tokenizer-dir", f"{VOL}/tokenizer", "--gen-tokens", str(bench_tokens),
-         "--no-graphs", "--out", dec_json],
-        f"{base}/logs/decode_{tag}_d{depth}.log")
+         "--no-graphs", "--out", dec_json] + extra_args,
+        f"{base}/logs/decode_{tag}{suffix}_d{depth}.log")
     code_b, text_b = _run_logged(
         [sys.executable, "-m", "scripts.sap_eval_generation", "--checkpoint-dir", f"{ckdir}/{tag}",
          "--reference-dir", f"{ckdir}/{ref_tag}", "--tokenizer-dir", f"{VOL}/tokenizer",
          "--data-dir", f"{VOL}/data", "--n-prefixes", str(gen_prefixes), "--gen-tokens", str(gen_tokens),
-         "--out", f"{base}/gen_{tag}_d{depth}.jsonl"],
-        f"{base}/logs/gen_{tag}_d{depth}.log")
+         "--out", f"{base}/gen_{tag}{suffix}_d{depth}.jsonl"] + extra_args,
+        f"{base}/logs/gen_{tag}{suffix}_d{depth}.log")
     VOLUME.commit()
     out = {"tag": tag, "decode_rc": code_a, "gen_rc": code_b}
     if code_a == 0 and os.path.exists(dec_json):
@@ -320,13 +326,16 @@ def stage_b(depth: int = 8, arms: str = "local",
 
 @app.local_entrypoint()
 def run_post(tag: str, ref: str = "B1_dense_s1", depth: int = 8,
-             gen_prefixes: int = 1024, gen_tokens: int = 128, bench_tokens: int = 256):
+             gen_prefixes: int = 1024, gen_tokens: int = 128, bench_tokens: int = 256,
+             override_mode: str = "", jacobi_sweeps: int = None):
     """Run decode benchmarks and generation evaluation on an existing checkpoint on the volume.
     Example:
-        modal run modal_sap.py::run_post --tag SAP_local_T4_s1
+        modal run modal_sap.py::run_post --tag SAP_local_TL_s1 --override-mode local_jacobi --jacobi-sweeps 2
     """
-    print(f"Running post-eval on {tag} against reference {ref} (depth {depth})...")
-    res = stage_b_post.remote(tag, ref, depth, gen_prefixes, gen_tokens, bench_tokens)
+    label = f"{tag} (override_mode={override_mode}, sweeps={jacobi_sweeps})" if override_mode else tag
+    print(f"Running post-eval on {label} against reference {ref} (depth {depth})...")
+    res = stage_b_post.remote(tag, ref, depth, gen_prefixes, gen_tokens, bench_tokens,
+                              override_mode=override_mode, jacobi_sweeps=jacobi_sweeps)
     rows = (res.get("decode") or {}).get("rows", [])
     sp = ", ".join(f"b{r['batch']}: {r['speedup']:.2f}x" for r in rows)
     print(f"\nResults for {tag}:")

@@ -805,7 +805,7 @@ parser.add_argument("--sch-rank-probe", type=int, default=0, help="SCH: contexts
 parser.add_argument("--sch-eval-steps", type=int, default=100, help="SCH: validation batches used by the end-of-training diagnostics")
 # SAP: sampling-aware block head (nanochat/block_head.py, sap_research_plan.md)
 parser.add_argument("--sap-block-t", type=int, default=0, help="SAP: tokens emitted per block by the head (0 = off)")
-parser.add_argument("--sap-block-mode", type=str, default="indep", choices=["indep", "p1_discrete", "p2_gauss", "p3_energy", "cp", "local", "inv_head", "plain_noise", "wta"], help="SAP: indep (independent slots), p1_discrete / p2_gauss (plan-latent ELBO), p3_energy (energy score), cp / local / inv_head (baselines), plain_noise / wta (controls)")
+parser.add_argument("--sap-block-mode", type=str, default="indep", choices=["indep", "p1_discrete", "p2_gauss", "p3_energy", "cp", "local", "local_jacobi", "inv_head", "plain_noise", "wta"], help="SAP: indep (independent slots), p1_discrete / p2_gauss (plan-latent ELBO), p3_energy (energy score), cp / local / local_jacobi / inv_head (baselines), plain_noise / wta (controls)")
 parser.add_argument("--sap-block-frac", type=float, default=0.125, help="SAP: fraction of positions carrying a block in training; the head's FLOPs scale with it")
 parser.add_argument("--sap-lambda", type=float, default=1.0, help="SAP: weight of the block loss next to the next-token loss")
 parser.add_argument("--sap-head-layers", type=int, default=2, help="SAP: attention layers in the slot decoder")
@@ -819,6 +819,7 @@ parser.add_argument("--sap-free-bits", type=float, default=0.25, help="SAP: unpe
 parser.add_argument("--sap-kl-anneal-steps", type=int, default=2000, help="SAP: micro-steps over which the KL weight ramps to 1")
 parser.add_argument("--sap-cp-components", type=int, default=8, help="SAP: R for the cp mixture baseline")
 parser.add_argument("--sap-wta-k", type=int, default=4, help="SAP: noise draws for the winner-take-all control")
+parser.add_argument("--sap-jacobi-sweeps", type=int, default=2, help="SAP: parallel refinement sweeps for local_jacobi (or local)")
 parser.add_argument("--sap-eval-steps", type=int, default=20, help="SAP: validation batches for the block bpb at each eval (0 = skip)")
 parser.add_argument("--seed", type=int, default=-1, help="RNG seed for weight init and data-order-independent randomness (-1 = unseeded, the historical default). Needed for seed-variance runs; note the dataloader order is not seeded by this.")
 parser.add_argument("--early-stop-tokens", type=int, default=-1, help="terminate training after this many tokens without affecting the LR schedule (-1 = disabled)")
@@ -1446,6 +1447,7 @@ def build_model_meta(depth, apply_dim_override=True):
         sap_kl_anneal_steps=int(getattr(args, 'sap_kl_anneal_steps', 2000)),
         sap_cp_components=int(getattr(args, 'sap_cp_components', 8)),
         sap_wta_k=int(getattr(args, 'sap_wta_k', 4)),
+        sap_jacobi_sweeps=int(getattr(args, 'sap_jacobi_sweeps', 2)),
 
     )
     # Stash tokenizer_dir on config for lazy prior loading in EET

@@ -60,12 +60,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.checkpoint import checkpoint
 
-SAP_MODES = ("indep", "p1_discrete", "p2_gauss", "p3_energy", "cp", "local",
+SAP_MODES = ("indep", "p1_discrete", "p2_gauss", "p3_energy", "cp", "local", "local_jacobi",
              "inv_head", "plain_noise", "wta")
 LATENT_MODES = ("p1_discrete", "p2_gauss")
 NOISE_MODES = ("p3_energy", "plain_noise", "wta")
 # Modes whose slots may only read earlier slots (their inputs carry earlier tokens or noise).
-CAUSAL_MODES = ("local", "inv_head")
+CAUSAL_MODES = ("local", "local_jacobi", "inv_head")
 
 
 def _norm(x):
@@ -237,6 +237,7 @@ class BlockHead(nn.Module):
         self.k_wta = int(getattr(config, "sap_wta_k", 4))
         self.n_freq = int(getattr(config, "sap_u_freqs", 24))
         self.u_interior = float(getattr(config, "sap_u_interior", 0.8))
+        self.jacobi_sweeps = int(getattr(config, "sap_jacobi_sweeps", 2))
         # Training forward calls, for the KL warm-up. A tensor buffer rather than a Python int
         # so torch.compile sees an in-place update instead of a new constant every step.
         self.register_buffer("_calls", torch.zeros((), dtype=torch.float32), persistent=False)
@@ -271,7 +272,7 @@ class BlockHead(nn.Module):
         if m == "cp":
             self.comp_emb = nn.Parameter(torch.empty(self.R, d))
             self.mix_out = _Lin(d, self.R)
-        if m == "local":
+        if m in ("local", "local_jacobi"):
             self.tok_in = _Lin(d, d)
         if m == "inv_head":
             self.u_in = _Lin(2 * self.n_freq + 1, d)
@@ -414,7 +415,7 @@ class BlockHead(nn.Module):
         if m == "indep":
             lp = self._slot_logprob(self._decode(base, ctx_in, ctx_valid), y_safe, readout)
             loss = -(lp * valid).sum() / nvalid
-        elif m == "local":
+        elif m in ("local", "local_jacobi"):
             prev = torch.cat([y_safe.new_zeros(N, 1), y_safe[:, :-1]], dim=1)
             tok = self.tok_in(_norm(embed(prev).to(h.dtype)))
             tok = tok * (torch.arange(T, device=h.device) > 0)[None, :, None].to(tok.dtype)
@@ -523,16 +524,29 @@ class BlockHead(nn.Module):
 
         if m == "indep":
             return _choose(_logits(self._decode(base, ctx_in, ctx_valid)))
-        if m == "local":
-            out = torch.zeros(N, T, dtype=torch.long, device=dev)
-            for k in range(T):
-                prev = torch.cat([out.new_zeros(N, 1), out[:, :-1]], dim=1)
-                tok = self.tok_in(_norm(embed(prev).to(h.dtype)))
-                tok = tok * (torch.arange(T, device=dev) > 0)[None, :, None].to(tok.dtype)
-                s = self._decode(base + tok, ctx_in, ctx_valid)
-                lg_k = _logits(s[:, k:k + 1])
-                out[:, k] = _choose(lg_k)[:, 0]
-            return out
+        if m in ("local", "local_jacobi"):
+            js = getattr(self, "jacobi_sweeps", 2) if m == "local_jacobi" else getattr(self, "jacobi_sweeps", 0)
+            if js > 0:
+                # Fast Parallel Jacobi: 1 initial draft pass + js parallel causal sweeps
+                s = self._decode(base, ctx_in, ctx_valid)
+                out = _choose(_logits(s))
+                for _ in range(js):
+                    prev = torch.cat([out.new_zeros(N, 1), out[:, :-1]], dim=1)
+                    tok = self.tok_in(_norm(embed(prev).to(h.dtype)))
+                    tok = tok * (torch.arange(T, device=dev) > 0)[None, :, None].to(tok.dtype)
+                    s = self._decode(base + tok, ctx_in, ctx_valid)
+                    out = _choose(_logits(s))
+                return out
+            else:
+                out = torch.zeros(N, T, dtype=torch.long, device=dev)
+                for k in range(T):
+                    prev = torch.cat([out.new_zeros(N, 1), out[:, :-1]], dim=1)
+                    tok = self.tok_in(_norm(embed(prev).to(h.dtype)))
+                    tok = tok * (torch.arange(T, device=dev) > 0)[None, :, None].to(tok.dtype)
+                    s = self._decode(base + tok, ctx_in, ctx_valid)
+                    lg_k = _logits(s[:, k:k + 1])
+                    out[:, k] = _choose(lg_k)[:, 0]
+                return out
         if m == "inv_head":
             u = _rand(N, T)
             lg = _logits(self._decode(base + self._u_emb(u[:, :-1], h.dtype), ctx_in, ctx_valid))

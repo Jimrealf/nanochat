@@ -66,13 +66,15 @@ def main():
     p.add_argument("--batch", type=int, default=32)
     p.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     p.add_argument("--out", type=str, default="sap_generation.jsonl")
+    p.add_argument("--override-mode", type=str, default="", help="override block head mode (e.g. local_jacobi)")
+    p.add_argument("--jacobi-sweeps", type=int, default=None, help="override jacobi sweeps")
     p.add_argument("--smoke", action="store_true", help="random tiny models, random prefixes")
     args = p.parse_args()
     device = torch.device(args.device)
 
     if args.smoke:
         from scripts.sap_decode_bench import smoke_model
-        model = ref = smoke_model(device).eval()
+        model = ref = smoke_model(device, mode=args.override_mode or "p1_discrete").eval()
         tok = None
         prefixes = torch.randint(0, model.config.vocab_size, (8, args.prefix_len))
         args.gen_tokens, args.batch = 16, 4
@@ -80,6 +82,10 @@ def main():
         model, tok = load(args.checkpoint_dir, args.step, device, args.tokenizer_dir)
         ref, _ = (load(args.reference_dir, None, device, args.tokenizer_dir)
                   if args.reference_dir else (model, None))
+        if args.override_mode and model.sap_head is not None:
+            model.sap_head.mode = args.override_mode
+        if args.jacobi_sweeps is not None and model.sap_head is not None:
+            model.sap_head.jacobi_sweeps = args.jacobi_sweeps
         from nanochat.dataloader import tokenizing_distributed_data_loader_bos_bestfit
         loader = tokenizing_distributed_data_loader_bos_bestfit(
             tok, args.batch, args.prefix_len, split="val", device="cpu", data_dir=args.data_dir)
