@@ -40,6 +40,25 @@ import urllib.request
 import urllib.error
 
 
+def _load_env():
+    """Load key-value pairs from .env if present."""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for candidate in [os.path.join(base_dir, ".env"), ".env"]:
+        if os.path.exists(candidate):
+            with open(candidate, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k, v = k.strip(), v.strip().strip("'\"")
+                        if k and k not in os.environ:
+                            os.environ[k] = v
+            break
+
+
+_load_env()
+
+
 JUDGE_PROMPT_TEMPLATE = """You are an expert linguistic evaluator assessing the quality of two competing AI continuations for a given prefix.
 
 [Prefix]:
@@ -62,6 +81,27 @@ Instructions:
 - Reply ONLY with a valid JSON object in the exact format:
 {{"analysis": "<short rationale>", "verdict": "A" | "B" | "Tie"}}
 """
+
+
+def _call_deepseek(prompt: str, model: str, api_key: str) -> str:
+    url = "https://api.deepseek.com/chat/completions"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    payload = {
+        "model": model or "deepseek-chat",
+        "messages": [
+            {"role": "system", "content": "You are an objective AI evaluator. Always respond with strict JSON."},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.0,
+        "response_format": {"type": "json_object"}
+    }
+    req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        res = json.loads(resp.read().decode("utf-8"))
+        return res["choices"][0]["message"]["content"]
 
 
 def _call_openai(prompt: str, model: str, api_key: str) -> str:
@@ -161,23 +201,35 @@ def wilson_interval(successes: int, total: int, z: float = 1.96) -> tuple[float,
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--pairs", type=str, required=True, help="Path to gen_*.jsonl from sap_eval_generation.py")
-    parser.add_argument("--provider", type=str, default="openai", choices=["openai", "anthropic", "mock"])
-    parser.add_argument("--model", type=str, default="gpt-4o-mini", help="Judge model name")
+    parser.add_argument("--provider", type=str, default="deepseek", choices=["deepseek", "openai", "anthropic", "mock"])
+    parser.add_argument("--model", type=str, default="", help="Judge model name (default: deepseek-chat for deepseek, gpt-4o-mini for openai)")
     parser.add_argument("--max-pairs", type=int, default=200, help="Max number of pairs to evaluate (default: 200)")
+    parser.add_argument("--concurrency", type=int, default=8, help="Concurrent API request workers (default: 8)")
     parser.add_argument("--out", type=str, default="", help="Output judgments jsonl path")
     args = parser.parse_args()
 
     api_key = ""
-    if args.provider == "openai":
+    if args.provider == "deepseek":
+        api_key = os.getenv("DEEPSEEK_API_KEY", "")
+        if not api_key:
+            print("Error: DEEPSEEK_API_KEY environment variable not set.", file=sys.stderr)
+            sys.exit(1)
+        if not args.model:
+            args.model = "deepseek-chat"
+    elif args.provider == "openai":
         api_key = os.getenv("OPENAI_API_KEY", "")
         if not api_key:
             print("Error: OPENAI_API_KEY environment variable not set.", file=sys.stderr)
             sys.exit(1)
+        if not args.model:
+            args.model = "gpt-4o-mini"
     elif args.provider == "anthropic":
         api_key = os.getenv("ANTHROPIC_API_KEY", "")
         if not api_key:
             print("Error: ANTHROPIC_API_KEY environment variable not set.", file=sys.stderr)
             sys.exit(1)
+        if not args.model:
+            args.model = "claude-3-5-sonnet-20241022"
 
     out_path = args.out or args.pairs.replace(".jsonl", "_judged.jsonl")
     if out_path == args.pairs:
@@ -192,27 +244,24 @@ def main():
                 break
 
     print(f"Loaded {len(pairs)} pairs from {args.pairs}")
-    print(f"Evaluating with {args.provider} ({args.model}) with Swap-Pair Debiasing...")
+    print(f"Evaluating with {args.provider} ({args.model}) with Swap-Pair Debiasing (workers={args.concurrency})...")
 
-    results = []
-    block_wins = 0
-    ar_wins = 0
-    ties = 0
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
-    out_file = open(out_path, "w", encoding="utf-8")
-
-    for i, p in enumerate(pairs):
+    def eval_pair(item):
+        i, p = item
         prefix = p.get("prefix", "")
         cont_block = p.get("block", "")
         cont_ar = p.get("ar", "")
 
-        # Pass 1: A = Block, B = AR
         prompt_1 = JUDGE_PROMPT_TEMPLATE.format(prefix=prefix, cont_a=cont_block, cont_b=cont_ar)
-        # Pass 2: A = AR,    B = Block
         prompt_2 = JUDGE_PROMPT_TEMPLATE.format(prefix=prefix, cont_a=cont_ar, cont_b=cont_block)
 
         try:
-            if args.provider == "openai":
+            if args.provider == "deepseek":
+                r1 = _call_deepseek(prompt_1, args.model, api_key)
+                r2 = _call_deepseek(prompt_2, args.model, api_key)
+            elif args.provider == "openai":
                 r1 = _call_openai(prompt_1, args.model, api_key)
                 r2 = _call_openai(prompt_2, args.model, api_key)
             elif args.provider == "anthropic":
@@ -222,24 +271,17 @@ def main():
                 r1 = _call_mock(prompt_1, cont_block, cont_ar)
                 r2 = _call_mock(prompt_2, cont_ar, cont_block)
 
-            v1 = parse_judgment(r1)  # A=Block, B=AR
-            v2 = parse_judgment(r2)  # A=AR,    B=Block
+            v1 = parse_judgment(r1)
+            v2 = parse_judgment(r2)
 
-            # Resolve verdict with position swap:
-            # If Pass 1 voted A (Block) and Pass 2 voted B (Block) => Block Win
-            # If Pass 1 voted B (AR)    and Pass 2 voted A (AR)    => AR Win
-            # If both voted Tie, or if vote flipped due to order   => Tie
             if v1 == "A" and v2 == "B":
                 final_verdict = "BLOCK_WIN"
-                block_wins += 1
             elif v1 == "B" and v2 == "A":
                 final_verdict = "AR_WIN"
-                ar_wins += 1
             else:
                 final_verdict = "TIE"
-                ties += 1
 
-            record = {
+            return {
                 "pair_id": i,
                 "prefix": prefix,
                 "verdict": final_verdict,
@@ -250,17 +292,34 @@ def main():
                 "ar_ref_nll": p.get("ar_ref_nll"),
                 "block_ref_nll": p.get("block_ref_nll")
             }
-            out_file.write(json.dumps(record) + "\n")
-            out_file.flush()
-
-            if (i + 1) % 10 == 0 or (i + 1) == len(pairs):
-                print(f"[{i+1}/{len(pairs)}] Block Wins: {block_wins} | AR Wins: {ar_wins} | Ties: {ties}")
-
         except Exception as e:
-            print(f"Error on pair {i}: {e}", file=sys.stderr)
-            time.sleep(2)
+            return {"pair_id": i, "error": str(e), "verdict": "ERROR"}
 
-    out_file.close()
+    results = []
+    block_wins = 0
+    ar_wins = 0
+    ties = 0
+
+    with ThreadPoolExecutor(max_workers=max(1, args.concurrency)) as pool:
+        futures = {pool.submit(eval_pair, (i, p)): i for i, p in enumerate(pairs)}
+        out_file = open(out_path, "w", encoding="utf-8")
+        completed_count = 0
+        for fut in as_completed(futures):
+            res = fut.result()
+            results.append(res)
+            v = res.get("verdict")
+            if v == "BLOCK_WIN":
+                block_wins += 1
+            elif v == "AR_WIN":
+                ar_wins += 1
+            elif v == "TIE":
+                ties += 1
+            out_file.write(json.dumps(res) + "\n")
+            out_file.flush()
+            completed_count += 1
+            if completed_count % 10 == 0 or completed_count == len(pairs):
+                print(f"[{completed_count}/{len(pairs)}] Block Wins: {block_wins} | AR Wins: {ar_wins} | Ties: {ties}")
+        out_file.close()
 
     total = block_wins + ar_wins + ties
     if total > 0:
