@@ -81,21 +81,11 @@ done
 
 VOCAB="${VOCAB:-32768}"
 TOK="${TOKENIZER_DIR:-tokenizer}"
-TS="${TS:-8 L}"
+TS="${TS:-L}"
 # ARMS to run:
-# Local causal block attention is the sole surviving method clearing the pre-registered kill criterion
-# (Ref PPL 117-134, 2.2x speedup at batch 16, +5.9% block bpb penalty at T=2).
-#
-# Retired/failed arms from depth-8 Stage B sweep (commented out):
-#   indep:       failed (ref PPL exploded to 3898, +54% block BPB penalty; cannot sample without teacher)
-#   p1_discrete: collapsed (ref PPL 1396, +34% block BPB penalty)
-#   cp:          killed in Stage A / B
-#   inv_head:    killed in Stage A / B
-#   p3_energy:   killed in Stage A
-#   p2_gauss:    continuous ELBO (ref PPL 1197) - keep commented unless testing continuous plan
-#
-ARMS="${ARMS:-local}"
-# ARMS="${ARMS:-local p2_gauss}"
+# Track 1: p1_discrete (single-pass latent SAP at T=L)
+# Track 2: local_jacobi (fixed-sweep parallel causal attention at T=L)
+ARMS="${ARMS:-p1_discrete local_jacobi}"
 
 LATENT_CODES="${LATENT_CODES:-64}"   # P1: Stage A's diagnostic found C=64 beats C=16 (capacity-limited)
 [ "$CONTROLS" -eq 1 ] && ARMS="$ARMS plain_noise wta"
