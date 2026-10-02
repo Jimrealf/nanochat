@@ -55,6 +55,10 @@ app = modal.App("nanochat-sap", image=image)
 
 def _workdir():
     """A cwd where the repo's default lookups ("tokenizer/tokenizer.pkl", "data") hit the volume."""
+    try:
+        VOLUME.reload()
+    except Exception as e:
+        print(f"Notice: VOLUME.reload() skipped or failed: {e}")
     os.makedirs(WORK, exist_ok=True)
     for name in ("tokenizer", "data"):
         link = os.path.join(WORK, name)
@@ -157,6 +161,30 @@ def _parse_train_log(text):
 def stage_b_train(tag: str, train_args: list, depth: int) -> dict:
     _workdir()
     ckdir = f"{VOL}/out/s00_sap/d{depth}"
+    target_dir = f"{ckdir}/{tag}"
+    if os.path.isdir(target_dir):
+        pts = [f for f in os.listdir(target_dir) if f.startswith("model_") and f.endswith(".pt")]
+        if pts:
+            print(f"Skipping {tag}: found existing checkpoint {pts[-1]} in {target_dir}")
+            log_candidates = [
+                f"{VOL}/out/s00_sap/logs/{tag}_d{depth}.log",
+                f"{VOL}/out/s00_sap/{tag}_d{depth}.log",
+            ]
+            text = ""
+            for lp in log_candidates:
+                if os.path.exists(lp):
+                    with open(lp) as f:
+                        text = f.read()
+                    break
+            res = {"tag": tag, "returncode": 0, **_parse_train_log(text)}
+            if "val_bpb" not in res:
+                metas = [f for f in os.listdir(target_dir) if f.startswith("meta_") and f.endswith(".json")]
+                if metas:
+                    with open(os.path.join(target_dir, sorted(metas)[-1])) as f:
+                        meta_data = json.load(f)
+                    res["val_bpb"] = meta_data.get("val_bpb")
+            return res
+
     cmd = [sys.executable, "-m", "scripts.base_train", *train_args,
            "--checkpoints-dir", ckdir, "--model-tag", tag]
     code, text = _run_logged(cmd, f"{VOL}/out/s00_sap/logs/{tag}_d{depth}.log")
@@ -173,7 +201,8 @@ def stage_b_post(tag: str, ref_tag: str, depth: int, gen_prefixes: int, gen_toke
     dec_json = f"{base}/decode_{tag}_d{depth}.json"
     code_a, text_a = _run_logged(
         [sys.executable, "-m", "scripts.sap_decode_bench", "--checkpoint-dir", f"{ckdir}/{tag}",
-         "--tokenizer-dir", f"{VOL}/tokenizer", "--gen-tokens", str(bench_tokens), "--out", dec_json],
+         "--tokenizer-dir", f"{VOL}/tokenizer", "--gen-tokens", str(bench_tokens),
+         "--no-graphs", "--out", dec_json],
         f"{base}/logs/decode_{tag}_d{depth}.log")
     code_b, text_b = _run_logged(
         [sys.executable, "-m", "scripts.sap_eval_generation", "--checkpoint-dir", f"{ckdir}/{tag}",
@@ -206,17 +235,17 @@ def _dense_flops(depth, seq_len, window, vocab=32768, ratio=10.5, round_to=26214
 
 
 @app.local_entrypoint()
-def stage_b(depth: int = 8, arms: str = "indep,cp,local,inv_head,p1_discrete,p2_gauss,p3_energy",
-            ts: str = "2,4", seeds: int = 1, smoke: bool = False, post: bool = True,
+def stage_b(depth: int = 8, arms: str = "local",
+            ts: str = "8,L", seeds: int = 1, smoke: bool = False, post: bool = True,
             frac: float = 0.0625, cp_frac: float = 0.015625, gen_prefixes: int = 1024,
             gen_tokens: int = 128, bench_tokens: int = 256, out: str = "out/s00_sap_modal"):
     arm_list = [a for a in arms.split(",") if a]
-    t_list = [int(t) for t in ts.split(",") if t]
+    t_raw = [t.strip() for t in ts.split(",") if t.strip()]
     opts = {"max-seq-len": 2048, "window-pattern": "SSSL", "device-batch-size": 16,
             "total-batch-size": -1, "eval-tokens": 20 * 2 ** 20, "sap-eval-steps": 40, "log-every": 100}
     train_fn, post_fn = stage_b_train, stage_b_post
     if smoke:
-        depth, arm_list, t_list, seeds = 2, ["p1_discrete"], [2], 1
+        depth, arm_list, t_raw, seeds = 2, ["local"], ["2"], 1
         gen_prefixes, gen_tokens, bench_tokens = 8, 16, 16
         opts.update({"max-seq-len": 256, "window-pattern": "L", "device-batch-size": 4,
                      "total-batch-size": 1024, "eval-tokens": 16384, "sap-eval-steps": 2, "log-every": 10})
@@ -238,12 +267,22 @@ def stage_b(depth: int = 8, arms: str = "indep,cp,local,inv_head,p1_discrete,p2_
     jobs = []
     for s in range(1, seeds + 1):
         jobs.append((f"B1_dense_s{s}", common + ["--seed", str(s)], depth))
-        for T in t_list:
+        for t_spec in t_raw:
+            if t_spec.upper() == "L":
+                T = opts["max-seq-len"]
+                t_label = "TL"
+                f_ = 1.0 / T
+            else:
+                T = int(t_spec)
+                t_label = f"T{T}"
+                f_ = 1.0 / T if T >= opts["max-seq-len"] else frac
             for arm in arm_list:
-                f_ = cp_frac if arm == "cp" else frac
-                jobs.append((f"SAP_{arm}_T{T}_s{s}",
-                             common + ["--seed", str(s), "--sap-block-t", str(T), "--sap-block-mode", arm,
-                                       "--sap-block-frac", str(f_)], depth))
+                f_arm = cp_frac if arm == "cp" else f_
+                arm_args = ["--seed", str(s), "--sap-block-t", str(T), "--sap-block-mode", arm,
+                            "--sap-block-frac", str(f_arm)]
+                if arm == "p1_discrete":
+                    arm_args += ["--sap-latent-codes", "64"]
+                jobs.append((f"SAP_{arm}_{t_label}_s{s}", common + arm_args, depth))
     print(f"launching {len(jobs)} training runs in parallel: {', '.join(j[0] for j in jobs)}")
     os.makedirs(out, exist_ok=True)
     results = {}

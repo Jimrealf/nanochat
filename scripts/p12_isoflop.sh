@@ -151,6 +151,14 @@ esac
 OUT_BASE="${OUT_BASE:-out/p12_isoflop}"
 mkdir -p "$OUT_BASE"
 TIMER_STEPS="${TIMER_STEPS:-20}"
+
+# A long arm killed mid-training (an OOM daemon's SIGTERM, a host preemption) resumes
+# from its last periodic checkpoint, so retrying it in place is far cheaper than losing
+# the point. RETRY_MIN_SECONDS separates a kill from a genuine config error: anything
+# that dies faster than this never trained, so retrying it would only spin.
+RETRIES="${RETRIES:-3}"
+RETRY_MIN_SECONDS="${RETRY_MIN_SECONDS:-600}"
+RETRY_DELAY="${RETRY_DELAY:-30}"
 if [ "$TIMER" -eq 1 ]; then
     # A costing pass must not touch the real sweep: its own out tree, its own state file,
     # and no mark_done, so a later real run still sees every arm as outstanding.
@@ -303,9 +311,12 @@ run() {
         # entirely, leaving a log that stops at the depth banner. A costing pass is
         # throwaway, so start it from a clean directory every time.
         [ "$TIMER" -eq 1 ] && rm -rf "$dir"
-        local rc=0
-        local t_start=$(date +%s.%N)
+        local rc=0 attempt=0
+        local t_start t_end elapsed
         local armlog="${dir}.probe.log"
+      while :; do
+        rc=0
+        t_start=$(date +%s.%N)
         if [ "$TIMER" -eq 1 ]; then
             # A real pipeline, not a variable that expands to "|": bash parses redirections
             # before expanding, so the old ${TIMER:+| tee ...} became literal filenames.
@@ -318,12 +329,13 @@ run() {
             bash scripts/research_sweep.sh $COMMON --out-dir "$dir" --seed "$s" \
                  "$@" "$depth" 2>&1 | tee -a "$LOGFILE" || rc=$?
         fi
-        local t_end=$(date +%s.%N)
+        t_end=$(date +%s.%N)
+        elapsed=$(awk -v a="$t_start" -v b="$t_end" 'BEGIN{printf "%.0f", b-a}')
         [ "$TIMER" -eq 1 ] && project_arm "$t" "$armlog" "$t_start" "$t_end"
         if [ "$ABORT" -eq 1 ] || [ "$rc" -eq 130 ] || [ "$rc" -eq 143 ]; then
             ABORT=1
             log "INTERRUPTED $t  (resumes from its last checkpoint on the next run)"
-            continue
+            break
         fi
         # An arm counts as complete only if it left the result row this profile reads.
         # research_sweep.sh can exit 0 without training anything, because its own
@@ -331,12 +343,40 @@ run() {
         # done would drop a point from the profile with no error anywhere.
         if [ "$TIMER" -eq 1 ]; then
             [ "$rc" -eq 0 ] || { FAILED_ARMS+=("$t"); log "FAIL $t (rc=$rc)"; }
+            break
         elif [ "$rc" -eq 0 ] && [ -f "${dir}/depth_${depth}/results_depth_${depth}.tsv" ]; then
             mark_done "$t"; log "OK $t"
+            break
+        fi
+        # Failed. A long arm that dies mid-training is almost always the host killing
+        # the worker (SIGTERM from an OOM daemon, a preemption), not a bad config:
+        # training resumes from the last periodic checkpoint, so a retry costs one
+        # recompile and at most SAVE_EVERY steps of lost work. Retry it in place
+        # rather than dropping the point and waiting for a human to re-invoke.
+        # An arm that dies quickly is a real error -- a bad flag, a missing shard --
+        # and retrying that only spins, so require the attempt to have run a while.
+        if [ "$attempt" -lt "$RETRIES" ] && [ "$elapsed" -ge "$RETRY_MIN_SECONDS" ]; then
+            attempt=$((attempt + 1))
+            log "RETRY $t (rc=$rc, attempt $attempt/$RETRIES, ran ${elapsed}s; resuming from last checkpoint)"
+            sleep "$RETRY_DELAY"
+            # The trap can fire during that sleep; without this the retry would
+            # relaunch an arm the user has just asked to stop.
+            if [ "$ABORT" -eq 1 ]; then
+                log "INTERRUPTED $t  (resumes from its last checkpoint on the next run)"
+                break
+            fi
+            continue
+        fi
+        FAILED_ARMS+=("$t")
+        if [ "$attempt" -gt 0 ]; then
+            log "FAIL $t (rc=$rc, gave up after $attempt retries)"
+        elif [ "$elapsed" -lt "$RETRY_MIN_SECONDS" ]; then
+            log "FAIL $t (rc=$rc after only ${elapsed}s -- looks like a config error, not a kill; not retrying)"
         else
-            FAILED_ARMS+=("$t")
             log "FAIL $t (rc=$rc)"
         fi
+        break
+      done
     done
 }
 

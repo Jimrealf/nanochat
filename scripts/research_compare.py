@@ -6,6 +6,7 @@ import glob
 import shutil
 import datetime
 from pathlib import Path
+import signal
 import subprocess
 
 import torch
@@ -791,6 +792,16 @@ def run_training_sweep(args):
             process.communicate()
             
             if process.returncode != 0:
+                # A negative returncode means the worker was killed by a signal rather
+                # than exiting on its own. Name it: -15 (SIGTERM) from an external
+                # supervisor reads identically to a genuine training error otherwise,
+                # and the two want opposite responses (retry vs. fix the config).
+                if process.returncode < 0:
+                    sig = signal.Signals(-process.returncode).name
+                    print(f"Training {model_name} was KILLED by {sig} "
+                          f"({-process.returncode}) from outside this process. "
+                          f"This is not a training error; the run resumes from its "
+                          f"last checkpoint.")
                 print(f"Error training {model_name}. Marking as failed and continuing to next model.")
                 results[f"{model_name}"] = "FAILED"
                 continue

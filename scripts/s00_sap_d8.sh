@@ -81,9 +81,22 @@ done
 
 VOCAB="${VOCAB:-32768}"
 TOK="${TOKENIZER_DIR:-tokenizer}"
-TS="${TS:-2 4}"
-# p3_energy was killed in Stage A (LEARNINGS 2026-10-01); add it back with ARMS=... to rerun it.
-ARMS="${ARMS:-indep cp local inv_head p1_discrete p2_gauss}"
+TS="${TS:-8 L}"
+# ARMS to run:
+# Local causal block attention is the sole surviving method clearing the pre-registered kill criterion
+# (Ref PPL 117-134, 2.2x speedup at batch 16, +5.9% block bpb penalty at T=2).
+#
+# Retired/failed arms from depth-8 Stage B sweep (commented out):
+#   indep:       failed (ref PPL exploded to 3898, +54% block BPB penalty; cannot sample without teacher)
+#   p1_discrete: collapsed (ref PPL 1396, +34% block BPB penalty)
+#   cp:          killed in Stage A / B
+#   inv_head:    killed in Stage A / B
+#   p3_energy:   killed in Stage A
+#   p2_gauss:    continuous ELBO (ref PPL 1197) - keep commented unless testing continuous plan
+#
+ARMS="${ARMS:-local}"
+# ARMS="${ARMS:-local p2_gauss}"
+
 LATENT_CODES="${LATENT_CODES:-64}"   # P1: Stage A's diagnostic found C=64 beats C=16 (capacity-limited)
 [ "$CONTROLS" -eq 1 ] && ARMS="$ARMS plain_noise wta"
 FRAC="${FRAC:-0.0625}"
@@ -126,9 +139,16 @@ mkdir -p "$OUT_BASE"
 
 done_already() {
     [ "$FORCE" -eq 1 ] && return 1
+    # Check state file
     python3 -c "
 import json,sys
-sys.exit(0 if '$1' in json.load(open('$STATE')).get('completed',{}) else 1)" 2>/dev/null
+sys.exit(0 if '$1' in json.load(open('$STATE')).get('completed',{}) else 1)" 2>/dev/null && return 0
+    # Also check if checkpoint already exists on disk (e.g. from a prior run or volume)
+    local ck="${OUT_BASE}/d${DEPTH}/$1"
+    if [ -d "$ck" ] && ls "$ck"/model_*.pt > /dev/null 2>&1; then
+        return 0
+    fi
+    return 1
 }
 mark_done() {
     python3 -c "
@@ -175,7 +195,7 @@ run() {
             mark_done "$t"; echo "OK    $t"
             if [ "$POST" -eq 1 ] && [ "$tag" != "B1_dense" ]; then
                 python3 -m scripts.sap_decode_bench --checkpoint-dir "${dir}/${t}" \
-                    --gen-tokens "${BENCH_TOKENS:-256}" \
+                    --gen-tokens "${BENCH_TOKENS:-256}" --no-graphs \
                     --out "${OUT_BASE}/decode_${t}_d${DEPTH}.json" 2>&1 | tee -a "$LOGFILE"
                 python3 -m scripts.sap_eval_generation --checkpoint-dir "${dir}/${t}" \
                     --reference-dir "${dir}/B1_dense_s${s}" --tokenizer-dir "$TOK" \
@@ -192,16 +212,27 @@ run() {
 echo "============================================================"
 echo "  S00: SAP block head, V=${VOCAB}, depth ${DEPTH}, T in {${TS}}"
 echo "  arms: ${ARMS}"
-echo "  block fraction ${FRAC} (cp ${CP_FRAC}), P1 codes ${LATENT_CODES}, GPUs ${NPROC_PER_NODE}"
+echo "  block fraction ${FRAC} (for T=L: 1/${SEQ_LEN}), GPUs ${NPROC_PER_NODE}"
 echo "  target FLOPs ${DENSE_FLOPS} per arm (the dense arm's)   post-run evals: ${POST}"
 echo "============================================================"
 
 run "B1_dense"
-for T in $TS; do
+for T_SPEC in $TS; do
     for arm in $ARMS; do
-        frac="$FRAC"
-        [ "$arm" = "cp" ] && frac="$CP_FRAC"
-        run "SAP_${arm}_T${T}" --sap-block-t "$T" --sap-block-mode "$arm" --sap-block-frac "$frac" \
+        if [ "$T_SPEC" = "L" ] || [ "$T_SPEC" = "l" ] || [ "$T_SPEC" = "$SEQ_LEN" ]; then
+            actual_T="$SEQ_LEN"
+            # Crucial OOM protection: when T=L, each sequence has only 1 block start (t=0).
+            # frac = 1/L ensures exactly N = B blocks per batch (1 per sequence),
+            # preventing 137 GB attention matrix OOM.
+            frac=$(python3 -c "print(1.0 / $SEQ_LEN)")
+            tag="SAP_${arm}_TL"
+        else
+            actual_T="$T_SPEC"
+            frac="$FRAC"
+            [ "$arm" = "cp" ] && frac="$CP_FRAC"
+            tag="SAP_${arm}_T${T_SPEC}"
+        fi
+        run "$tag" --sap-block-t "$actual_T" --sap-block-mode "$arm" --sap-block-frac "$frac" \
             --sap-latent-codes "$LATENT_CODES"
     done
 done

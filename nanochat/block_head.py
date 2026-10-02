@@ -529,8 +529,9 @@ class BlockHead(nn.Module):
                 prev = torch.cat([out.new_zeros(N, 1), out[:, :-1]], dim=1)
                 tok = self.tok_in(_norm(embed(prev).to(h.dtype)))
                 tok = tok * (torch.arange(T, device=dev) > 0)[None, :, None].to(tok.dtype)
-                lg = _logits(self._decode(base + tok, ctx_in, ctx_valid))
-                out[:, k] = _choose(lg[:, k:k + 1])[:, 0]
+                s = self._decode(base + tok, ctx_in, ctx_valid)
+                lg_k = _logits(s[:, k:k + 1])
+                out[:, k] = _choose(lg_k)[:, 0]
             return out
         if m == "inv_head":
             u = _rand(N, T)
@@ -765,25 +766,43 @@ def evaluate_block_bpb(model, batches, steps, token_bytes, blocks_per_row=8, n_s
     it = iter(batches)
     for step in range(steps):
         x, y = next(it)
-        logits, hid = model(x, return_hidden=True)
+        hid = model(x, skip_logits=True)
         B, Tq = x.shape
-        n_start = Tq - T + 1
-        starts = torch.tensor([(j + 1) * n_start // (blocks_per_row + 1) for j in range(blocks_per_row)],
-                              device=device)
-        b = torch.arange(B, device=device).repeat_interleave(blocks_per_row)
+        eff_blocks = max(1, min(blocks_per_row, n_start))
+        if n_start <= 1:
+            starts = torch.zeros(1, dtype=torch.long, device=device)
+        else:
+            starts = torch.tensor([(j + 1) * n_start // (eff_blocks + 1) for j in range(eff_blocks)],
+                                  device=device)
+        b = torch.arange(B, device=device).repeat_interleave(eff_blocks)
         t = starts.repeat(B)
         yb = y[b[:, None], t[:, None] + ks[None, :]]
         ysafe = yb.clamp_min(0)
         bytes_b = token_bytes[ysafe] * (yb >= 0)
         keep = (bytes_b > 0).all(dim=1)
         ctx, cv = model._sap_window(hid, b, t)
+
+        # Compute NTP logits in chunks for selected block positions
+        # Avoids allocating massive tensors: OOM-safe for arbitrary T up to L
+        hid_blocks = hid[b[:, None], t[:, None] + ks[None, :]]
+        hid_flat = hid_blocks.reshape(-1, hid_blocks.size(-1))
+        ysafe_flat = ysafe.reshape(-1)
+        ntp_lp_list = []
         u_bins = None
-        if head.mode == "inv_head":
-            rows = logits[b[:, None], t[:, None] + ks[None, :T - 1]].reshape(-1, logits.size(-1))
-            lo, w = target_bins(rows, ysafe[:, :T - 1].reshape(-1))
-            u_bins = (lo.view(-1, T - 1), w.view(-1, T - 1))
-        ntp = torch.log_softmax(logits[b[:, None], t[:, None] + ks[None, :]].float(), dim=-1)
-        ntp_lp = ntp.gather(-1, ysafe[..., None]).squeeze(-1).sum(-1)
+        inv_lo, inv_w = [], []
+        for c in range(0, hid_flat.size(0), 4096):
+            c_hid = hid_flat[c:c + 4096]
+            c_y = ysafe_flat[c:c + 4096]
+            c_lg = model._sap_readout(c_hid)
+            c_lp = torch.log_softmax(c_lg.float(), dim=-1).gather(-1, c_y[:, None]).squeeze(-1)
+            ntp_lp_list.append(c_lp)
+            if head.mode == "inv_head":
+                l_i, w_i = target_bins(c_lg, c_y)
+                inv_lo.append(l_i)
+                inv_w.append(w_i)
+        if head.mode == "inv_head" and inv_lo:
+            u_bins = (torch.cat(inv_lo).view(-1, T)[:, :T - 1], torch.cat(inv_w).view(-1, T)[:, :T - 1])
+        ntp_lp = torch.cat(ntp_lp_list).view(yb.shape).sum(-1)
         ntp_nats += -(ntp_lp[keep]).double().sum()
         n_bytes += bytes_b[keep].double().sum()
         n_blocks += keep.double().sum()
