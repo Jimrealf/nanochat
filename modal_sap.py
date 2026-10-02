@@ -316,3 +316,24 @@ def stage_b(depth: int = 8, arms: str = "local",
     with open(path, "w") as f:
         json.dump(results, f, indent=2)
     print(f"\nsummary written to {path}; logs and checkpoints on the volume under out/s00_sap/")
+
+
+@app.local_entrypoint()
+def run_post(tag: str, ref: str = "B1_dense_s1", depth: int = 8,
+             gen_prefixes: int = 1024, gen_tokens: int = 128, bench_tokens: int = 256):
+    """Run decode benchmarks and generation evaluation on an existing checkpoint on the volume.
+    Example:
+        modal run modal_sap.py::run_post --tag SAP_local_T4_s1
+    """
+    print(f"Running post-eval on {tag} against reference {ref} (depth {depth})...")
+    res = stage_b_post.remote(tag, ref, depth, gen_prefixes, gen_tokens, bench_tokens)
+    rows = (res.get("decode") or {}).get("rows", [])
+    sp = ", ".join(f"b{r['batch']}: {r['speedup']:.2f}x" for r in rows)
+    print(f"\nResults for {tag}:")
+    print(f"  Decode speedup: {sp}")
+    print(f"  Ref PPL AR:     {res.get('ref_ppl_ar')}")
+    print(f"  Ref PPL Block:  {res.get('ref_ppl_block')}")
+    print(f"  Distinct 3 AR:  {res.get('distinct3_ar')}")
+    print(f"  Distinct 3 Blk: {res.get('distinct3_block')}")
+    return res
+
