@@ -30,10 +30,38 @@ acts_d12_v131k.pt
 .*.swp
 .*.swo
 
-# Ignore all markdown files except README.md
+# Ignore all markdown files except tracked docs
 *.md
 !README.md
 !**/README.md
+!SAP_RESEARCH_SUMMARY.md
+
+# Plans
+!s01_sap_plan.md
+!s02_sap_plan.md
+!s04_sap_plan.md
+!s05_sap_plan.md
+!s08_sap_lanes_plan.md
+
+# Brainstorms
+!s06_sap_one_pass_brainstorm.md
+!s07_sap_mechanism_brainstorm.md
+!s11_sap_tl_brainstorm.md
+!s12_sap_brainstorm.md
+!s13_sap_brainstorm.md
+
+# Flow experiments
+!sap_flow_joint_gate.md
+!sap_flow_joint_results.md
+!sap_flow_text_d4_plan.md
+!sap_flow_text_d4_results.md
+!sap_flow_text_d8_plan.md
+!sap_flow_text_d8_results.md
+
+# Logs
+!LEARNINGS.md
+!OPEN_QUESTIONS.md
+!PROJECT_MAP.md
 
 # Compiler caches. Belt and braces: the scripts point these at out/ (already ignored),
 # but a stray TORCHINDUCTOR_CACHE_DIR or a new script must not be able to commit them.
