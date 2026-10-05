@@ -12,8 +12,8 @@ import torch
 import torch.nn.functional as F
 
 from nanochat.bridge import bisection_levels
-from scripts.sap_order_oracle import (MaskedLMOracle, _groups, compare, context_probe, finalize, order_steps,
-                                      score_order, score_rows, separator_scores, snap_levels)
+from scripts.sap_order_oracle import (MaskedLMOracle, _groups, compare, confidence_steps, context_probe, finalize,
+                                      order_steps, score_order, score_rows, separator_scores, snap_levels)
 
 
 class MarkovOracle:
@@ -59,6 +59,9 @@ class MarkovOracle:
     def nll(self, x, pos, tok):
         return [-self.posteriors(x[b])[pos[b], tok[b]].log() for b in range(x.size(0))]
 
+    def confidence(self, x, pos):
+        return [self.posteriors(x[b])[pos[b]].amax(-1) for b in range(x.size(0))]
+
 
 def _expected(oracle, P, Tb, steps, groups=0):
     """E_p[(par, grouped chain)] by enumerating every sequence of the chain."""
@@ -72,12 +75,20 @@ def _expected(oracle, P, Tb, steps, groups=0):
     return par, chain
 
 
-@pytest.mark.parametrize("order", ["l2r", "bisect1", "bisect2", "lanes2", "lanes4", "random3", "snap1"])
+@pytest.mark.parametrize("order", ["l2r", "bisect1", "bisect2", "lanes2", "lanes4", "random3", "snap1", "bl2_2", "conf3"])
 def test_every_chain_is_the_exact_block_nll(order):
     oracle, P, Tb = MarkovOracle(), 3, 8
     ids = oracle.sample(P + 1 + Tb, seed=1)
     is_start = torch.tensor([0, 0, 1, 0, 0, 0, 1, 0], dtype=torch.bool)
-    steps, level = order_steps(order, Tb, is_start=is_start, seed=1)
+    if order.startswith("conf"):                                     # adaptive: still a chain rule per sample
+        steps = confidence_steps(oracle, ids, P, Tb, int(order[4:]))
+        assert [int((steps == s).sum()) for s in range(4)] == [1, 3, 3, 2]   # ceil(hidden / steps left)
+        x = ids.clone()
+        x[P + 1:] = oracle.mask_id
+        conf, first = oracle.confidence(x[None], [torch.arange(P + 1, P + 1 + Tb)])[0], steps[1:] == 1
+        assert conf[first].min() >= conf[~first].max()                    # the most confident go first
+    else:
+        steps, level = order_steps(order, Tb, is_start=is_start, seed=1)
     par, chain, passes = score_order(oracle, ids, P, steps, batch=3)
     assert float(chain.sum()) == pytest.approx(oracle.block_nll(ids, P), rel=1e-9)
     assert passes == 1 + Tb
@@ -102,7 +113,7 @@ def test_tc_is_the_same_step_dependence():
     assert [g.tolist() for g in _groups(torch.arange(5), 2)] == [[0, 2, 4], [1, 3]]
 
 
-@pytest.mark.parametrize("order", ["l2r", "bisect1", "bisect4", "lanes4", "random5", "snap2"])
+@pytest.mark.parametrize("order", ["l2r", "bisect1", "bisect4", "lanes4", "random5", "snap2", "bl4_2"])
 def test_orders_are_complete_schedules(order):
     Tb = 32
     is_start = torch.zeros(Tb, dtype=torch.bool)
@@ -159,7 +170,7 @@ def test_masked_lm_oracle_finds_the_alignment_and_needs_right_context(shift):
 def test_sharded_resumed_runs_merge_to_the_single_run(tmp_path):
     oracle, P, Tb, R = MarkovOracle(), 2, 8, 4
     rows = [oracle.sample(P + 1 + Tb, seed=s) for s in range(R)]
-    orders = ["l2r", "bisect1", "lanes2", "random3"]
+    orders = ["l2r", "bisect1", "lanes2", "random3", "conf2"]
     cfg = {"oracle": "markov", "mask_id": oracle.mask_id, "shift": 0, "rows": R, "prefix": P, "block": 1 + Tb,
            "orders": orders, "groups": 0, "seed": 0, "rows_hash": "x", "block_bytes": [30] * R}
     run = lambda idx, done=None: score_rows(oracle, rows, P, Tb, orders, idx, done=done, log=lambda s: None)
@@ -221,7 +232,7 @@ def test_command_line_run_and_sharded_merge(tmp_path, monkeypatch):
     monkeypatch.setattr(soo.MaskedLMOracle, "from_pretrained",
                         classmethod(lambda cls, name, device, shift, mask_id: cls(model, Tok(), exact.mask_id, shift, "cpu")))
     common = ["--data-dir", str(tmp_path / "data"), "--rows", "3", "--prefix", "4", "--block", "16",
-              "--orders", "l2r,bisect1,lanes4,snap4,random3", "--batch", "5",
+              "--orders", "l2r,bisect1,lanes4,snap4,random4", "--batch", "5",
               "--sep-cut", "8", "--sep-span", "8", "--sep-windows", "0,1,2"]
     commits = []
 
@@ -239,7 +250,8 @@ def test_command_line_run_and_sharded_merge(tmp_path, monkeypatch):
     single, merged = (json.loads((tmp_path / f).read_text()) for f in ("all.json", "merged.json"))
     assert merged == single and single["shift"] == 0 and single["rows"] == 3
     assert single["validity"]["right_context_used"] and set(single["orders"]) == {"l2r", "bisect1", "lanes4",
-                                                                                   "snap4", "random3"}
+                                                                                   "snap4", "random4"}
     assert single["orders"]["bisect1"]["steps_max"] == 6 and "bisect1_TC_ge_3pct" in single["readings"]
+    assert "lanes4_over_random4_total" in single["readings"]                     # equal steps: 5 each
     assert single["separator"]["1"]["8"]["far_past_info_bits"] == pytest.approx([0.0] * 3, abs=1e-9)
     assert not single["readings"]["LSB_dead"] and single["validity"]["separator_info_nonnegative"]

@@ -32,6 +32,13 @@ other Tb positions:
                  decisions are not scored, so its numbers are a necessary condition, not a bound
     random{R}    a random order in R equal steps, drawn afresh for every row (masked-diffusion-style
                  parallel decoding)
+    conf{R}      confidence-ordered decoding in R steps, the masked-diffusion default (LLaDA's
+                 low-confidence remasking): each step reveals the ceil(hidden / steps left) hidden
+                 positions with the highest oracle max-probability given what is revealed so far
+                 (R extra passes per row; the order depends only on visible text, so it is a valid
+                 sampler and its chain is still a chain rule)
+    bl{L}_{n}    S11 bridged lanes (nanochat/wbisect.py): each of L intervals' last n tokens placed
+                 coarse-to-fine, then the intervals filled left to right in lockstep
 
 Separator bound (E2a, --sep-cut; on by default): how many bits must cross a cut so that the next m
 tokens lose at most 2%. With the past before the last w tokens hidden (block position c is the cut;
@@ -129,10 +136,16 @@ def snap_levels(Tb, is_start, W):
 def order_steps(name, Tb, is_start=None, seed=0):
     """(steps (1 + Tb,), level of each step, step 0's level being -1) for one of the module
     docstring's orders."""
-    m = re.fullmatch(r"(l2r|bisect|lanes|snap|random)(\d*)", name)
+    m = re.fullmatch(r"(l2r|bisect|lanes|snap|random|bl)(\d*)(?:_(\d+))?", name)
     assert m, f"unknown order {name!r}"
     kind, k = m.group(1), int(m.group(2) or 0)
-    if kind == "l2r":
+    assert kind == "bl" or not m.group(3), f"unknown order {name!r}"
+    if kind == "bl":
+        from nanochat.wbisect import bridged_lanes_steps
+        assert k >= 1 and m.group(3), f"{name}: bridged lanes are bl{{L}}_{{n}}"
+        local = bridged_lanes_steps(Tb, 0, k, int(m.group(3)))
+        level = list(range(int(local.max()) + 1))
+    elif kind == "l2r":
         local = torch.arange(Tb)
         level = list(range(Tb))
     elif kind == "bisect":
@@ -223,6 +236,24 @@ def separator_scores(oracle, ids, P, cut, windows, span, batch=8, keep_first=Fal
     return out
 
 
+@torch.no_grad()
+def confidence_steps(oracle, ids, P, Tb, R):
+    """(1 + Tb,) steps of confidence-ordered decoding (the conf{R} order): the block's first token
+    at step 0, then R steps, each revealing the ceil(hidden / steps left) hidden positions whose
+    oracle max-probability (oracle.confidence) is highest given the positions revealed so far.
+    One oracle pass per step."""
+    steps = torch.full((1 + Tb,), -1, dtype=torch.long)
+    steps[0] = 0
+    for s in range(1, R + 1):
+        hidden = (steps < 0).nonzero().flatten()
+        k = -(-hidden.numel() // (R - s + 1))
+        x = ids.clone()
+        x[hidden + P] = oracle.mask_id
+        conf = oracle.confidence(x[None], [hidden + P])[0]
+        steps[hidden[conf.topk(k).indices]] = s
+    return steps
+
+
 def score_rows(oracle, rows, P, Tb, orders, indices, starts=None, groups=0, batch=8, seed=0,
                done=None, save=None, log=print, sep=None):
     """Score rows[i] for i in indices under every order: {i: {order: record}}. done holds records
@@ -230,7 +261,7 @@ def score_rows(oracle, rows, P, Tb, orders, indices, starts=None, groups=0, batc
     are drawn afresh for every row (seed + i); snap orders use starts[i]. sep: {cut, windows, span,
     keep_first} adds the separator scores under the key "_sep"."""
     records = dict(done or {})
-    fixed = {o: order_steps(o, Tb) for o in orders if not o.startswith(("snap", "random"))}
+    fixed = {o: order_steps(o, Tb) for o in orders if not o.startswith(("snap", "random", "conf"))}
     todo = [i for i in indices if i not in records]
     if len(todo) < len(indices):
         log(f"resuming: {len(indices) - len(todo)} of {len(indices)} rows already scored")
@@ -238,9 +269,16 @@ def score_rows(oracle, rows, P, Tb, orders, indices, starts=None, groups=0, batc
         t0 = time.time()
         rec = {}
         for o in orders:
-            steps, level = fixed[o] if o in fixed else order_steps(
-                o, Tb, is_start=None if starts is None else starts[i], seed=seed + i)
+            extra = 0
+            if o in fixed:
+                steps, level = fixed[o]
+            elif o.startswith("conf"):
+                extra = int(o[4:])
+                steps, level = confidence_steps(oracle, rows[i], P, Tb, extra), [-1] + list(range(extra))
+            else:
+                steps, level = order_steps(o, Tb, is_start=None if starts is None else starts[i], seed=seed + i)
             par, chain, passes = score_order(oracle, rows[i], P, steps, groups, batch)
+            passes += extra
             rec[o] = {"par": par, "chain": chain, "passes": passes, "steps": int(steps.max()) + 1,
                       "level": torch.tensor([level[s] for s in steps.tolist()])}
         if sep:
@@ -292,6 +330,13 @@ class MaskedLMOracle:
             t = tok[b].to(self.device)[:, None]
             out.append((torch.logsumexp(z, -1) - z.gather(1, t).squeeze(1)).double().cpu())
         return out
+
+    @torch.no_grad()
+    def confidence(self, x, pos):
+        """Per row b of x: the oracle's max probability at positions pos[b] (decoding confidence)."""
+        lg = self.logits(x.to(self.device))
+        return [torch.softmax(lg[b, pos[b].to(self.device) - self.shift].float(), -1).amax(-1).cpu()
+                for b in range(x.size(0))]
 
     @torch.no_grad()
     def detect_shift(self, rows, P, frac=0.15, seed=0):
@@ -486,6 +531,15 @@ def readings(summary, sep=None):
             cut = 100.0 * (1 - summary[o]["total_pct"][0] / b["total_pct"][0])
             out[f"{o}_cut_vs_bisect1_pct"] = cut
             out[f"{o}_BSB_live"] = cut >= 15.0
+    for o in summary:                                 # S15 L0b: lanes against diffusion decoding at equal steps
+        if not o.startswith("lanes"):
+            continue
+        for d in summary:
+            if d.startswith(("conf", "random")) and summary[d]["steps_max"] == summary[o]["steps_max"] \
+                    and summary[d]["total_pct"][0] > 0:
+                ratio = summary[o]["total_pct"][0] / summary[d]["total_pct"][0]
+                out[f"{o}_over_{d}_total"] = ratio
+                out[f"{o}_beats_{d}"] = ratio <= 0.5     # pre-registered: at most half the cost at equal steps
     if sep and "1" in sep:
         need = sep["1"][max(sep["1"], key=int)]["bits_needed"][0]
         out["separator_w1_bits_needed"] = need
@@ -668,7 +722,8 @@ def main(argv=None, commit=None):
               "prefix": P, "block": 1 + Tb, "orders": orders, "groups": args.groups, "seed": args.seed,
               "rows_hash": rows_hash(rows), "block_bytes": [len(b.encode("utf-8")) for b in blocks], "sep": sep}
     indices = list(range(args.shard, len(rows), args.num_shards))
-    passes = len(indices) * (len(orders) * (1 + Tb) + (len(sep["windows"]) * sep["span"] if sep else 0))
+    conf_passes = sum(int(o[4:]) for o in orders if o.startswith("conf"))
+    passes = len(indices) * (len(orders) * (1 + Tb) + conf_passes + (len(sep["windows"]) * sep["span"] if sep else 0))
     print(f"oracle {args.oracle}: mask {oracle.mask_id}, shift {oracle.shift} (probe {shift_probe}), "
           f"right-context probe {probe}; shard {args.shard}/{args.num_shards}: {len(indices)} of {len(rows)} "
           f"rows of {P} + {1 + Tb} tokens, row hash {config['rows_hash']}, "

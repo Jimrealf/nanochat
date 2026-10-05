@@ -1133,7 +1133,14 @@ The user asked to go back to the one-head T=L seed (`s13_sap_brainstorm.md`).
 **Decision for the user.** One pass (SV-D, true T=L, samples-only bar) or constant rounds (SV-A, exact bpb, S+1 rounds)? The Q3 timing above is the evidence for that choice.
 
 
-## SAP S14: is the strict seed limited by information or by computation? (open 2026-10-05)
+## SAP S14: is the strict seed limited by information or by computation? (RESOLVED 2026-10-05: information)
+
+**Resolved.** Under both 8B oracles, exact token orders of 13 levels or fewer lose 13 to 15% to same-step TC, against a 1% bar.
+- Lanes need about 36 or more steps for TC ≤ 1%.
+- Separators need 113 to 126 bits.
+- PCB and BSB are not live; LSB and CVL are dead; VAR-T is disfavoured.
+- Details in `s14_sap_strict_tl_brainstorm.md` §11; the learning is in `LEARNINGS.md`. The original entry is kept below as the record.
+
 
 The user asked for the strict version of the seed (`s14_sap_strict_tl_brainstorm.md`):
 - 1920 tokens in at most 13 parallel levels;
@@ -1170,3 +1177,23 @@ The user asked for the strict version of the seed (`s14_sap_strict_tl_brainstorm
 | PCB is supported | tax(d8)/tax(d4) ≤ 0.7 |
 
 **Decision for the user.** None until Stage 0 returns. Then pick which Stage 1 gates to run.
+
+## SAP S15: does the plain-lanes tax turn down with scale? (open 2026-10-05)
+
+S14 closed the strict thesis. The user chose the plain-lanes paper (`s15_lanes_paper_plan.md`).
+
+**Frank status: not at the A* bar yet.**
+- The evidence is only at d4 and d8, and the equal-token tax grew from d4 to d8.
+- Parity needs 2 to 5x tokens, and that multiple can grow with scale.
+- The speedup is batch-1 only, and there is no iso-quality baseline.
+- Samples and the OWT / BD3-LM protocol are still open.
+
+**Decides now (R1).** Extra nats per lane at L=64 and 1x tokens, d12 against d8.
+- ≤ 0.90x: go.
+- ≥ 1.05x: no-go for plain lanes as the core.
+- In between: a d16 pair decides.
+
+**In parallel (L0b).** The S14 oracle at T=1920: lanes' floor per L, and lanes against confidence-ordered diffusion decoding at equal steps (win if lanes' total ≤ 0.5x).
+
+**Decision for the user, after R1.** Which mechanism for the learnable lane-start cost (L1). At d8 about 85% of the per-lane loss is learnable.
+

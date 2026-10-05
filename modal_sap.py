@@ -2895,7 +2895,8 @@ def s14_cpu_job(name: str, cmd: list) -> dict:
 
 @app.local_entrypoint()
 def s14_order_oracle(oracle: str = "llada", rows: int = 0, shards: int = 4, orders: str = "",
-                     ar_ref: str = "Qwen/Qwen2.5-7B", batch: int = 8, smoke: bool = False):
+                     ar_ref: str = "Qwen/Qwen2.5-7B", batch: int = 8, block: int = 1024, prefix: int = 128,
+                     sep_cut: int = 512, name: str = "", smoke: bool = False):
     """S14 E0 + E2a: per-order TC (information) and gap (oracle difficulty) on real text, and the
     bits a separator must carry, under an 8B any-order oracle (scripts/sap_order_oracle.py). Rows
     are split over `shards` H100s; rerunning the same command resumes from the saved rows, then
@@ -2903,11 +2904,16 @@ def s14_order_oracle(oracle: str = "llada", rows: int = 0, shards: int = 4, orde
         modal run modal_sap.py::s14_order_oracle --smoke            # 2 short rows: images, paths, probes
         modal run modal_sap.py::s14_order_oracle                    # LLaDA-8B-Base, 32 rows (primary)
         modal run modal_sap.py::s14_order_oracle --oracle dream     # Dream-v0-Base-7B, 16 rows (check)
-        modal run modal_sap.py::s14_order_oracle_compare            # cross-oracle readings"""
+        modal run modal_sap.py::s14_order_oracle_compare            # cross-oracle readings
+    S15 L0b (s15_lanes_paper_plan.md), the paper's 1920-token block, no separator bound:
+        modal run modal_sap.py::s14_order_oracle --block 1920 --sep-cut 0 --rows 16 --name t1920 \
+            --orders l2r,lanes32,lanes64,lanes128,bl32_8,random30,conf30,conf60
+    `name` keeps a run's raw files and result apart (out/s14/s14_oracle_<oracle>_<name>.json)."""
     fn = {"llada": s14_oracle_llada, "dream": s14_oracle_dream}[oracle]
     rows = rows or (32 if oracle == "llada" else 16)
-    tag = f"s14_oracle_{oracle}"
-    argv = ["--oracle", S14_ORACLES[oracle], "--data-dir", f"{VOL}/data", "--rows", str(rows), "--batch", str(batch)]
+    tag = f"s14_oracle_{oracle}" + (f"_{name}" if name else "")
+    argv = ["--oracle", S14_ORACLES[oracle], "--data-dir", f"{VOL}/data", "--rows", str(rows), "--batch", str(batch),
+            "--block", str(block), "--prefix", str(prefix), "--sep-cut", str(sep_cut)]
     argv += ["--ar-ref", ar_ref] if ar_ref else []
     argv += ["--orders", orders] if orders else []
     if smoke:

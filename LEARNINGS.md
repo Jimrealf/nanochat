@@ -4,6 +4,31 @@ Durable concepts learned and misunderstandings corrected during this project.
 
 ---
 
+## 2026-10-05: S14 E0 results: same-step dependence in text is local, and lanes are the efficient parallel order
+
+Measured with two 8B any-order oracles (LLaDA-8B-Base, 32 rows; Dream-v0-Base-7B, 16 rows) on FineWeb-Edu. Every validity check passed. Data in `scratch/s14/`; details in `s14_sap_strict_tl_brainstorm.md` §11.
+
+- **The strict thesis is closed on information.**
+  - Exact token orders of 13 levels or fewer pay 13 to 15% of the NLL in same-step TC (bisect1 13.5 / 15.0%, random12 13.3 / 14.4%, snap32 13.7 / 13.9%). That is before any learning cost, against a 1% bar.
+  - Capacity, data or scale cannot remove TC.
+- **TC is local.**
+  - About 97% of bisection's TC sits at its three finest levels (spacing ≤ 8), even though every coarser anchor is an exact token.
+  - Coarse plans or multi-scale codes therefore cannot remove it. This is why log-depth "interface-first" orders, the S11 premise, are wrong for text, though they are exact for low-order Markov toys.
+- **Lanes lie below every other order's cost-vs-steps curve.**
+  - lanes32 at 33 steps costs about half of bisect4 at 37 steps.
+  - lanes64 at 17 steps costs 3.1 to 3.7x less than the 12-to-15-step orders.
+  - Lanes keep every token's left neighbour visible except at lane starts, and 42% of their TC sits in the lane-start step.
+- **Small separators do not exist in text.**
+  - The far past carries 135 to 152 bits about the next 256 tokens.
+  - A single position plus any code needs 113 to 126 bits to keep that span within 2%.
+- **The oracle's gap depends on its training distribution.** Dream, AR-adapted, has about twice LLaDA's gap. Gap is a property of the model, not of the order.
+- **Correction (my own, the same day): compare per-lane costs in nats, not in average-token losses.**
+  - S13's per-lane numbers are in units of the dense model's mean token loss, which shrinks with scale.
+  - d8 L=64's 2.38 is about 7 nats per lane, against the 8B oracle's about 1.7 total (about 1.0 TC). So about 85% of d8's lane tax is learnable, not the 60% I first said.
+  - The same unit change shows that d4 → d8 per-lane nats went about 6.6 → 7.1: scale has not started paying yet. `lane_offset_report` now prints absolute nats per lane for this comparison.
+
+---
+
 ## 2026-10-05: Correction: the lane-start survivor audit (`scripts/validate_all_survivors.py`) tests nothing it claims
 
 The "8 Lane-Start Tax Reduction Candidates" section near the end of this file (and `SAP_RESEARCH_SUMMARY.md` §2 items 5 to 8 and §4) reports kills and one survivor. Reading the script shows that none of them is evidence:

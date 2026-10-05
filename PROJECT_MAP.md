@@ -742,11 +742,16 @@ scale modes behave, with `none` asserted to blow the output up because that is t
     - `scripts/sap_order_oracle.py`: the E0 order oracle and the E2a separator bound. Nothing is trained.
       - An any-order masked diffusion LM (LLaDA-8B-Base or Dream-v0-Base-7B) scores real text in a generation order twice: in parallel per step, and as the order's exact chain (one token per pass) (`score_order`).
       - TC = par − chain is same-step dependence. gap = chain(order) − chain(l2r) is the order's difficulty for the oracle.
-      - Orders (`order_steps`): l2r, `bisectN` (window bisection via `nanochat/bridge.py`), `lanesL`, `snapW` (anchors snapped to sentence starts, `snap_levels`), `randomR`.
+      - Orders (`order_steps`): l2r, `bisectN` (window bisection via `nanochat/bridge.py`), `lanesL`, `snapW` (anchors snapped to sentence starts, `snap_levels`), `randomR`, and `blL_n` (S11 bridged lanes via `nanochat/wbisect.py::bridged_lanes_steps`).
+      - `confR` (`confidence_steps`): confidence-ordered decoding, the masked-diffusion default. One pass per step via `MaskedLMOracle.confidence`.
+      - `readings` also compares lanes with `conf` and `random` orders at equal steps (S15 L0b).
       - `separator_scores` and `separator_summary`: the NLL after a cut with the far past hidden, giving the bits any separator must carry.
       - `MaskedLMOracle`: logit-shift detection and known mask ids. `context_probe` flags an oracle that ignores right context. `ar_reference_bpb`.
       - `score_rows` / `finalize` / `readings`: sharded (`--shard`, `--num-shards`), resumable (`--raw`), `--merge`, and `--compare` (cross-oracle Spearman). Pre-registered `validity` and `readings` are written into the JSON.
-    - Modal: `modal_sap.py::s14_order_oracle` (shards on H100s in images pinned to each model card's transformers, then a merge) and `s14_order_oracle_compare`; the workers are `s14_oracle_llada`, `s14_oracle_dream` and `s14_cpu_job`. E1 reuses `s11_ladder` at depth 8.
+    - Modal: `modal_sap.py::s14_order_oracle` (shards on H100s in images pinned to each model card's transformers, then a merge; `block`, `prefix`, `sep_cut` and `name` set the run) and `s14_order_oracle_compare`. The workers are `s14_oracle_llada`, `s14_oracle_dream` and `s14_cpu_job`. Results: `scratch/s14/`.
+  - S15 (`s15_lanes_paper_plan.md`), the lanes paper:
+    - `scripts/sap_position_bpb.py::lane_offset_report(..., n_rows)` adds absolute extra nats per lane and the reference's nats per token, so the R1 scale test compares model sizes in the same units as the S14 oracle.
+    - Runs reuse `s11_ladder`, `s11_score`, `s08_gen` and `s11_speed` at depth 12.
     - Tests: `tests/test_order_oracle.py`. It uses an exact Markov-chain oracle to check:
       - every chain equals the block NLL;
       - TC = 0 for independent tokens and for bisection of a Markov chain;

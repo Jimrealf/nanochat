@@ -1,8 +1,11 @@
 # S14: the strict seed, T=L in a fixed number of levels
 
-Status 2026-10-05: brainstorm done, Stage 0 code ready (`scripts/sap_order_oracle.py`,
-`modal_sap.py::s14_order_oracle`), waiting for the runs. Stage 1 code is written only for what
-Stage 0 leaves alive.
+**Status 2026-10-05: CLOSED on information.** E0 and E2a ran in both oracles, and every validity check passed (§11).
+- Exact token orders of 13 levels or fewer lose 13 to 15% to same-step dependence alone, against a 1% bar.
+- All five survivors are dead, not live, or disfavoured.
+- E1 and Stage 1 are not run.
+
+The work continues as the non-strict lanes paper (`s15_lanes_paper_plan.md`).
 
 ## 0. Changes from the approved plan, and why
 
@@ -356,3 +359,86 @@ My prior:
 - PCB is the best bet if E0 shows small TC and a shrinking gap.
 
 If Stage 0 closes all five, the strict thesis is closed with measured reasons. The A* path is then the non-strict speculative lanes.
+
+## 11. Results (2026-10-05)
+
+**Runs.** E0 + E2a in `scratch/s14/` (JSONs and merge logs from `out/s14/` on the volume).
+- `GSAI-ML/LLaDA-8B-Base`: 32 rows, row hash `a249add6812c7098`.
+- `Dream-org/Dream-v0-Base-7B`: 16 rows, row hash `0757c59a556d13c2`.
+- Rows are 128 + 1025 tokens. About 6 H100-hours: 481 s per row for LLaDA, 396 s for Dream.
+
+**Validity: every check passed in both oracles.**
+
+| check | LLaDA | Dream |
+|---|---|---|
+| shift probe (mean NLL, shift 0 / shift 1) | 0.56 / 12.1 nats | 7.3 / 0.58 nats |
+| right-context probe ratio | 0.155 | 0.313 |
+| l2r bpb against Qwen2.5-7B on the same bytes | 0.6646 vs 0.5984 (1.111x) | 0.6181 vs 0.5785 (1.069x) |
+
+- TC ≥ 0 for every order.
+- Separator information is non-negative and shrinks with the window.
+- Cross-oracle Spearman of total cost: 0.967.
+
+### Per order
+
+% of the l2r chain NLL, with row-bootstrap 95% CIs.
+
+| order | steps (LLaDA / Dream) | TC % LLaDA | TC % Dream | gap % LLaDA | gap % Dream | total % LLaDA | total % Dream |
+|---|---|---|---|---|---|---|---|
+| bisect1 | 12 / 12 | 13.53 [12.59, 14.59] | 14.97 [13.53, 16.46] | 4.68 [3.68, 5.89] | 9.38 [7.01, 12.75] | 18.21 [16.42, 20.29] | 24.35 [20.80, 28.85] |
+| bisect2 | 21 / 21 | 4.85 [4.37, 5.40] | 5.18 [4.66, 5.78] | 3.86 [2.96, 4.95] | 8.26 [6.15, 10.93] | 8.71 [7.54, 10.09] | 13.44 [11.01, 16.56] |
+| bisect4 | 37 / 37 | 1.63 [1.39, 1.91] | 1.89 [1.46, 2.34] | 3.06 [2.33, 3.96] | 6.43 [4.62, 8.75] | 4.69 [3.85, 5.69] | 8.32 [6.30, 10.82] |
+| bisect16 | 113 / 113 | 0.25 [0.15, 0.35] | 0.20 [0.03, 0.39] | 1.44 [0.97, 2.01] | 2.98 [1.90, 4.46] | 1.68 [1.19, 2.28] | 3.17 [2.11, 4.68] |
+| lanes8 | 129 / 129 | 0.16 [0.04, 0.34] | 0.06 [-0.07, 0.24] | 0.29 [0.04, 0.55] | 0.95 [0.43, 1.71] | 0.45 [0.16, 0.82] | 1.01 [0.43, 1.85] |
+| lanes32 | 33 / 33 | 1.20 [0.90, 1.63] | 1.25 [0.84, 1.80] | 1.18 [0.73, 1.70] | 2.52 [1.44, 3.95] | 2.38 [1.72, 3.24] | 3.77 [2.62, 5.43] |
+| lanes64 | 17 / 17 | 3.06 [2.49, 4.02] | 3.45 [2.86, 4.13] | 1.86 [1.25, 2.58] | 3.73 [2.27, 5.77] | 4.92 [3.90, 6.37] | 7.18 [5.56, 9.60] |
+| snap32 | 15 / 14 | 13.65 [12.55, 14.82] | 13.86 [12.27, 15.54] | 3.99 [3.09, 5.01] | 8.52 [6.54, 11.32] | 17.64 [15.91, 19.68] | 22.38 [19.07, 26.33] |
+| random12 | 13 / 13 | 13.34 [12.16, 15.00] | 14.43 [12.84, 16.40] | 3.95 [3.06, 5.04] | 7.98 [6.01, 10.77] | 17.29 [15.50, 19.59] | 22.42 [19.10, 26.75] |
+
+### Separator bound (E2a)
+
+The cut is at block position 512 and the span is the next 256 tokens.
+
+| quantity | LLaDA | Dream |
+|---|---|---|
+| far past's information (window 0) | 152 bits | 135 bits |
+| far past's information (window 16) | 95 bits | 89 bits |
+| bits a separator needs (w = 1) | **126 [102, 154]** | **113 [88, 140]** |
+| bits a separator needs (w = 16) | 80 | 74 |
+
+### Pre-registered readings
+
+| reading | LLaDA | Dream | verdict |
+|---|---|---|---|
+| bisect1 TC ≥ 3% (strict token orders closed on information) | yes | yes | **closed** |
+| bisect1 gap ≥ 5% in both (closed on computation) | no (4.68) | yes | not established, and moot |
+| PCB: some ≤13-step order with TC ≤ 1% and gap ≤ 2% | none | none | **not live** |
+| BSB: snapping cuts TC + gap by ≥ 15% | 3.2% | 8.1% | **not live**; it also adds steps (15 / 14) |
+| LSB: separator needs ≤ 48 bits | 126 | 113 | **dead** |
+| CVL strong form, carry-select scan: ≤ 16 bits | 126 | 113 | **dead** |
+| CVL's own kill: per-level TC > 3 ln K where the tax sits (K=1024: 21 nats) | level 9: 158 nats | level 9: 180 nats | **dead** |
+
+VAR-T was not tested. The diagnosis below disfavours it, and it is not run.
+
+### Diagnosis (reusable)
+
+1. **Same-step dependence in text is local.**
+   - 96.6% (LLaDA) and 98.1% (Dream) of bisection's TC sits in its three finest levels, at spacing ≤ 8.
+   - That holds although every coarser anchor is an exact token, so coarse plans, codes or scales cannot remove it.
+2. **Lanes lie below every other order's cost-vs-steps curve.** The step counts are not exactly matched, and the matched comparison against diffusion decoding is S15 L0b. The margins:
+   - lanes32 at 33 steps costs about half of bisect4 at 37 steps (2.4 vs 4.7% LLaDA; 3.8 vs 8.3% Dream);
+   - lanes64 at 17 steps costs 3.1 to 3.7x less than the 12-to-15-step orders (4.9 / 7.2% against 17.3 to 24.4%);
+   - lanes8 at 129 steps costs 3.1 to 3.7x less than bisect16 at 113 steps.
+   - Interface-first bisection, the S11 premise, is the wrong parallel structure for text.
+3. **Lanes' information floor.**
+   - TC per lane: 0.43 / 0.82 / 1.04 nats at S = 128 / 32 / 16 (LLaDA). 42 to 43% of it sits in the lane-start step.
+   - TC ≤ 1% needs about 36 or more steps per lane. This is extrapolated from S = 16 and 32; T = 1920 is measured in S15 L0b.
+4. **Excess entropy.**
+   - The far past carries 135 to 152 bits about the next 256 tokens.
+   - 89 to 95 bits of that sit beyond a 16-token window.
+5. **The gap depends on how the oracle was trained.** Dream, AR-adapted, has about 2x the gap of LLaDA, which was trained on any order.
+6. **S13's open question is answered: the unrecovered junction loss is mostly learnability.**
+   - d8 L=64 loses 2.38 average-token losses per lane, about 7 nats at about 3.0 nats per token. S15 R1 measures this exactly.
+   - The 8B oracle's total is about 1.7 nats per lane, of which about 1.0 is TC.
+   - So about 85% of d8's lane tax is learnable.
+

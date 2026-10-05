@@ -148,3 +148,16 @@ def test_lagged_lane_mask_hides_other_lanes_recent_steps_only():
     assert m[q, P + 0] and m[q, P + 1] and not m[q, P + 2]   # lane 0 up to step 3 - 2 = 1
     assert not m[q, P + 8 + 2] and m[q, P + 8 + 1]           # lane 2 likewise
     assert not (m & (r[None, :] > r[:, None])).any()         # never a later step
+
+
+def test_lane_offset_report_gives_absolute_nats_per_lane():
+    from scripts.sap_position_bpb import lane_offset_report
+    N, P, L, R = 12, 4, 2, 3                   # lanes of S = 4 at input positions 4..7 and 8..11; 3 rows
+    ref = torch.full((N,), 2.0 * R, dtype=torch.float64)
+    own = ref.clone()
+    own[8] += 3.0 * R                          # lane 1's first prediction: 3 nats more per row
+    own[11] -= 1.0 * R                         # its last one (the junction): 1 nat less
+    rep = lane_offset_report(N, P, L, (own, ref), (ref, ref), n_rows=R)
+    assert rep["extra nats per lane"] == pytest.approx(2.0) and rep["reference nats per token"] == pytest.approx(2.0)
+    assert rep["0"] == pytest.approx(2.5) and rep["share of the lanes' extra nats at offset 0"] == pytest.approx(1.5)
+

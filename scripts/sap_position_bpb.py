@@ -87,12 +87,14 @@ def bucket_bpb(model, rows, token_bytes, edges, mask=None, batch=8, prep=None, w
     return bpb, pos_nats, pos_bytes
 
 
-def lane_offset_report(N, P, L, own, ref):
+def lane_offset_report(N, P, L, own, ref, n_rows=0):
     """S08 plain lanes: the cost against the reference by input offset within a lane (step s),
     pooled over lanes 1..L-1 (lane 0 continues the prefix directly and is reported alone). own,
-    ref: (pos_nats, pos_bytes) on identical targets. Offset 0 is a lane's first prediction, made
-    from the lane-start token with no left context of its own; offset S-1 predicts the next lane's
-    first token, after that lane's later tokens are known."""
+    ref: (pos_nats, pos_bytes) on identical targets, summed over n_rows rows. Offset 0 is a lane's
+    first prediction, made from the lane-start token with no left context of its own; offset S-1
+    predicts the next lane's first token, after that lane's later tokens are known. With n_rows,
+    also the extra nats per lane in absolute units (S15 R1, comparable across model sizes and with
+    the order oracle's per-lane TC) and the reference's nats per token."""
     S = (N - P) // L
     p = torch.arange(N)
     s, j = (p - P) % S, (p - P) // S
@@ -109,6 +111,9 @@ def lane_offset_report(N, P, L, own, ref):
     tax = float(own[0][lanes].sum() - ref[0][lanes].sum())
     first = float(own[0][lanes & (s == 0)].sum() - ref[0][lanes & (s == 0)].sum())
     out["share of the lanes' extra nats at offset 0"] = first / tax if tax > 0 else float("nan")
+    if n_rows > 0:
+        out["extra nats per lane"] = tax / (n_rows * (L - 1))
+        out["reference nats per token"] = float(ref[0][lanes].sum()) / (n_rows * int(lanes.sum()))
     return out
 
 
@@ -307,7 +312,8 @@ def main():
     for name in names:
         ln = result["models"][name]["lanes"]
         if ln and len(names) > 1 and not result["models"][name]["splice"]:
-            rep = lane_offset_report(N, args.wb_prefix, ln, per_pos[name], per_pos[names[0]])
+            rep = lane_offset_report(N, args.wb_prefix, ln, per_pos[name], per_pos[names[0]],
+                                     n_rows=result.get("within_doc_rows", len(rows)))
             result["models"][name]["lane_offsets"] = rep
             print(f"{name}: nats ratio to {names[0]} by offset within a lane (lanes 1..{ln - 1}): " +
                   ", ".join(f"{k} {v:.3f}" for k, v in rep.items()))
