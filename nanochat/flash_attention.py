@@ -268,6 +268,11 @@ def flash_attn_with_kvcache(q, k_cache, v_cache, k=None, v=None, cache_seqlens=N
     Returns:
         Output tensor of shape (B, T_new, H, D)
     """
+    # FA3 takes cache_seqlens on device, but its C++ kernel can fault inside CUDA graph capture.
+    # When graph_safe is requested for CUDA graph replay, route through the graph-safe SDPA kernel.
+    if graph_safe:
+        return _kvcache_attention_graph_safe(q, k_cache, v_cache, k, v, cache_seqlens, window_size)
+
     # FA4 does not yet implement flash_attn_with_kvcache — handled below by SDPA.
     if _BACKEND == 'fa3':
         return _fa3.flash_attn_with_kvcache(
@@ -276,11 +281,6 @@ def flash_attn_with_kvcache(q, k_cache, v_cache, k=None, v=None, cache_seqlens=N
         )
     # FA4 does not yet implement flash_attn_with_kvcache — fall through to SDPA.
     # Training still uses FA4's flash_attn_func (the hot path), so this is fine.
-
-    # FA3 above already takes cache_seqlens on device; the SDPA fallback below reads the
-    # position on the host, which a CUDA graph cannot capture.
-    if graph_safe:
-        return _kvcache_attention_graph_safe(q, k_cache, v_cache, k, v, cache_seqlens, window_size)
 
     # SDPA fallback: manually manage KV cache
     B, T_new, H, D = q.shape

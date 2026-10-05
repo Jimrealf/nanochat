@@ -1,0 +1,36 @@
+Loading frozen ChunkAE from /vol/out/s03_sap/s13_chunk_ae_K8_dz256.pt...
+/usr/local/lib/python3.12/site-packages/torch/nn/modules/transformer.py:392: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.norm_first was True
+  warnings.warn(
+ChunkAE loaded and frozen.
+ChunkMeanFlowPrior: P=128 N=240 dz=256 width=512 depth=8 heads=8 params=42,713,344
+step     0/4000 | loss 1.5268 | flow_mse 2.3322 | 0.1M tokens | 1s
+step   200/4000 | loss 1.2883 | flow_mse 1.6640 | 13.2M tokens | 16s
+step   400/4000 | loss 1.2565 | flow_mse 1.5877 | 26.3M tokens | 30s
+step   600/4000 | loss 1.2403 | flow_mse 1.5453 | 39.4M tokens | 45s
+step   800/4000 | loss 1.2358 | flow_mse 1.5355 | 52.5M tokens | 60s
+step  1000/4000 | loss 1.2416 | flow_mse 1.5538 | 65.6M tokens | 75s
+step  1200/4000 | loss 1.2191 | flow_mse 1.5108 | 78.7M tokens | 89s
+step  1400/4000 | loss 1.2351 | flow_mse 1.5523 | 91.8M tokens | 104s
+step  1600/4000 | loss 1.2545 | flow_mse 1.6096 | 104.9M tokens | 119s
+step  1800/4000 | loss 1.2222 | flow_mse 1.5076 | 118.0M tokens | 134s
+step  2000/4000 | loss 1.2628 | flow_mse 1.6587 | 131.1M tokens | 150s
+step  2200/4000 | loss 1.2236 | flow_mse 1.5287 | 144.2M tokens | 166s
+step  2400/4000 | loss 1.2575 | flow_mse 1.6261 | 157.4M tokens | 180s
+step  2600/4000 | loss 1.2798 | flow_mse 1.7250 | 170.5M tokens | 194s
+step  2800/4000 | loss 1.2501 | flow_mse 1.5792 | 183.6M tokens | 209s
+step  3000/4000 | loss 1.2551 | flow_mse 1.6398 | 196.7M tokens | 223s
+step  3200/4000 | loss 1.2129 | flow_mse 1.4933 | 209.8M tokens | 238s
+step  3400/4000 | loss 1.1988 | flow_mse 1.4645 | 222.9M tokens | 253s
+step  3600/4000 | loss 1.2784 | flow_mse 1.7243 | 236.0M tokens | 267s
+step  3800/4000 | loss 1.2396 | flow_mse 1.6009 | 249.1M tokens | 281s
+step  3999/4000 | loss 1.2353 | flow_mse 1.5669 | 262.1M tokens | 296s
+Evaluating one-pass generation on validation set...
+Validation latent MSE: 1.9709
+Validation token accuracy (one-pass): 0.00698
+Sample diversity: d1=0.262 d2=0.854 d3=0.992
+Sample generation (first 100 chars):
+  Prompt:    '<|bos|>Archives\n\nAuthor: tamukamu\n\nClouds form when water droplets or ice crysta'
+  Generated: " or potatoes and many to the bark chip's eight.\n\nThe Town which we make assess s"
+  Target:    " at the ocean's surface roughly 50 micrometers thick.\n\nStudying the sea surface "
+Saved prior weights to /vol/out/s03_sap/s13_meanflow_K8_dz256_d8.pt
+Saved generated samples to /vol/out/s03_sap/s13_meanflow_K8_dz256_d8_samples.jsonl

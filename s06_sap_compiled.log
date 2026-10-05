@@ -1,0 +1,554 @@
+S06-Q — one-round SAP mechanism screen
+========================================
+Oracle context: exact phrase-HMM filtering belief (mechanism test, not end-to-end).
+All primitive randomness is drawn once; no teacher, distillation, AR verifier,
+rejection, or token-conditioned resampling loop.
+Exact gate: PASS KL<=0.10 and invalid<=3%; BORDERLINE KL<=0.50 and invalid<=10%.
+Implicit gate: invalid<=10%, unique>=25%, sensitivity>0.01; no KL claim.
+
+Configuration: {"arms": ["argmax", "cint", "crc", "dcmf", "fnt_k", "fnt_v", "mif", "pss", "rmlt", "source_oracle"], "batch": 96, "depth": 4, "eval_contexts": 256, "merge": true, "rerun_arms": [], "samples_per_ctx": 8, "smoke": false, "states": 64, "steps": 2500, "width": 128}
+
+arm                     KL   invalid    unique      sens      params  verdict
+--------------------------------------------------------------------------------------------
+argmax              5.0229    0.6724    0.9404    0.7635   1,098,880  KILL_THIS_INSTANTIATION
+cint                   n/a    0.8467    0.9966    0.8976     938,496  KILL_THIS_INSTANTIATION
+crc                14.3477    0.9673    1.0000    0.9983     175,376  KILL_THIS_INSTANTIATION
+dcmf                   n/a    0.9673    1.0000    0.9975   1,017,088  KILL_THIS_INSTANTIATION
+fnt_k                  n/a    0.6987    0.9595    0.7833     938,496  KILL_THIS_INSTANTIATION
+fnt_v                  n/a    0.7051    0.9478    0.7825     938,496  KILL_THIS_INSTANTIATION
+mif                 4.2500    0.6001    0.9248    0.7522   1,133,060  KILL_THIS_INSTANTIATION
+pss                 5.0149    0.5439    0.9458    0.7945   1,471,040  KILL_THIS_INSTANTIATION
+rmlt                5.4530    0.5835    0.9458    0.7895   1,999,424  KILL_THIS_INSTANTIATION
+source_oracle       5.0914    0.6553    0.9346    0.7606   1,132,544  KILL_THIS_INSTANTIATION
+
+Interpretation guardrails
+-------------------------
+A pass only earns an end-to-end learned-context reproduction and an L=2048 kernel benchmark.
+PSS/RMLT test fixed XOR state emissions; failure is scoped to that scalable instantiation.
+MIF tests four declared reversible transforms; source_oracle reports each transform separately.
+CRC is a fixed decomposable circuit; DCMF is true JVP MeanFlow with one inference evaluation.
+Argmax is the exact-parallel prior-work control, not a novelty claim.
+
+Full rows
+---------
+[
+  {
+    "T": 4,
+    "arm": "pss",
+    "block_kl": 5.014869689941406,
+    "curve": [
+      {
+        "block_kl": 5.747541427612305,
+        "ideal_indep_invalid": 0.625,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.65380859375,
+        "loss": 15.763055801391602,
+        "sample_nll_valid": 15.54081916809082,
+        "sensitivity": 0.8406808376312256,
+        "step": 1250,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 0.962890625
+      },
+      {
+        "block_kl": 5.014869689941406,
+        "ideal_indep_invalid": 0.6328125,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.5439453125,
+        "loss": 16.080615997314453,
+        "sample_nll_valid": 13.756574630737305,
+        "sensitivity": 0.794503390789032,
+        "step": 2500,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 0.94580078125
+      }
+    ],
+    "depth": 4,
+    "ideal_indep_invalid": 0.6328125,
+    "ideal_indep_tc": 4.449029922485352,
+    "invalid_rate": 0.5439453125,
+    "oracle_context": true,
+    "parameters": 1471040,
+    "sample_nll_valid": 13.756574630737305,
+    "seconds": 36.71,
+    "seed": 0,
+    "sensitivity": 0.794503390789032,
+    "steps": 2500,
+    "stochastic_rounds": 1,
+    "training_multiplier": 1,
+    "true_entropy": 9.525346755981445,
+    "unique_rate": 0.94580078125,
+    "verdict": "KILL_THIS_INSTANTIATION",
+    "width": 128
+  },
+  {
+    "T": 4,
+    "arm": "rmlt",
+    "block_kl": 5.453041076660156,
+    "curve": [
+      {
+        "block_kl": 5.950795650482178,
+        "ideal_indep_invalid": 0.625,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.64990234375,
+        "loss": 15.434686660766602,
+        "sample_nll_valid": 14.579673767089844,
+        "sensitivity": 0.8338449001312256,
+        "step": 1250,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 0.96337890625
+      },
+      {
+        "block_kl": 5.453041076660156,
+        "ideal_indep_invalid": 0.63671875,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.58349609375,
+        "loss": 15.939422607421875,
+        "sample_nll_valid": 12.924276351928711,
+        "sensitivity": 0.7894810438156128,
+        "step": 2500,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 0.94580078125
+      }
+    ],
+    "depth": 4,
+    "ideal_indep_invalid": 0.63671875,
+    "ideal_indep_tc": 4.449029922485352,
+    "invalid_rate": 0.58349609375,
+    "oracle_context": true,
+    "parameters": 1999424,
+    "sample_nll_valid": 12.924276351928711,
+    "seconds": 26.22,
+    "seed": 0,
+    "sensitivity": 0.7894810438156128,
+    "steps": 2500,
+    "stochastic_rounds": 1,
+    "training_multiplier": 1,
+    "true_entropy": 9.525346755981445,
+    "unique_rate": 0.94580078125,
+    "verdict": "KILL_THIS_INSTANTIATION",
+    "width": 128
+  },
+  {
+    "T": 4,
+    "arm": "mif",
+    "block_kl": 4.250041961669922,
+    "curve": [
+      {
+        "block_kl": 4.797127723693848,
+        "ideal_indep_invalid": 0.625,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.6806640625,
+        "loss": 14.867517471313477,
+        "sample_nll_valid": 10.927565574645996,
+        "sensitivity": 0.8126395344734192,
+        "step": 1250,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 0.951171875
+      },
+      {
+        "block_kl": 4.250041961669922,
+        "ideal_indep_invalid": 0.62890625,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.60009765625,
+        "loss": 15.124244689941406,
+        "sample_nll_valid": 9.91862964630127,
+        "sensitivity": 0.7522321939468384,
+        "step": 2500,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 0.9248046875
+      }
+    ],
+    "depth": 4,
+    "ideal_indep_invalid": 0.62890625,
+    "ideal_indep_tc": 4.449029922485352,
+    "invalid_rate": 0.60009765625,
+    "oracle_context": true,
+    "parameters": 1133060,
+    "sample_nll_valid": 9.91862964630127,
+    "seconds": 40.01,
+    "seed": 0,
+    "sensitivity": 0.7522321939468384,
+    "steps": 2500,
+    "stochastic_rounds": 1,
+    "training_multiplier": 1,
+    "true_entropy": 9.525346755981445,
+    "unique_rate": 0.9248046875,
+    "verdict": "KILL_THIS_INSTANTIATION",
+    "width": 128
+  },
+  {
+    "T": 4,
+    "arm": "crc",
+    "block_kl": 14.347667694091797,
+    "curve": [
+      {
+        "block_kl": 14.805008888244629,
+        "ideal_indep_invalid": 0.625,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.96533203125,
+        "loss": 24.370769500732422,
+        "sample_nll_valid": 28.713388442993164,
+        "sensitivity": 0.9983259439468384,
+        "step": 1250,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 1.0
+      },
+      {
+        "block_kl": 14.347667694091797,
+        "ideal_indep_invalid": 0.63671875,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.96728515625,
+        "loss": 23.921489715576172,
+        "sample_nll_valid": 28.730070114135742,
+        "sensitivity": 0.9983259439468384,
+        "step": 2500,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 1.0
+      }
+    ],
+    "depth": 4,
+    "ideal_indep_invalid": 0.63671875,
+    "ideal_indep_tc": 4.449029922485352,
+    "invalid_rate": 0.96728515625,
+    "oracle_context": true,
+    "parameters": 175376,
+    "sample_nll_valid": 28.730070114135742,
+    "seconds": 13.76,
+    "seed": 0,
+    "sensitivity": 0.9983259439468384,
+    "steps": 2500,
+    "stochastic_rounds": 1,
+    "training_multiplier": 1,
+    "true_entropy": 9.525346755981445,
+    "unique_rate": 1.0,
+    "verdict": "KILL_THIS_INSTANTIATION",
+    "width": 128
+  },
+  {
+    "T": 4,
+    "arm": "fnt_v",
+    "block_kl": null,
+    "curve": [
+      {
+        "block_kl": null,
+        "ideal_indep_invalid": 0.59765625,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.900390625,
+        "loss": 4.858875274658203,
+        "marginal_nll": 4.320125102996826,
+        "sample_nll_valid": 18.025062561035156,
+        "sensitivity": 0.913644015789032,
+        "step": 1250,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 0.998046875
+      },
+      {
+        "block_kl": null,
+        "ideal_indep_invalid": 0.625,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.705078125,
+        "loss": 4.500561714172363,
+        "marginal_nll": 3.927051544189453,
+        "sample_nll_valid": 9.85308837890625,
+        "sensitivity": 0.7825056314468384,
+        "step": 2500,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 0.94775390625
+      }
+    ],
+    "depth": 4,
+    "ideal_indep_invalid": 0.625,
+    "ideal_indep_tc": 4.449029922485352,
+    "invalid_rate": 0.705078125,
+    "marginal_nll": 3.927051544189453,
+    "oracle_context": true,
+    "parameters": 938496,
+    "sample_nll_valid": 9.85308837890625,
+    "seconds": 44.36,
+    "seed": 0,
+    "sensitivity": 0.7825056314468384,
+    "steps": 2500,
+    "stochastic_rounds": 1,
+    "training_multiplier": 4,
+    "true_entropy": 9.525346755981445,
+    "unique_rate": 0.94775390625,
+    "verdict": "KILL_THIS_INSTANTIATION",
+    "width": 128
+  },
+  {
+    "T": 4,
+    "arm": "fnt_k",
+    "block_kl": null,
+    "curve": [
+      {
+        "block_kl": null,
+        "ideal_indep_invalid": 0.59765625,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.86181640625,
+        "kernel_score": -0.8836068511009216,
+        "loss": 0.6673758029937744,
+        "marginal_nll": 4.201803207397461,
+        "sample_nll_valid": 16.619037628173828,
+        "sensitivity": 0.9040179252624512,
+        "step": 1250,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 0.99658203125
+      },
+      {
+        "block_kl": null,
+        "ideal_indep_invalid": 0.625,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.69873046875,
+        "kernel_score": -0.8967660665512085,
+        "loss": 0.32862138748168945,
+        "marginal_nll": 3.9156856536865234,
+        "sample_nll_valid": 10.559457778930664,
+        "sensitivity": 0.7833426594734192,
+        "step": 2500,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 0.95947265625
+      }
+    ],
+    "depth": 4,
+    "ideal_indep_invalid": 0.625,
+    "ideal_indep_tc": 4.449029922485352,
+    "invalid_rate": 0.69873046875,
+    "kernel_score": -0.8967660665512085,
+    "marginal_nll": 3.9156856536865234,
+    "oracle_context": true,
+    "parameters": 938496,
+    "sample_nll_valid": 10.559457778930664,
+    "seconds": 61.43,
+    "seed": 0,
+    "sensitivity": 0.7833426594734192,
+    "steps": 2500,
+    "stochastic_rounds": 1,
+    "training_multiplier": 4,
+    "true_entropy": 9.525346755981445,
+    "unique_rate": 0.95947265625,
+    "verdict": "KILL_THIS_INSTANTIATION",
+    "width": 128
+  },
+  {
+    "T": 4,
+    "arm": "cint",
+    "block_kl": null,
+    "curve": [
+      {
+        "block_kl": null,
+        "ideal_indep_invalid": 0.609375,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.9482421875,
+        "loss": 4.90536642074585,
+        "marginal_nll": 4.881054878234863,
+        "sample_nll_valid": 21.942798614501953,
+        "sensitivity": 0.9797712564468384,
+        "step": 1250,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 1.0,
+        "winner_ce": 4.417261123657227
+      },
+      {
+        "block_kl": null,
+        "ideal_indep_invalid": 0.62109375,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.8466796875,
+        "loss": 4.095065593719482,
+        "marginal_nll": 4.24290657043457,
+        "sample_nll_valid": 16.666236877441406,
+        "sensitivity": 0.8976004719734192,
+        "step": 2500,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 0.99658203125,
+        "winner_ce": 3.6707749366760254
+      }
+    ],
+    "depth": 4,
+    "ideal_indep_invalid": 0.62109375,
+    "ideal_indep_tc": 4.449029922485352,
+    "invalid_rate": 0.8466796875,
+    "marginal_nll": 4.24290657043457,
+    "oracle_context": true,
+    "parameters": 938496,
+    "sample_nll_valid": 16.666236877441406,
+    "seconds": 35.55,
+    "seed": 0,
+    "sensitivity": 0.8976004719734192,
+    "steps": 2500,
+    "stochastic_rounds": 1,
+    "training_multiplier": 8,
+    "true_entropy": 9.525346755981445,
+    "unique_rate": 0.99658203125,
+    "verdict": "KILL_THIS_INSTANTIATION",
+    "width": 128,
+    "winner_ce": 3.6707749366760254
+  },
+  {
+    "T": 4,
+    "arm": "dcmf",
+    "block_kl": null,
+    "curve": [
+      {
+        "block_kl": null,
+        "flow_mse": 0.7595612406730652,
+        "ideal_indep_invalid": 0.59765625,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.9619140625,
+        "loss": 0.8708181381225586,
+        "sample_nll_valid": 29.381088256835938,
+        "sensitivity": 0.9981864094734192,
+        "step": 1250,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 1.0
+      },
+      {
+        "block_kl": null,
+        "flow_mse": 0.7544009685516357,
+        "ideal_indep_invalid": 0.61328125,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.96728515625,
+        "loss": 0.8678220510482788,
+        "sample_nll_valid": 28.8294620513916,
+        "sensitivity": 0.9974888563156128,
+        "step": 2500,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 1.0
+      }
+    ],
+    "depth": 4,
+    "flow_mse": 0.7544009685516357,
+    "ideal_indep_invalid": 0.61328125,
+    "ideal_indep_tc": 4.449029922485352,
+    "invalid_rate": 0.96728515625,
+    "oracle_context": true,
+    "parameters": 1017088,
+    "sample_nll_valid": 28.8294620513916,
+    "seconds": 125.86,
+    "seed": 0,
+    "sensitivity": 0.9974888563156128,
+    "steps": 2500,
+    "stochastic_rounds": 1,
+    "training_multiplier": 2,
+    "true_entropy": 9.525346755981445,
+    "unique_rate": 1.0,
+    "verdict": "KILL_THIS_INSTANTIATION",
+    "width": 128
+  },
+  {
+    "T": 4,
+    "arm": "argmax",
+    "block_kl": 5.022928237915039,
+    "curve": [
+      {
+        "block_kl": 5.501615524291992,
+        "ideal_indep_invalid": 0.625,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.748046875,
+        "loss": 15.543466567993164,
+        "sample_nll_valid": 10.695441246032715,
+        "sensitivity": 0.7912946939468384,
+        "step": 1250,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 0.95849609375
+      },
+      {
+        "block_kl": 5.022928237915039,
+        "ideal_indep_invalid": 0.6328125,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.67236328125,
+        "loss": 15.495261192321777,
+        "sample_nll_valid": 9.945403099060059,
+        "sensitivity": 0.7635324001312256,
+        "step": 2500,
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 0.9404296875
+      }
+    ],
+    "depth": 4,
+    "ideal_indep_invalid": 0.6328125,
+    "ideal_indep_tc": 4.449029922485352,
+    "invalid_rate": 0.67236328125,
+    "oracle_context": true,
+    "parameters": 1098880,
+    "sample_nll_valid": 9.945403099060059,
+    "seconds": 35.64,
+    "seed": 0,
+    "sensitivity": 0.7635324001312256,
+    "steps": 2500,
+    "stochastic_rounds": 1,
+    "training_multiplier": 1,
+    "true_entropy": 9.525346755981445,
+    "unique_rate": 0.9404296875,
+    "verdict": "KILL_THIS_INSTANTIATION",
+    "width": 128
+  },
+  {
+    "T": 4,
+    "arm": "source_oracle",
+    "best_transform": "identity",
+    "block_kl": 5.091443061828613,
+    "curve": [
+      {
+        "best_transform": "identity",
+        "block_kl": 5.754071235656738,
+        "ideal_indep_invalid": 0.625,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.76708984375,
+        "loss": 16.832624435424805,
+        "sample_nll_valid": 11.307619094848633,
+        "sensitivity": 0.811104953289032,
+        "step": 1250,
+        "transform_kl": {
+          "butterfly": 7.869427680969238,
+          "delta": 7.353970050811768,
+          "identity": 5.754071235656738,
+          "xor_butterfly": 7.673299789428711
+        },
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 0.97216796875
+      },
+      {
+        "best_transform": "identity",
+        "block_kl": 5.091443061828613,
+        "ideal_indep_invalid": 0.6328125,
+        "ideal_indep_tc": 4.449029922485352,
+        "invalid_rate": 0.6552734375,
+        "loss": 16.9365234375,
+        "sample_nll_valid": 10.026054382324219,
+        "sensitivity": 0.7606027126312256,
+        "step": 2500,
+        "transform_kl": {
+          "butterfly": 7.143952369689941,
+          "delta": 6.71723747253418,
+          "identity": 5.091443061828613,
+          "xor_butterfly": 6.920788764953613
+        },
+        "true_entropy": 9.525346755981445,
+        "unique_rate": 0.9345703125
+      }
+    ],
+    "depth": 4,
+    "ideal_indep_invalid": 0.6328125,
+    "ideal_indep_tc": 4.449029922485352,
+    "invalid_rate": 0.6552734375,
+    "oracle_context": true,
+    "parameters": 1132544,
+    "sample_nll_valid": 10.026054382324219,
+    "seconds": 35.0,
+    "seed": 0,
+    "sensitivity": 0.7606027126312256,
+    "steps": 2500,
+    "stochastic_rounds": 1,
+    "training_multiplier": 4,
+    "transform_kl": {
+      "butterfly": 7.143952369689941,
+      "delta": 6.71723747253418,
+      "identity": 5.091443061828613,
+      "xor_butterfly": 6.920788764953613
+    },
+    "true_entropy": 9.525346755981445,
+    "unique_rate": 0.9345703125,
+    "verdict": "KILL_THIS_INSTANTIATION",
+    "width": 128
+  }
+]

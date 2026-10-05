@@ -1,0 +1,1316 @@
+S02 SAP correlated-tree depth-8 exception
+Arms: shallow tree (2 anchor levels + parallel fill), full balanced tree
+Budget: each arm receives the dense depth-8 training-FLOP budget
+
+COMPILED_RESULT_JSON
+{
+  "B1_dense_s1": {
+    "checkpoint": "/vol/out/s00_sap/d8/B1_dense_s1/model_001680.pt",
+    "existing_reference": true,
+    "returncode": 0,
+    "tag": "B1_dense_s1",
+    "val_bpb": 0.9583690496457866
+  },
+  "S02_sir_tree_full_TL_s1": {
+    "flops_per_token": 430929600.0,
+    "post": {
+      "decode_rc": -11,
+      "distinct3_ar": 0.979,
+      "distinct3_block": 0.968,
+      "gen_rc": 0,
+      "ref_ppl_ar": 63.27,
+      "ref_ppl_block": 74.29,
+      "tag": "S02_sir_tree_full_TL_s1"
+    },
+    "returncode": 0,
+    "sap_eval": {
+      "block_bpb": null,
+      "blocks": 0,
+      "latent_sensitivity_nats": null,
+      "ntp_bpb_same_tokens": null,
+      "step": 1116
+    },
+    "tag": "S02_sir_tree_full_TL_s1",
+    "train_tokens": 292552704,
+    "val_bpb": 0.995128
+  },
+  "S02_sir_tree_l2_TL_s1": {
+    "flops_per_token": 421815500.0,
+    "post": {
+      "decode_rc": -11,
+      "distinct3_ar": 0.981,
+      "distinct3_block": 0.968,
+      "gen_rc": 0,
+      "ref_ppl_ar": 57.18,
+      "ref_ppl_block": 115.21,
+      "tag": "S02_sir_tree_l2_TL_s1"
+    },
+    "returncode": 0,
+    "sap_eval": {
+      "block_bpb": null,
+      "blocks": 0,
+      "latent_sensitivity_nats": null,
+      "ntp_bpb_same_tokens": null,
+      "step": 1140
+    },
+    "tag": "S02_sir_tree_l2_TL_s1",
+    "train_tokens": 298844160,
+    "val_bpb": 0.985865
+  }
+}
+
+PER-JOB LOGS
+
+========================================================================================
+S02_sir_tree_full_TL_s1_d8.log
+========================================================================================
+2026-10-03 00:16:03,239 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/agent-harnesses "HTTP/1.1 200 OK"
+2026-10-03 00:16:03,488 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/main/kernel-status.toml "HTTP/1.1 404 Not Found"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-10-03 00:16:03,489 - huggingface_hub.utils._http - [33m[1mWARNING[0m - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-10-03 00:16:03,713 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/tree/main/build?recursive=false&expand=false "HTTP/1.1 200 OK"
+2026-10-03 00:16:03,940 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/revision/main "HTTP/1.1 200 OK"
+2026-10-03 00:16:04,182 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/tree/de87b9b5af06dd9984df595bef90b2eba44b181a?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-10-03 00:16:04,409 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/de87b9b5af06dd9984df595bef90b2eba44b181a/build/torch29-cxx11-cu128-x86_64-linux/flash_attention_3/__init__.py "HTTP/1.1 307 Temporary Redirect"
+2026-10-03 00:16:04,424 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/de87b9b5af06dd9984df595bef90b2eba44b181a/build/torch29-cxx11-cu128-x86_64-linux/flash_attention_3/flash_attn_interface.py "HTTP/1.1 307 Temporary Redirect"
+2026-10-03 00:16:04,425 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/de87b9b5af06dd9984df595bef90b2eba44b181a/build/torch29-cxx11-cu128-x86_64-linux/flash_attention_3/flash_attn_config.py "HTTP/1.1 307 Temporary Redirect"
+2026-10-03 00:16:04,467 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/xet-read-token/de87b9b5af06dd9984df595bef90b2eba44b181a "HTTP/1.1 200 OK"
+2026-10-03 00:16:04,626 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py=&etag=%226c880f44203ba43b62b3465d6de77eb20f1e03e[1m8%[0m22 "HTTP/1.1 200 OK"
+2026-10-03 00:16:04,638 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py=&etag=%2248f62eb48ad4005c223687f3c7e7be[1m0115633829%[0m22 "HTTP/1.1 200 OK"
+2026-10-03 00:16:04,646 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py=&etag=%22d66ad504a8025d7e7e632f7e84d4543d66a0a68e%22 "HTTP/1.1 200 OK"
+2026-10-03 00:16:04,845 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py=&etag=%226c880f44203ba43b62b3465d6de77eb20f1e03e[1m8%[0m22 "HTTP/1.1 200 OK"
+2026-10-03 00:16:04,866 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py=&etag=%22d66ad504a8025d7e7e632f7e84d4543d66a0a68e%22 "HTTP/1.1 200 OK"
+2026-10-03 00:16:04,874 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py=&etag=%2248f62eb48ad4005c223687f3c7e7be[1m0115633829%[0m22 "HTTP/1.1 200 OK"
+
+                                                       █████                █████
+                                                      ░░███                ░░███
+     ████████    ██████   ████████    ██████   ██████  ░███████    ██████  ███████
+    ░░███░░███  ░░░░░███ ░░███░░███  ███░░███ ███░░███ ░███░░███  ░░░░░███░░░███░
+     ░███ ░███   ███████  ░███ ░███ ░███ ░███░███ ░░░  ░███ ░███   ███████  ░███
+     ░███ ░███  ███░░███  ░███ ░███ ░███ ░███░███  ███ ░███ ░███  ███░░███  ░███ ███
+     ████ █████░░████████ ████ █████░░██████ ░░██████  ████ █████░░███████  ░░█████
+    ░░░░ ░░░░░  ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░   ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░   ░░░░░
+    
+Autodetected device type: cuda
+2026-10-03 00:16:12,949 - nanochat.common - [32m[1mINFO[0m - Distributed world size: 1
+Device: cuda (ddp=False, world_size=1)
+GPU: NVIDIA H100 80GB HBM3 | Peak FLOPS (BF16): 9.89e+14
+COMPUTE_DTYPE: torch.bfloat16 (auto-detected: CUDA SM 90 (bf16 supported))
+✓ Using Flash Attention 3 (Hopper GPU detected) — efficient and fast.
+Vocab size: 32,768
+[SAP] block head: mode=sir_tree T=2048 frac=0.00048828125 window=16 layers=3 params=7,872,512
+Model config:
+{
+  "sequence_len": 2048,
+  "vocab_size": 32768,
+  "n_layer": 8,
+  "n_head": 4,
+  "n_kv_head": 4,
+  "n_embd": 512,
+  "use_moe": false,
+  "use_perm": false,
+  "moe_num_experts": 8,
+  "moe_router_dim": 64,
+  "moe_embed_dim": 64,
+  "dropout": 0.0,
+  "use_remix_linear": false,
+  "remix_context_dim": 64,
+  "remix_context_dim_ratio": 6,
+  "remix_basis_size": 64,
+  "remix_output_gate_rank": 16,
+  "remixed_linear_kwargs": {
+    "use_basis_gate": true,
+    "use_output_gate": true,
+    "use_context": true,
+    "basis_gate_mode": "mlp",
+    "sparse_gate_k": 0,
+    "gate_temperature": 1.0,
+    "basis_scale_factor": 4,
+    "n_templates": 1,
+    "template_routing_learned": false,
+    "template_topk": 0,
+    "tiny_expert": false,
+    "tiny_expert_topk": 16,
+    "lokr_expert": false,
+    "lokr_n_experts": 64,
+    "lokr_topk": 16,
+    "lokr_rank": 4,
+    "lokr_learned": false,
+    "basis_gate_rank": 8,
+    "disable_ln_basis": false,
+    "chunk_route_impl": "compose",
+    "top1_gate": "ones",
+    "template_delta_rank": 0,
+    "route_side": "output",
+    "drop_basis_proj": false,
+    "basis_side_templates": 0,
+    "grad_equalize": false,
+    "output_gate_rank": 16,
+    "operator_modulation": "none",
+    "lie_generators": 4,
+    "poly_order": 2,
+    "grassmann_bank_size": 4
+  },
+  "use_pos_embed": false,
+  "moe_use_abs_pos_embed": false,
+  "use_layer_context": true,
+  "scale_basis_size": true,
+  "remix_use_dual_gate": false,
+  "remix_use_fused": false,
+  "p26_output_gated_linear": 0,
+  "p28_shared_basis": 0,
+  "p28_chunk_routing_size": 0,
+  "p28_global_template_bank": "none",
+  "p28_attn_proj_templates": 0,
+  "p28_attn_qk_templates": 0,
+  "p29_template_block_diag": 0,
+  "p29_template_lr_scale": 1.0,
+  "p29_grad_equalize": 0,
+  "p34_ffn_mult": 4.0,
+  "p34_ffn_single": 0,
+  "p34_dense_attn": 0,
+  "legacy_init_fallback": 0,
+  "p35_template_diversity_lambda": 0.0,
+  "p22_route_affine": 0,
+  "p34_ffn_schedule": "",
+  "p34_ffn_no_ffn_replacement": "none",
+  "p34_ffn_last_depth": 1,
+  "p36_swiglu_ffn": 0,
+  "p36_swiglu_mult": 2.6666666666666665,
+  "cond_sites": "both",
+  "cond_rank": 256,
+  "cond_mult_steps": 0,
+  "cond_gate_source": "router",
+  "cond_coeff_act": "centered",
+  "cond_router_rank": 0,
+  "cond_live_init": 0.0,
+  "cond_router_act": "none",
+  "cond_chunk_size": 0,
+  "cond_mult_scale": -1.0,
+  "cond_mult_impl": "wy",
+  "cond_attn_projs": "qkvo",
+  "cond_layer_frac": 1.0,
+  "perm_expert_mode": "low_rank",
+  "perm_rank": 16,
+  "router_context_window": -1,
+  "router_causal": true,
+  "router_num_heads": 4,
+  "router_num_queries": 16,
+  "router_n_layers": 2,
+  "router_use_vocab_prior": false,
+  "window_pattern": "SSSL",
+  "cclblock_modulation": "weight",
+  "cclblock_orth_lambda": 0.0,
+  "cclblock_context_stream": "local",
+  "cclblock_ema_factor": 0.99,
+  "cclblock_stale_ctx_lag": 0,
+  "cclblock_sparse_gate_k": 0,
+  "cclblock_gate_temperature": 1.0,
+  "cclblock_context_bank_size": 0,
+  "cclblock_per_head_ctx": false,
+  "cclblock_context_source": "norm_x",
+  "cclblock_chunk_size": 0,
+  "cclblock_aux_objective": "none",
+  "cclblock_aux_lambda": 0.1,
+  "cclblock_boundary_token_id": 198,
+  "use_ral": false,
+  "ral_rank": 32,
+  "cclblock_film_gate": false,
+  "cclblock_attn_shadow_dim": 0,
+  "cclblock_dynamic_ratio": 0.25,
+  "cclblock_gate_rank": 8,
+  "cclblock_num_regimes": 8,
+  "cclblock_regime_temperature": 1.0,
+  "cclblock_poly_order": 2,
+  "cclblock_lie_generators": 4,
+  "cclblock_grassmann_bank_size": 4,
+  "cclblock_tucker_rank": 32,
+  "cclblock_tucker_modes": 8,
+  "cclblock_svs_rank": 64,
+  "cclblock_svs_eps": 0.1,
+  "cclblock_vq_codes": 8,
+  "cclblock_vq_temperature": 1.0,
+  "cclblock_dcu_warmup_steps": 0,
+  "cclblock_fsi_rotations": 8,
+  "cclblock_fsi_selector_dim": 64,
+  "cclblock_aesp_strata": 4,
+  "cclblock_aesp_delta_rank": 4,
+  "cclblock_ckr_branches": 4,
+  "cclblock_ckr_kernel_size": 64,
+  "cclblock_ckr_pos_channels": 1,
+  "cclblock_ckr_dual_optim": 0,
+  "cclblock_ckr_content_bias": 0.0,
+  "cclblock_giad_rank": 32,
+  "cclblock_psg_kernel_size": 64,
+  "cclblock_ss_dynamic_ratio": 0.25,
+  "cclblock_ss_branches": 2,
+  "cclblock_ss_kernel_size": 64,
+  "cclblock_lokr_branches": 8,
+  "cclblock_lokr_rank": 16,
+  "cclblock_ckr_temp_start": 2.0,
+  "cclblock_ckr_temp_end": 0.3,
+  "cclblock_com_kernel_size": 32,
+  "cclblock_ckr_ortho_init": 0,
+  "cclblock_ckr_branch_dropout": 0.0,
+  "cclblock_ckr_diversity_lambda": 0.0,
+  "cclblock_ckr_layer_selective": 0,
+  "cclblock_pgr_kernel_size": 64,
+  "cclblock_cil_kernel_size": 64,
+  "cclblock_prb_kernel_size": 64,
+  "p18_layer_drop": 0.0,
+  "p18_dynamic_activation": 0,
+  "p18_mixture_norm": 0,
+  "p18_causal_attn_bias": 0,
+  "p18_aux_sim_lambda": 0.0,
+  "p18_gradient_penalty": 0.0,
+  "p18_per_channel_scale": 0,
+  "p19_residual_gate": 0,
+  "p19_head_importance": 0,
+  "p19_residual_mix_groups": 0,
+  "p19_attn_logit_bias": 0,
+  "p19_residual_decay": 0,
+  "p19_grad_equilibrium": 0.0,
+  "p19_spectral_reparam": 0,
+  "p19_weight_anticollapse": 0.0,
+  "p19_ve_bias": 0,
+  "p19_weight_noise": 0.0,
+  "p20_hrcs_scale": 0,
+  "p20_lswr_scale": 0,
+  "p20_lswr_planes": 8,
+  "p20_lrcfb_branches": 0,
+  "p20_lrcfb_narrow": 0,
+  "p20_lrcfb_learned": 0,
+  "p20_lrcfb_topk": 0,
+  "p20_dgcr_branches": 0,
+  "p20_dgcr_aux_weight": 0.01,
+  "p20_mone_experts": 0,
+  "p20_mone_topk": 0,
+  "p20_mone_narrow": 1,
+  "p20_mone_frozen": 0,
+  "p20_ncea_branches": 0,
+  "p20_ncea_eps": 0.1,
+  "p20_adwi": 0,
+  "p20_pwu_branches": 0,
+  "p20_pwu_phase": 1,
+  "p20_fsvd_gate": 0,
+  "p20_wbfc_clusters": 0,
+  "p20_wbfc_active": 0,
+  "p21_per_experts": 0,
+  "p21_per_topk": 0,
+  "p21_per_learned": 0,
+  "p21_per_attn": 0,
+  "p22_attn_moe_route": "none",
+  "p23_tiny_expert": 0,
+  "p23_n_experts": 64,
+  "p23_topk": 16,
+  "p23_learned_route": 0,
+  "p23_std_moe_experts": 0,
+  "p23_std_moe_topk": -1,
+  "p23_std_moe_aux_weight": 0.01,
+  "p23_lokr": 0,
+  "p23_lokr_rank": 4,
+  "p23_use_shared_block_router": 0,
+  "p23_linear_moe_experts": 0,
+  "p23_linear_moe_topk": 0,
+  "p23_quantile_route": 0,
+  "remix_shared_context_gates": 0,
+  "p24_use_sliced_weight": 0,
+  "p24_sliced_weight_reduction_scale": 8,
+  "p24_sliced_weight_min_select": 128,
+  "p24_sliced_weight_scope": "per_token",
+  "p24_sliced_weight_balance_coeff": 0.01,
+  "p24_quantile_route": 0,
+  "p24_use_folded_mod": 0,
+  "p24_folded_mod_reduction_scale": 8,
+  "p24_folded_mod_min_dim": 128,
+  "p24_folded_mod_scope": "per_layer",
+  "p24_folded_mod_gate_act": "tanh_centered",
+  "p24_use_sequence_gated_linear": 0,
+  "p24_sequence_gated_scope": "per_layer",
+  "p24_sequence_gated_act": "tanh_centered",
+  "remix_disable_ln_basis": 0,
+  "dense_intermediate_ln": 0,
+  "use_mol": false,
+  "mol_n_blocks": 5,
+  "mol_n_shared": 1,
+  "mol_topk": 3,
+  "mol_thin_dim": 256,
+  "mol_head_dim": 64,
+  "mol_ffn_mult": 4.0,
+  "mol_router_aux": 0.05,
+  "mol_routed_attn": "softmax",
+  "mol_dispatch": 1,
+  "mol_capacity_factor": 1.0,
+  "mol_block_lr_scale": 1.0,
+  "mol_per_block_ve": 0,
+  "use_binary": false,
+  "binary_acts": true,
+  "binary_weight_scale": "row",
+  "binary_act_scale": "token",
+  "binary_clip": 1.0,
+  "binary_linear": true,
+  "binary_embeddings": true,
+  "binary_skip": "",
+  "binary_native": false,
+  "binary_tau": 1.0,
+  "binary_hard": false,
+  "binary_resid_width": 0,
+  "binary_attn_chunk": 256,
+  "use_mst": false,
+  "mst_n_subs": 8,
+  "mst_sub_dim": 64,
+  "mst_head_dim": 0,
+  "mst_input_mode": "fixed_slice",
+  "mst_rotated_slice_learned": false,
+  "mst_routing_mode": "soft_weighted",
+  "mst_routing_topk": 4,
+  "mst_routing_aux_weight": 0.01,
+  "mst_diversity_weight": 0.0,
+  "mst_ffn_mode": "standard",
+  "mst_ffn_every": 1,
+  "mst_transition_mode": "parallel",
+  "mst_final_mode": "aggregate_proj",
+  "mst_final_topk": -1,
+  "mst_ffn_shared_up": 0,
+  "mst_ffn_inner_dim": 0,
+  "mst_sub_dropout": 0.0,
+  "mst_transition_every": 1,
+  "mst_ffa_temperature": 1.0,
+  "mst_global_residual": 0,
+  "mst_hybrid_dense": 0,
+  "mst_cross_sub_kv": 0,
+  "mst_sub_aux_weight": 0.0,
+  "mst_progressive_merge": 0,
+  "mst_multi_scale_windows": 0,
+  "mst_delta_residual": 0,
+  "mst_sub_layers": 1,
+  "mst_grad_equalize": 0,
+  "mst_block_diagonal_muon": 0,
+  "mst_transition_width_mult": 1.0,
+  "mst_sub_lr_scale": 1.0,
+  "mst_shared_expert": 0,
+  "mst_router_entropy_weight": 0.0,
+  "mst_shared_kv_attn": 0,
+  "mst_contrastive_diversity_weight": 0.0,
+  "mst_transition_nonlinear": 0,
+  "mst_transition_gated": 0,
+  "mst_transition_mlp": 0,
+  "mst_cross_sub_gate": 0,
+  "mst_hyper_connect": 0,
+  "mst_cross_kv_inject": 0,
+  "mst_slice_transition": 0,
+  "mst_lookback_layers": 0,
+  "mst_bilinear_transition": 0,
+  "mst_cross_sub_qmod": 0,
+  "mst_feature_cycle": 0,
+  "mst_mean_transition": 0,
+  "mst_sub_head_dim": 0,
+  "mst_final_norm": 0,
+  "mst_per_stream_ve": 0,
+  "mst_ve_map": 0,
+  "mst_ve_map_rank": 0,
+  "mst_lm_head_dim": 0,
+  "mst_compose_windows": 0,
+  "mst_channel_mix": "none",
+  "mst_channel_mix_site": "layer",
+  "mst_distribute_block_muon": 0,
+  "mst_trans_spectral_lr": 0,
+  "mst_talking_heads": 0,
+  "mst_wo_mode": "block",
+  "mst_stream_topk": 0,
+  "mst_stream_shared": 0,
+  "mst_stream_router_aux": 0.01,
+  "mst_stream_router_noise": 0.0,
+  "mst_stream_dispatch": 0,
+  "mst_stream_capacity_factor": 1.0,
+  "mst_stream_gate_attn": 0,
+  "mst_ffn_monarch": "none",
+  "mst_shampoo": 0,
+  "mst_precond_every": 10,
+  "mst_shampoo_beta": 0.95,
+  "use_eet": false,
+  "eet_frozen_kv": true,
+  "eet_reenter_final": false,
+  "eet_router_type": "mlp2",
+  "eet_router_hidden": 0,
+  "eet_freq_prior_alpha": 0.0,
+  "eet_pos_prior_beta": 0.0,
+  "eet_domain_prior": false,
+  "eet_warmup_frac": 0.02,
+  "eet_explore_frac": 0.15,
+  "eet_reconstruct_lambda": 1.0,
+  "eet_efficiency_lambda_start": 0.01,
+  "eet_efficiency_lambda_end": 0.1,
+  "eet_translator_rank": 0,
+  "eet_max_frozen_kv_frac": 0.75,
+  "eet_exit_threshold": 0.5,
+  "eet_min_exit_layer": 1,
+  "eet_loss_variant": "reconstruct",
+  "eet_topk_vocab": 512,
+  "eet_entropy_lambda": 0.3,
+  "eet_surprise_lambda": 0.1,
+  "eet_adv_lambda": 1.0,
+  "eet_adv_entropy_lambda": 0.2,
+  "eet_quality_lambda": 1.0,
+  "eet_quality_entropy_bonus": 0.1,
+  "eet_gumbel_temp_start": 0.0,
+  "eet_gumbel_temp_end": 0.1,
+  "eet_gumbel_hard": true,
+  "eet_commitment_beta": 0.1,
+  "eet_global_router": false,
+  "eet_freq_efficiency_alpha": 0.0,
+  "eet_diversity_lambda": 0.0,
+  "eet_ce_guided_lambda": 1.0,
+  "eet_router_lr_mult": 5.0,
+  "eet_model_lr_mult": 1.0,
+  "eet_depth_weight_type": "none",
+  "eet_depth_weight_max": 2.5,
+  "eet_use_override": 0,
+  "eet_override_prob_start": 0.5,
+  "eet_override_prob_end": 0.1,
+  "eet_compute_skip": false,
+  "eet_target_active_frac": 0.125,
+  "eet_capacity_schedule": "bell",
+  "eet_exit_fracs": null,
+  "eet_capacity_alignment_lambda": 0.0,
+  "eet_kv_mode": "none",
+  "eet_route_noise": 0.0,
+  "eet_route_noise_end": -1.0,
+  "eet_coverage_diag": false,
+  "deep_supervision_lambda": 0.0,
+  "deep_supervision_frac": 0.125,
+  "eet_width_power": 0.0,
+  "eet_width_cap": 16.0,
+  "eet_kv_eager": false,
+  "eet_router_task_grad": true,
+  "eet_reinforce_interval": 0,
+  "eet_reinforce_lambda": 0.1,
+  "eet_exit_adapter_rank": 0,
+  "eet_router_after_block": 0,
+  "eet_ffn_skip": false,
+  "eet_ffn_target_frac": 0.5,
+  "eet_ffn_full_attn": true,
+  "eet_depth_affine": false,
+  "eet_capacity_anneal_frac": 0.0,
+  "eet_learned_schedule": false,
+  "eet_departure_summary": false,
+  "eet_route_consistency_lambda": 0.0,
+  "eet_dense_distill_interval": 0,
+  "eet_dense_distill_lambda": 0.5,
+  "eet_depth_lr_scale": false,
+  "eet_depth_grad_scale": false,
+  "eet_detach_aux_from_backbone": false,
+  "eet_detach_exit_from_backbone": false,
+  "use_code_head": false,
+  "sch_head_type": "code",
+  "sch_bits": 0,
+  "sch_order": 2,
+  "sch_max_m": 0,
+  "sch_phi_mode": "monomial",
+  "sch_code_mode": "binary",
+  "sch_code_path": "",
+  "sch_code_ecc_bits": 0,
+  "sch_code_seed": 1234,
+  "sch_phi_density": 0.0,
+  "sch_phi_dtype": "bf16",
+  "sch_phi_normalize": 1,
+  "sch_phi_center": 0,
+  "sch_g_type": "linear",
+  "sch_g_hidden": 0,
+  "sch_g_layers": 2,
+  "sch_g_out_std": 0.001,
+  "sch_mixture": 1,
+  "sch_residual_rank": 0,
+  "sch_logit_act": "none",
+  "sch_bias": 0,
+  "sch_input_mode": "table",
+  "sch_input_hidden": 0,
+  "sch_product_groups": 8,
+  "sch_product_codebook": 256,
+  "sch_product_source": "hash",
+  "sch_product_impl": "dense",
+  "sch_phi_whiten": 0,
+  "sch_mixture_per_phi": 0,
+  "sch_mixture_topk": 0,
+  "sch_mixture_aux": 0.01,
+  "sch_monarch_m1": 0,
+  "sch_monarch_perm": "none",
+  "sch_monarch_perm_path": "",
+  "sch_tier_bounds": "",
+  "sch_tier_caps": "",
+  "sch_tier_order": "freq",
+  "sch_tier_perm_path": "",
+  "sch_proposal_rank": 32,
+  "sch_proposal_topk": 16384,
+  "sch_proposal_samples": 4096,
+  "sch_proposal_warmup": 0,
+  "sch_proposal_chunk": 2048,
+  "sch_proposal_aux": 1.0,
+  "sch_nfh_mode": "cp",
+  "sch_nfh_rank": 32,
+  "sch_nfh_dims": "",
+  "sch_nfh_groups": 3,
+  "sch_nfh_views": 1,
+  "sch_nfh_perm": "none",
+  "sch_nfh_perm_path": "",
+  "sch_nfh_g_type": "linear",
+  "sch_nfh_g_hidden": 0,
+  "sch_rerank_mode": "topk",
+  "sch_rerank_k": 64,
+  "sch_rerank_rank": 32,
+  "sch_nfh_smooth": 0,
+  "sch_nfh_chunk": 256,
+  "sap_block_T": 2048,
+  "sap_block_mode": "sir_tree",
+  "sap_block_frac": 0.00048828125,
+  "sap_lambda": 1.0,
+  "sap_head_layers": 3,
+  "sap_head_heads": 0,
+  "sap_head_mlp_mult": 2,
+  "sap_enc_layers": 1,
+  "sap_ctx_window": 16,
+  "sap_latent_groups": 4,
+  "sap_latent_codes": 16,
+  "sap_latent_dim": 64,
+  "sap_free_bits": 0.25,
+  "sap_kl_anneal_steps": 2000,
+  "sap_gumbel_tau": 1.0,
+  "sap_cp_components": 8,
+  "sap_wta_k": 4,
+  "sap_u_freqs": 24,
+  "sap_u_interior": 0.8,
+  "sap_logit_chunk": 8192,
+  "sap_jacobi_sweeps": 2,
+  "sap_sir_topk": 16,
+  "sap_sir_rank": 32,
+  "sap_sir_anchor_stride": 16,
+  "sap_sir_fine_stride": 4,
+  "sap_sir_refine_frac": 0.25,
+  "sap_sir_tree_levels": 0,
+  "sap_sir_train_samples": 4,
+  "sap_sir_policy_weight": 1.0,
+  "sap_sir_posterior_mix": 0.0,
+  "sap_sir_draft_weight": 1.0,
+  "sap_sir_context_weight": 0.25,
+  "sap_sir_energy_weight": 0.25
+}
+Seeded weight init with --seed 1
+Checkpoints directory: /vol/out/s00_sap/d8/S02_sir_tree_full_TL_s1
+Parameter counts:
+wte                     : 16,777,216
+wpe                     : 0
+value_embeds            : 67,108,864
+lm_head                 : 16,777,216
+transformer_matrices    : 25,166,336
+research                : 7,872,512
+scalars                 : 16
+total                   : 133,702,160
+Estimated FLOPs per token (total):  4.309296e+08
+COST_AXES precision=W16A16E16H16 bops_arith=5.5159e+10 energy_pj_per_token=3.4409e+08 inference_MiB=255.02 training_state_MiB=881.40
+Estimated FLOPs per token (active): 4.309296e+08
+Estimated active params:            133,702,160
+[SAP] block head: mode=sir_tree T=2048 frac=0.00048828125 window=16 layers=3 params=16,920,576
+Auto-computed optimal batch size: 262,144 tokens
+Scaling LRs by 0.7071 for batch size 262,144 (reference: 524,288)
+Scaling weight decay from 0.200000 to 0.371230 for depth 8
+Scaling the LR for the AdamW parameters ∝1/√(512/768) = 1.224745
+Calculated number of iterations from target FLOPs: 1,116
+Total number of training tokens: 292,552,704
+Tokens : Scaling params ratio: 6.97
+Total training FLOPs estimate: 1.260696e+17
+Total training FLOPs (active):  1.260696e+17
+Total active training FLOPs estimate: 1.260696e+17
+Using base scheduler: linear warmup/flat/linear warmdown
+Tokens / micro-batch / rank: 16 x 2048 = 32,768
+Tokens / micro-batch: 32,768
+Total batch size 262,144 => gradient accumulation steps: 8
+Running pre-compilation warmup (1 dummy forward+backward to init lazy allocations)...
+Warmup complete. Steady-state VRAM: 1.6 GB allocated
+step 00000/01116 (0.00%) | loss: 20.797903 | lrm: 0.17 | lr(adamw:5.824e-02, muon:2.357e-03) | dt: 772.72ms | tok/sec: 339,247 | bf16_mfu: 14.78 | epoch: 1 pq: 0 rg: 1 | total time: 0.00m
+step 00100/01116 (8.96%) | loss: 12.445100 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 581.18ms | tok/sec: 451,055 | bf16_mfu: 19.65 | epoch: 1 pq: 0 rg: 52 | total time: 0.96m | eta: 10.9m
+step 00200/01116 (17.92%) | loss: 11.144769 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 630.40ms | tok/sec: 415,839 | bf16_mfu: 18.12 | epoch: 1 pq: 1 rg: 16 | total time: 1.95m | eta: 9.4m
+step 00300/01116 (26.88%) | loss: 9.832980 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 558.26ms | tok/sec: 469,575 | bf16_mfu: 20.46 | epoch: 1 pq: 1 rg: 65 | total time: 2.92m | eta: 8.2m
+step 00400/01116 (35.84%) | loss: 9.156709 | lrm: 0.99 | lr(adamw:3.453e-01, muon:1.398e-02) | dt: 580.41ms | tok/sec: 451,655 | bf16_mfu: 19.68 | epoch: 1 pq: 2 rg: 29 | total time: 3.90m | eta: 7.2m
+step 00500/01116 (44.80%) | loss: 8.870888 | lrm: 0.86 | lr(adamw:2.995e-01, muon:1.212e-02) | dt: 588.80ms | tok/sec: 445,214 | bf16_mfu: 19.40 | epoch: 1 pq: 2 rg: 78 | total time: 4.87m | eta: 6.1m
+step 00600/01116 (53.76%) | loss: 8.649026 | lrm: 0.73 | lr(adamw:2.537e-01, muon:1.027e-02) | dt: 605.28ms | tok/sec: 433,096 | bf16_mfu: 18.87 | epoch: 1 pq: 3 rg: 43 | total time: 5.83m | eta: 5.1m
+step 00700/01116 (62.72%) | loss: 8.555389 | lrm: 0.60 | lr(adamw:2.079e-01, muon:8.416e-03) | dt: 652.90ms | tok/sec: 401,509 | bf16_mfu: 17.49 | epoch: 1 pq: 4 rg: 9 | total time: 6.82m | eta: 4.1m
+step 00800/01116 (71.68%) | loss: 8.396187 | lrm: 0.46 | lr(adamw:1.622e-01, muon:6.563e-03) | dt: 572.13ms | tok/sec: 458,185 | bf16_mfu: 19.96 | epoch: 1 pq: 4 rg: 58 | total time: 7.79m | eta: 3.1m
+step 00900/01116 (80.65%) | loss: 8.345284 | lrm: 0.33 | lr(adamw:1.164e-01, muon:4.710e-03) | dt: 601.64ms | tok/sec: 435,714 | bf16_mfu: 18.99 | epoch: 1 pq: 5 rg: 24 | total time: 8.78m | eta: 2.1m
+step 01000/01116 (89.61%) | loss: 8.191677 | lrm: 0.20 | lr(adamw:7.058e-02, muon:2.857e-03) | dt: 589.17ms | tok/sec: 444,935 | bf16_mfu: 19.39 | epoch: 1 pq: 5 rg: 72 | total time: 9.75m | eta: 1.1m
+step 01100/01116 (98.57%) | loss: 8.195900 | lrm: 0.07 | lr(adamw:2.480e-02, muon:1.004e-03) | dt: 600.96ms | tok/sec: 436,210 | bf16_mfu: 19.01 | epoch: 1 pq: 6 rg: 38 | total time: 10.75m | eta: 0.2m
+step 01115/01116 (99.91%) | loss: 8.155620 | lrm: 0.05 | lr(adamw:1.793e-02, muon:7.256e-04) | dt: 573.38ms | tok/sec: 457,189 | bf16_mfu: 19.92 | epoch: 1 pq: 6 rg: 45 | total time: 10.90m | eta: 0.0m
+Step 01116 | Validation bpb: 0.995128 | val_loss: 3.265165
+Step 01116 | SAP block bpb: n/a | next-token bpb on the same tokens: n/a | latent sensitivity: None nats
+SAP_EVAL_JSON {"step": 1116, "ntp_bpb_same_tokens": null, "block_bpb": null, "blocks": 0, "latent_sensitivity_nats": null}
+2026-10-03 00:30:05,366 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Saved model parameters to: /vol/out/s00_sap/d8/S02_sir_tree_full_TL_s1/model_001116.pt
+2026-10-03 00:30:05,370 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Saved metadata to: /vol/out/s00_sap/d8/S02_sir_tree_full_TL_s1/meta_001116.json
+step 01116/01116 (final) | loss: 8.155620 | early_stop: 0
+Peak memory usage: 11940.36MiB
+Total training time: 10.90m
+Minimum validation bpb: 0.995128
+Minimum validation loss (nats/byte): 3.265165
+
+========================================================================================
+decode_S02_sir_tree_full_TL_s1_d8.log
+========================================================================================
+2026-10-03 00:30:29,335 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/agent-harnesses "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,354 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/main/kernel-status.toml "HTTP/1.1 404 Not Found"
+2026-10-03 00:30:29,393 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/tree/main/build?recursive=false&expand=false "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,432 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/revision/main "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,469 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/tree/de87b9b5af06dd9984df595bef90b2eba44b181a?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,524 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/de87b9b5af06dd9984df595bef90b2eba44b181a/build/torch29-cxx11-cu128-x86_64-linux/flash_attention_3/flash_attn_config.py "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-10-03 00:30:29,525 - huggingface_hub.utils._http - [33m[1mWARNING[0m - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-10-03 00:30:29,532 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py=&etag=%2248f62eb48ad4005c223687f3c7e7be[1m0115633829%[0m22 "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,534 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/de87b9b5af06dd9984df595bef90b2eba44b181a/build/torch29-cxx11-cu128-x86_64-linux/flash_attention_3/__init__.py "HTTP/1.1 307 Temporary Redirect"
+2026-10-03 00:30:29,541 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py=&etag=%2248f62eb48ad4005c223687f3c7e7be[1m0115633829%[0m22 "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,542 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py=&etag=%226c880f44203ba43b62b3465d6de77eb20f1e03e[1m8%[0m22 "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,552 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py=&etag=%226c880f44203ba43b62b3465d6de77eb20f1e03e[1m8%[0m22 "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,555 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/xet-read-token/de87b9b5af06dd9984df595bef90b2eba44b181a "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,624 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/de87b9b5af06dd9984df595bef90b2eba44b181a/build/torch29-cxx11-cu128-x86_64-linux/flash_attention_3/flash_attn_interface.py "HTTP/1.1 307 Temporary Redirect"
+2026-10-03 00:30:29,631 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py=&etag=%22d66ad504a8025d7e7e632f7e84d4543d66a0a68e%22 "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,639 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py=&etag=%22d66ad504a8025d7e7e632f7e84d4543d66a0a68e%22 "HTTP/1.1 200 OK"
+2026-10-03 00:30:38,456 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Building model with config: {'sequence_len': 2048, 'vocab_size': 32768, 'n_layer': 8, 'n_head': 4, 'n_kv_head': 4, 'n_embd': 512, 'use_moe': False, 'use_perm': False, 'moe_num_experts': 8, 'moe_router_dim': 64, 'moe_embed_dim': 64, 'dropout': 0.0, 'use_remix_linear': False, 'remix_context_dim': 64, 'remix_context_dim_ratio': 6, 'remix_basis_size': 64, 'remix_output_gate_rank': 16, 'remixed_linear_kwargs': {'use_basis_gate': True, 'use_output_gate': True, 'use_context': True, 'basis_gate_mode': 'mlp', 'sparse_gate_k': 0, 'gate_temperature': 1.0, 'basis_scale_factor': 4, 'n_templates': 1, 'template_routing_learned': False, 'template_topk': 0, 'tiny_expert': False, 'tiny_expert_topk': 16, 'lokr_expert': False, 'lokr_n_experts': 64, 'lokr_topk': 16, 'lokr_rank': 4, 'lokr_learned': False, 'basis_gate_rank': 8, 'disable_ln_basis': False, 'chunk_route_impl': 'compose', 'top1_gate': 'ones', 'template_delta_rank': 0, 'route_side': 'output', 'drop_basis_proj': False, 'basis_side_templates': 0, 'grad_equalize': False, 'output_gate_rank': 16, 'operator_modulation': 'none', 'lie_generators': 4, 'poly_order': 2, 'grassmann_bank_size': 4}, 'use_pos_embed': False, 'moe_use_abs_pos_embed': False, 'use_layer_context': True, 'scale_basis_size': True, 'remix_use_dual_gate': False, 'remix_use_fused': False, 'p26_output_gated_linear': 0, 'p28_shared_basis': 0, 'p28_chunk_routing_size': 0, 'p28_global_template_bank': 'none', 'p28_attn_proj_templates': 0, 'p28_attn_qk_templates': 0, 'p29_template_block_diag': 0, 'p29_template_lr_scale': 1.0, 'p29_grad_equalize': 0, 'p34_ffn_mult': 4.0, 'p34_ffn_single': 0, 'p34_dense_attn': 0, 'legacy_init_fallback': 0, 'p35_template_diversity_lambda': 0.0, 'p22_route_affine': 0, 'p34_ffn_schedule': '', 'p34_ffn_no_ffn_replacement': 'none', 'p34_ffn_last_depth': 1, 'p36_swiglu_ffn': 0, 'p36_swiglu_mult': 2.6666666666666665, 'cond_sites': 'both', 'cond_rank': 256, 'cond_mult_steps': 0, 'cond_gate_source': 'router', 'cond_coeff_act': 'centered', 'cond_router_rank': 0, 'cond_live_init': 0.0, 'cond_router_act': 'none', 'cond_chunk_size': 0, 'cond_mult_scale': -1.0, 'cond_mult_impl': 'wy', 'cond_attn_projs': 'qkvo', 'cond_layer_frac': 1.0, 'perm_expert_mode': 'low_rank', 'perm_rank': 16, 'router_context_window': -1, 'router_causal': True, 'router_num_heads': 4, 'router_num_queries': 16, 'router_n_layers': 2, 'router_use_vocab_prior': False, 'window_pattern': 'SSSL', 'cclblock_modulation': 'weight', 'cclblock_orth_lambda': 0.0, 'cclblock_context_stream': 'local', 'cclblock_ema_factor': 0.99, 'cclblock_stale_ctx_lag': 0, 'cclblock_sparse_gate_k': 0, 'cclblock_gate_temperature': 1.0, 'cclblock_context_bank_size': 0, 'cclblock_per_head_ctx': False, 'cclblock_context_source': 'norm_x', 'cclblock_chunk_size': 0, 'cclblock_aux_objective': 'none', 'cclblock_aux_lambda': 0.1, 'cclblock_boundary_token_id': 198, 'use_ral': False, 'ral_rank': 32, 'cclblock_film_gate': False, 'cclblock_attn_shadow_dim': 0, 'cclblock_dynamic_ratio': 0.25, 'cclblock_gate_rank': 8, 'cclblock_num_regimes': 8, 'cclblock_regime_temperature': 1.0, 'cclblock_poly_order': 2, 'cclblock_lie_generators': 4, 'cclblock_grassmann_bank_size': 4, 'cclblock_tucker_rank': 32, 'cclblock_tucker_modes': 8, 'cclblock_svs_rank': 64, 'cclblock_svs_eps': 0.1, 'cclblock_vq_codes': 8, 'cclblock_vq_temperature': 1.0, 'cclblock_dcu_warmup_steps': 0, 'cclblock_fsi_rotations': 8, 'cclblock_fsi_selector_dim': 64, 'cclblock_aesp_strata': 4, 'cclblock_aesp_delta_rank': 4, 'cclblock_ckr_branches': 4, 'cclblock_ckr_kernel_size': 64, 'cclblock_ckr_pos_channels': 1, 'cclblock_ckr_dual_optim': 0, 'cclblock_ckr_content_bias': 0.0, 'cclblock_giad_rank': 32, 'cclblock_psg_kernel_size': 64, 'cclblock_ss_dynamic_ratio': 0.25, 'cclblock_ss_branches': 2, 'cclblock_ss_kernel_size': 64, 'cclblock_lokr_branches': 8, 'cclblock_lokr_rank': 16, 'cclblock_ckr_temp_start': 2.0, 'cclblock_ckr_temp_end': 0.3, 'cclblock_com_kernel_size': 32, 'cclblock_ckr_ortho_init': 0, 'cclblock_ckr_branch_dropout': 0.0, 'cclblock_ckr_diversity_lambda': 0.0, 'cclblock_ckr_layer_selective': 0, 'cclblock_pgr_kernel_size': 64, 'cclblock_cil_kernel_size': 64, 'cclblock_prb_kernel_size': 64, 'p18_layer_drop': 0.0, 'p18_dynamic_activation': 0, 'p18_mixture_norm': 0, 'p18_causal_attn_bias': 0, 'p18_aux_sim_lambda': 0.0, 'p18_gradient_penalty': 0.0, 'p18_per_channel_scale': 0, 'p19_residual_gate': 0, 'p19_head_importance': 0, 'p19_residual_mix_groups': 0, 'p19_attn_logit_bias': 0, 'p19_residual_decay': 0, 'p19_grad_equilibrium': 0.0, 'p19_spectral_reparam': 0, 'p19_weight_anticollapse': 0.0, 'p19_ve_bias': 0, 'p19_weight_noise': 0.0, 'p20_hrcs_scale': 0, 'p20_lswr_scale': 0, 'p20_lswr_planes': 8, 'p20_lrcfb_branches': 0, 'p20_lrcfb_narrow': 0, 'p20_lrcfb_learned': 0, 'p20_lrcfb_topk': 0, 'p20_dgcr_branches': 0, 'p20_dgcr_aux_weight': 0.01, 'p20_mone_experts': 0, 'p20_mone_topk': 0, 'p20_mone_narrow': 1, 'p20_mone_frozen': 0, 'p20_ncea_branches': 0, 'p20_ncea_eps': 0.1, 'p20_adwi': 0, 'p20_pwu_branches': 0, 'p20_pwu_phase': 1, 'p20_fsvd_gate': 0, 'p20_wbfc_clusters': 0, 'p20_wbfc_active': 0, 'p21_per_experts': 0, 'p21_per_topk': 0, 'p21_per_learned': 0, 'p21_per_attn': 0, 'p22_attn_moe_route': 'none', 'p23_tiny_expert': 0, 'p23_n_experts': 64, 'p23_topk': 16, 'p23_learned_route': 0, 'p23_std_moe_experts': 0, 'p23_std_moe_topk': -1, 'p23_std_moe_aux_weight': 0.01, 'p23_lokr': 0, 'p23_lokr_rank': 4, 'p23_use_shared_block_router': 0, 'p23_linear_moe_experts': 0, 'p23_linear_moe_topk': 0, 'p23_quantile_route': 0, 'remix_shared_context_gates': 0, 'p24_use_sliced_weight': 0, 'p24_sliced_weight_reduction_scale': 8, 'p24_sliced_weight_min_select': 128, 'p24_sliced_weight_scope': 'per_token', 'p24_sliced_weight_balance_coeff': 0.01, 'p24_quantile_route': 0, 'p24_use_folded_mod': 0, 'p24_folded_mod_reduction_scale': 8, 'p24_folded_mod_min_dim': 128, 'p24_folded_mod_scope': 'per_layer', 'p24_folded_mod_gate_act': 'tanh_centered', 'p24_use_sequence_gated_linear': 0, 'p24_sequence_gated_scope': 'per_layer', 'p24_sequence_gated_act': 'tanh_centered', 'remix_disable_ln_basis': 0, 'dense_intermediate_ln': 0, 'use_mol': False, 'mol_n_blocks': 5, 'mol_n_shared': 1, 'mol_topk': 3, 'mol_thin_dim': 256, 'mol_head_dim': 64, 'mol_ffn_mult': 4.0, 'mol_router_aux': 0.05, 'mol_routed_attn': 'softmax', 'mol_dispatch': 1, 'mol_capacity_factor': 1.0, 'mol_block_lr_scale': 1.0, 'mol_per_block_ve': 0, 'use_binary': False, 'binary_acts': True, 'binary_weight_scale': 'row', 'binary_act_scale': 'token', 'binary_clip': 1.0, 'binary_linear': True, 'binary_embeddings': True, 'binary_skip': '', 'binary_native': False, 'binary_tau': 1.0, 'binary_hard': False, 'binary_resid_width': 0, 'binary_attn_chunk': 256, 'use_mst': False, 'mst_n_subs': 8, 'mst_sub_dim': 64, 'mst_head_dim': 0, 'mst_input_mode': 'fixed_slice', 'mst_rotated_slice_learned': False, 'mst_routing_mode': 'soft_weighted', 'mst_routing_topk': 4, 'mst_routing_aux_weight': 0.01, 'mst_diversity_weight': 0.0, 'mst_ffn_mode': 'standard', 'mst_ffn_every': 1, 'mst_transition_mode': 'parallel', 'mst_final_mode': 'aggregate_proj', 'mst_final_topk': -1, 'mst_ffn_shared_up': 0, 'mst_ffn_inner_dim': 0, 'mst_sub_dropout': 0.0, 'mst_transition_every': 1, 'mst_ffa_temperature': 1.0, 'mst_global_residual': 0, 'mst_hybrid_dense': 0, 'mst_cross_sub_kv': 0, 'mst_sub_aux_weight': 0.0, 'mst_progressive_merge': 0, 'mst_multi_scale_windows': 0, 'mst_delta_residual': 0, 'mst_sub_layers': 1, 'mst_grad_equalize': 0, 'mst_block_diagonal_muon': 0, 'mst_transition_width_mult': 1.0, 'mst_sub_lr_scale': 1.0, 'mst_shared_expert': 0, 'mst_router_entropy_weight': 0.0, 'mst_shared_kv_attn': 0, 'mst_contrastive_diversity_weight': 0.0, 'mst_transition_nonlinear': 0, 'mst_transition_gated': 0, 'mst_transition_mlp': 0, 'mst_cross_sub_gate': 0, 'mst_hyper_connect': 0, 'mst_cross_kv_inject': 0, 'mst_slice_transition': 0, 'mst_lookback_layers': 0, 'mst_bilinear_transition': 0, 'mst_cross_sub_qmod': 0, 'mst_feature_cycle': 0, 'mst_mean_transition': 0, 'mst_sub_head_dim': 0, 'mst_final_norm': 0, 'mst_per_stream_ve': 0, 'mst_ve_map': 0, 'mst_ve_map_rank': 0, 'mst_lm_head_dim': 0, 'mst_compose_windows': 0, 'mst_channel_mix': 'none', 'mst_channel_mix_site': 'layer', 'mst_distribute_block_muon': 0, 'mst_trans_spectral_lr': 0, 'mst_talking_heads': 0, 'mst_wo_mode': 'block', 'mst_stream_topk': 0, 'mst_stream_shared': 0, 'mst_stream_router_aux': 0.01, 'mst_stream_router_noise': 0.0, 'mst_stream_dispatch': 0, 'mst_stream_capacity_factor': 1.0, 'mst_stream_gate_attn': 0, 'mst_ffn_monarch': 'none', 'mst_shampoo': 0, 'mst_precond_every': 10, 'mst_shampoo_beta': 0.95, 'use_eet': False, 'eet_frozen_kv': True, 'eet_reenter_final': False, 'eet_router_type': 'mlp2', 'eet_router_hidden': 0, 'eet_freq_prior_alpha': 0.0, 'eet_pos_prior_beta': 0.0, 'eet_domain_prior': False, 'eet_warmup_frac': 0.02, 'eet_explore_frac': 0.15, 'eet_reconstruct_lambda': 1.0, 'eet_efficiency_lambda_start': 0.01, 'eet_efficiency_lambda_end': 0.1, 'eet_translator_rank': 0, 'eet_max_frozen_kv_frac': 0.75, 'eet_exit_threshold': 0.5, 'eet_min_exit_layer': 1, 'eet_loss_variant': 'reconstruct', 'eet_topk_vocab': 512, 'eet_entropy_lambda': 0.3, 'eet_surprise_lambda': 0.1, 'eet_adv_lambda': 1.0, 'eet_adv_entropy_lambda': 0.2, 'eet_quality_lambda': 1.0, 'eet_quality_entropy_bonus': 0.1, 'eet_gumbel_temp_start': 0.0, 'eet_gumbel_temp_end': 0.1, 'eet_gumbel_hard': True, 'eet_commitment_beta': 0.1, 'eet_global_router': False, 'eet_freq_efficiency_alpha': 0.0, 'eet_diversity_lambda': 0.0, 'eet_ce_guided_lambda': 1.0, 'eet_router_lr_mult': 5.0, 'eet_model_lr_mult': 1.0, 'eet_depth_weight_type': 'none', 'eet_depth_weight_max': 2.5, 'eet_use_override': 0, 'eet_override_prob_start': 0.5, 'eet_override_prob_end': 0.1, 'eet_compute_skip': False, 'eet_target_active_frac': 0.125, 'eet_capacity_schedule': 'bell', 'eet_exit_fracs': None, 'eet_capacity_alignment_lambda': 0.0, 'eet_kv_mode': 'none', 'eet_route_noise': 0.0, 'eet_route_noise_end': -1.0, 'eet_coverage_diag': False, 'deep_supervision_lambda': 0.0, 'deep_supervision_frac': 0.125, 'eet_width_power': 0.0, 'eet_width_cap': 16.0, 'eet_kv_eager': False, 'eet_router_task_grad': True, 'eet_reinforce_interval': 0, 'eet_reinforce_lambda': 0.1, 'eet_exit_adapter_rank': 0, 'eet_router_after_block': 0, 'eet_ffn_skip': False, 'eet_ffn_target_frac': 0.5, 'eet_ffn_full_attn': True, 'eet_depth_affine': False, 'eet_capacity_anneal_frac': 0.0, 'eet_learned_schedule': False, 'eet_departure_summary': False, 'eet_route_consistency_lambda': 0.0, 'eet_dense_distill_interval': 0, 'eet_dense_distill_lambda': 0.5, 'eet_depth_lr_scale': False, 'eet_depth_grad_scale': False, 'eet_detach_aux_from_backbone': False, 'eet_detach_exit_from_backbone': False, 'use_code_head': False, 'sch_head_type': 'code', 'sch_bits': 0, 'sch_order': 2, 'sch_max_m': 0, 'sch_phi_mode': 'monomial', 'sch_code_mode': 'binary', 'sch_code_path': '', 'sch_code_ecc_bits': 0, 'sch_code_seed': 1234, 'sch_phi_density': 0.0, 'sch_phi_dtype': 'bf16', 'sch_phi_normalize': 1, 'sch_phi_center': 0, 'sch_g_type': 'linear', 'sch_g_hidden': 0, 'sch_g_layers': 2, 'sch_g_out_std': 0.001, 'sch_mixture': 1, 'sch_residual_rank': 0, 'sch_logit_act': 'none', 'sch_bias': 0, 'sch_input_mode': 'table', 'sch_input_hidden': 0, 'sch_product_groups': 8, 'sch_product_codebook': 256, 'sch_product_source': 'hash', 'sch_product_impl': 'dense', 'sch_phi_whiten': 0, 'sch_mixture_per_phi': 0, 'sch_mixture_topk': 0, 'sch_mixture_aux': 0.01, 'sch_monarch_m1': 0, 'sch_monarch_perm': 'none', 'sch_monarch_perm_path': '', 'sch_tier_bounds': '', 'sch_tier_caps': '', 'sch_tier_order': 'freq', 'sch_tier_perm_path': '', 'sch_proposal_rank': 32, 'sch_proposal_topk': 16384, 'sch_proposal_samples': 4096, 'sch_proposal_warmup': 0, 'sch_proposal_chunk': 2048, 'sch_proposal_aux': 1.0, 'sch_nfh_mode': 'cp', 'sch_nfh_rank': 32, 'sch_nfh_dims': '', 'sch_nfh_groups': 3, 'sch_nfh_views': 1, 'sch_nfh_perm': 'none', 'sch_nfh_perm_path': '', 'sch_nfh_g_type': 'linear', 'sch_nfh_g_hidden': 0, 'sch_rerank_mode': 'topk', 'sch_rerank_k': 64, 'sch_rerank_rank': 32, 'sch_nfh_smooth': 0, 'sch_nfh_chunk': 256, 'sap_block_T': 2048, 'sap_block_mode': 'sir_tree', 'sap_block_frac': 0.00048828125, 'sap_lambda': 1.0, 'sap_head_layers': 3, 'sap_head_heads': 0, 'sap_head_mlp_mult': 2, 'sap_enc_layers': 1, 'sap_ctx_window': 16, 'sap_latent_groups': 4, 'sap_latent_codes': 16, 'sap_latent_dim': 64, 'sap_free_bits': 0.25, 'sap_kl_anneal_steps': 2000, 'sap_gumbel_tau': 1.0, 'sap_cp_components': 8, 'sap_wta_k': 4, 'sap_u_freqs': 24, 'sap_u_interior': 0.8, 'sap_logit_chunk': 8192, 'sap_jacobi_sweeps': 2, 'sap_sir_topk': 16, 'sap_sir_rank': 32, 'sap_sir_anchor_stride': 16, 'sap_sir_fine_stride': 4, 'sap_sir_refine_frac': 0.25, 'sap_sir_tree_levels': 0, 'sap_sir_train_samples': 4, 'sap_sir_policy_weight': 1.0, 'sap_sir_posterior_mix': 0.0, 'sap_sir_draft_weight': 1.0, 'sap_sir_context_weight': 0.25, 'sap_sir_energy_weight': 0.25}
+[SAP] block head: mode=sir_tree T=2048 frac=0.00048828125 window=16 layers=3 params=7,872,512
+
+========================================================================================
+gen_S02_sir_tree_full_TL_s1_d8.log
+========================================================================================
+2026-10-03 00:30:51,695 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/main/kernel-status.toml "HTTP/1.1 404 Not Found"
+2026-10-03 00:30:51,714 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/tree/main/build?recursive=false&expand=false "HTTP/1.1 200 OK"
+2026-10-03 00:30:51,734 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/revision/main "HTTP/1.1 200 OK"
+2026-10-03 00:30:52,405 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Building model with config: {'sequence_len': 2048, 'vocab_size': 32768, 'n_layer': 8, 'n_head': 4, 'n_kv_head': 4, 'n_embd': 512, 'use_moe': False, 'use_perm': False, 'moe_num_experts': 8, 'moe_router_dim': 64, 'moe_embed_dim': 64, 'dropout': 0.0, 'use_remix_linear': False, 'remix_context_dim': 64, 'remix_context_dim_ratio': 6, 'remix_basis_size': 64, 'remix_output_gate_rank': 16, 'remixed_linear_kwargs': {'use_basis_gate': True, 'use_output_gate': True, 'use_context': True, 'basis_gate_mode': 'mlp', 'sparse_gate_k': 0, 'gate_temperature': 1.0, 'basis_scale_factor': 4, 'n_templates': 1, 'template_routing_learned': False, 'template_topk': 0, 'tiny_expert': False, 'tiny_expert_topk': 16, 'lokr_expert': False, 'lokr_n_experts': 64, 'lokr_topk': 16, 'lokr_rank': 4, 'lokr_learned': False, 'basis_gate_rank': 8, 'disable_ln_basis': False, 'chunk_route_impl': 'compose', 'top1_gate': 'ones', 'template_delta_rank': 0, 'route_side': 'output', 'drop_basis_proj': False, 'basis_side_templates': 0, 'grad_equalize': False, 'output_gate_rank': 16, 'operator_modulation': 'none', 'lie_generators': 4, 'poly_order': 2, 'grassmann_bank_size': 4}, 'use_pos_embed': False, 'moe_use_abs_pos_embed': False, 'use_layer_context': True, 'scale_basis_size': True, 'remix_use_dual_gate': False, 'remix_use_fused': False, 'p26_output_gated_linear': 0, 'p28_shared_basis': 0, 'p28_chunk_routing_size': 0, 'p28_global_template_bank': 'none', 'p28_attn_proj_templates': 0, 'p28_attn_qk_templates': 0, 'p29_template_block_diag': 0, 'p29_template_lr_scale': 1.0, 'p29_grad_equalize': 0, 'p34_ffn_mult': 4.0, 'p34_ffn_single': 0, 'p34_dense_attn': 0, 'legacy_init_fallback': 0, 'p35_template_diversity_lambda': 0.0, 'p22_route_affine': 0, 'p34_ffn_schedule': '', 'p34_ffn_no_ffn_replacement': 'none', 'p34_ffn_last_depth': 1, 'p36_swiglu_ffn': 0, 'p36_swiglu_mult': 2.6666666666666665, 'cond_sites': 'both', 'cond_rank': 256, 'cond_mult_steps': 0, 'cond_gate_source': 'router', 'cond_coeff_act': 'centered', 'cond_router_rank': 0, 'cond_live_init': 0.0, 'cond_router_act': 'none', 'cond_chunk_size': 0, 'cond_mult_scale': -1.0, 'cond_mult_impl': 'wy', 'cond_attn_projs': 'qkvo', 'cond_layer_frac': 1.0, 'perm_expert_mode': 'low_rank', 'perm_rank': 16, 'router_context_window': -1, 'router_causal': True, 'router_num_heads': 4, 'router_num_queries': 16, 'router_n_layers': 2, 'router_use_vocab_prior': False, 'window_pattern': 'SSSL', 'cclblock_modulation': 'weight', 'cclblock_orth_lambda': 0.0, 'cclblock_context_stream': 'local', 'cclblock_ema_factor': 0.99, 'cclblock_stale_ctx_lag': 0, 'cclblock_sparse_gate_k': 0, 'cclblock_gate_temperature': 1.0, 'cclblock_context_bank_size': 0, 'cclblock_per_head_ctx': False, 'cclblock_context_source': 'norm_x', 'cclblock_chunk_size': 0, 'cclblock_aux_objective': 'none', 'cclblock_aux_lambda': 0.1, 'cclblock_boundary_token_id': 198, 'use_ral': False, 'ral_rank': 32, 'cclblock_film_gate': False, 'cclblock_attn_shadow_dim': 0, 'cclblock_dynamic_ratio': 0.25, 'cclblock_gate_rank': 8, 'cclblock_num_regimes': 8, 'cclblock_regime_temperature': 1.0, 'cclblock_poly_order': 2, 'cclblock_lie_generators': 4, 'cclblock_grassmann_bank_size': 4, 'cclblock_tucker_rank': 32, 'cclblock_tucker_modes': 8, 'cclblock_svs_rank': 64, 'cclblock_svs_eps': 0.1, 'cclblock_vq_codes': 8, 'cclblock_vq_temperature': 1.0, 'cclblock_dcu_warmup_steps': 0, 'cclblock_fsi_rotations': 8, 'cclblock_fsi_selector_dim': 64, 'cclblock_aesp_strata': 4, 'cclblock_aesp_delta_rank': 4, 'cclblock_ckr_branches': 4, 'cclblock_ckr_kernel_size': 64, 'cclblock_ckr_pos_channels': 1, 'cclblock_ckr_dual_optim': 0, 'cclblock_ckr_content_bias': 0.0, 'cclblock_giad_rank': 32, 'cclblock_psg_kernel_size': 64, 'cclblock_ss_dynamic_ratio': 0.25, 'cclblock_ss_branches': 2, 'cclblock_ss_kernel_size': 64, 'cclblock_lokr_branches': 8, 'cclblock_lokr_rank': 16, 'cclblock_ckr_temp_start': 2.0, 'cclblock_ckr_temp_end': 0.3, 'cclblock_com_kernel_size': 32, 'cclblock_ckr_ortho_init': 0, 'cclblock_ckr_branch_dropout': 0.0, 'cclblock_ckr_diversity_lambda': 0.0, 'cclblock_ckr_layer_selective': 0, 'cclblock_pgr_kernel_size': 64, 'cclblock_cil_kernel_size': 64, 'cclblock_prb_kernel_size': 64, 'p18_layer_drop': 0.0, 'p18_dynamic_activation': 0, 'p18_mixture_norm': 0, 'p18_causal_attn_bias': 0, 'p18_aux_sim_lambda': 0.0, 'p18_gradient_penalty': 0.0, 'p18_per_channel_scale': 0, 'p19_residual_gate': 0, 'p19_head_importance': 0, 'p19_residual_mix_groups': 0, 'p19_attn_logit_bias': 0, 'p19_residual_decay': 0, 'p19_grad_equilibrium': 0.0, 'p19_spectral_reparam': 0, 'p19_weight_anticollapse': 0.0, 'p19_ve_bias': 0, 'p19_weight_noise': 0.0, 'p20_hrcs_scale': 0, 'p20_lswr_scale': 0, 'p20_lswr_planes': 8, 'p20_lrcfb_branches': 0, 'p20_lrcfb_narrow': 0, 'p20_lrcfb_learned': 0, 'p20_lrcfb_topk': 0, 'p20_dgcr_branches': 0, 'p20_dgcr_aux_weight': 0.01, 'p20_mone_experts': 0, 'p20_mone_topk': 0, 'p20_mone_narrow': 1, 'p20_mone_frozen': 0, 'p20_ncea_branches': 0, 'p20_ncea_eps': 0.1, 'p20_adwi': 0, 'p20_pwu_branches': 0, 'p20_pwu_phase': 1, 'p20_fsvd_gate': 0, 'p20_wbfc_clusters': 0, 'p20_wbfc_active': 0, 'p21_per_experts': 0, 'p21_per_topk': 0, 'p21_per_learned': 0, 'p21_per_attn': 0, 'p22_attn_moe_route': 'none', 'p23_tiny_expert': 0, 'p23_n_experts': 64, 'p23_topk': 16, 'p23_learned_route': 0, 'p23_std_moe_experts': 0, 'p23_std_moe_topk': -1, 'p23_std_moe_aux_weight': 0.01, 'p23_lokr': 0, 'p23_lokr_rank': 4, 'p23_use_shared_block_router': 0, 'p23_linear_moe_experts': 0, 'p23_linear_moe_topk': 0, 'p23_quantile_route': 0, 'remix_shared_context_gates': 0, 'p24_use_sliced_weight': 0, 'p24_sliced_weight_reduction_scale': 8, 'p24_sliced_weight_min_select': 128, 'p24_sliced_weight_scope': 'per_token', 'p24_sliced_weight_balance_coeff': 0.01, 'p24_quantile_route': 0, 'p24_use_folded_mod': 0, 'p24_folded_mod_reduction_scale': 8, 'p24_folded_mod_min_dim': 128, 'p24_folded_mod_scope': 'per_layer', 'p24_folded_mod_gate_act': 'tanh_centered', 'p24_use_sequence_gated_linear': 0, 'p24_sequence_gated_scope': 'per_layer', 'p24_sequence_gated_act': 'tanh_centered', 'remix_disable_ln_basis': 0, 'dense_intermediate_ln': 0, 'use_mol': False, 'mol_n_blocks': 5, 'mol_n_shared': 1, 'mol_topk': 3, 'mol_thin_dim': 256, 'mol_head_dim': 64, 'mol_ffn_mult': 4.0, 'mol_router_aux': 0.05, 'mol_routed_attn': 'softmax', 'mol_dispatch': 1, 'mol_capacity_factor': 1.0, 'mol_block_lr_scale': 1.0, 'mol_per_block_ve': 0, 'use_binary': False, 'binary_acts': True, 'binary_weight_scale': 'row', 'binary_act_scale': 'token', 'binary_clip': 1.0, 'binary_linear': True, 'binary_embeddings': True, 'binary_skip': '', 'binary_native': False, 'binary_tau': 1.0, 'binary_hard': False, 'binary_resid_width': 0, 'binary_attn_chunk': 256, 'use_mst': False, 'mst_n_subs': 8, 'mst_sub_dim': 64, 'mst_head_dim': 0, 'mst_input_mode': 'fixed_slice', 'mst_rotated_slice_learned': False, 'mst_routing_mode': 'soft_weighted', 'mst_routing_topk': 4, 'mst_routing_aux_weight': 0.01, 'mst_diversity_weight': 0.0, 'mst_ffn_mode': 'standard', 'mst_ffn_every': 1, 'mst_transition_mode': 'parallel', 'mst_final_mode': 'aggregate_proj', 'mst_final_topk': -1, 'mst_ffn_shared_up': 0, 'mst_ffn_inner_dim': 0, 'mst_sub_dropout': 0.0, 'mst_transition_every': 1, 'mst_ffa_temperature': 1.0, 'mst_global_residual': 0, 'mst_hybrid_dense': 0, 'mst_cross_sub_kv': 0, 'mst_sub_aux_weight': 0.0, 'mst_progressive_merge': 0, 'mst_multi_scale_windows': 0, 'mst_delta_residual': 0, 'mst_sub_layers': 1, 'mst_grad_equalize': 0, 'mst_block_diagonal_muon': 0, 'mst_transition_width_mult': 1.0, 'mst_sub_lr_scale': 1.0, 'mst_shared_expert': 0, 'mst_router_entropy_weight': 0.0, 'mst_shared_kv_attn': 0, 'mst_contrastive_diversity_weight': 0.0, 'mst_transition_nonlinear': 0, 'mst_transition_gated': 0, 'mst_transition_mlp': 0, 'mst_cross_sub_gate': 0, 'mst_hyper_connect': 0, 'mst_cross_kv_inject': 0, 'mst_slice_transition': 0, 'mst_lookback_layers': 0, 'mst_bilinear_transition': 0, 'mst_cross_sub_qmod': 0, 'mst_feature_cycle': 0, 'mst_mean_transition': 0, 'mst_sub_head_dim': 0, 'mst_final_norm': 0, 'mst_per_stream_ve': 0, 'mst_ve_map': 0, 'mst_ve_map_rank': 0, 'mst_lm_head_dim': 0, 'mst_compose_windows': 0, 'mst_channel_mix': 'none', 'mst_channel_mix_site': 'layer', 'mst_distribute_block_muon': 0, 'mst_trans_spectral_lr': 0, 'mst_talking_heads': 0, 'mst_wo_mode': 'block', 'mst_stream_topk': 0, 'mst_stream_shared': 0, 'mst_stream_router_aux': 0.01, 'mst_stream_router_noise': 0.0, 'mst_stream_dispatch': 0, 'mst_stream_capacity_factor': 1.0, 'mst_stream_gate_attn': 0, 'mst_ffn_monarch': 'none', 'mst_shampoo': 0, 'mst_precond_every': 10, 'mst_shampoo_beta': 0.95, 'use_eet': False, 'eet_frozen_kv': True, 'eet_reenter_final': False, 'eet_router_type': 'mlp2', 'eet_router_hidden': 0, 'eet_freq_prior_alpha': 0.0, 'eet_pos_prior_beta': 0.0, 'eet_domain_prior': False, 'eet_warmup_frac': 0.02, 'eet_explore_frac': 0.15, 'eet_reconstruct_lambda': 1.0, 'eet_efficiency_lambda_start': 0.01, 'eet_efficiency_lambda_end': 0.1, 'eet_translator_rank': 0, 'eet_max_frozen_kv_frac': 0.75, 'eet_exit_threshold': 0.5, 'eet_min_exit_layer': 1, 'eet_loss_variant': 'reconstruct', 'eet_topk_vocab': 512, 'eet_entropy_lambda': 0.3, 'eet_surprise_lambda': 0.1, 'eet_adv_lambda': 1.0, 'eet_adv_entropy_lambda': 0.2, 'eet_quality_lambda': 1.0, 'eet_quality_entropy_bonus': 0.1, 'eet_gumbel_temp_start': 0.0, 'eet_gumbel_temp_end': 0.1, 'eet_gumbel_hard': True, 'eet_commitment_beta': 0.1, 'eet_global_router': False, 'eet_freq_efficiency_alpha': 0.0, 'eet_diversity_lambda': 0.0, 'eet_ce_guided_lambda': 1.0, 'eet_router_lr_mult': 5.0, 'eet_model_lr_mult': 1.0, 'eet_depth_weight_type': 'none', 'eet_depth_weight_max': 2.5, 'eet_use_override': 0, 'eet_override_prob_start': 0.5, 'eet_override_prob_end': 0.1, 'eet_compute_skip': False, 'eet_target_active_frac': 0.125, 'eet_capacity_schedule': 'bell', 'eet_exit_fracs': None, 'eet_capacity_alignment_lambda': 0.0, 'eet_kv_mode': 'none', 'eet_route_noise': 0.0, 'eet_route_noise_end': -1.0, 'eet_coverage_diag': False, 'deep_supervision_lambda': 0.0, 'deep_supervision_frac': 0.125, 'eet_width_power': 0.0, 'eet_width_cap': 16.0, 'eet_kv_eager': False, 'eet_router_task_grad': True, 'eet_reinforce_interval': 0, 'eet_reinforce_lambda': 0.1, 'eet_exit_adapter_rank': 0, 'eet_router_after_block': 0, 'eet_ffn_skip': False, 'eet_ffn_target_frac': 0.5, 'eet_ffn_full_attn': True, 'eet_depth_affine': False, 'eet_capacity_anneal_frac': 0.0, 'eet_learned_schedule': False, 'eet_departure_summary': False, 'eet_route_consistency_lambda': 0.0, 'eet_dense_distill_interval': 0, 'eet_dense_distill_lambda': 0.5, 'eet_depth_lr_scale': False, 'eet_depth_grad_scale': False, 'eet_detach_aux_from_backbone': False, 'eet_detach_exit_from_backbone': False, 'use_code_head': False, 'sch_head_type': 'code', 'sch_bits': 0, 'sch_order': 2, 'sch_max_m': 0, 'sch_phi_mode': 'monomial', 'sch_code_mode': 'binary', 'sch_code_path': '', 'sch_code_ecc_bits': 0, 'sch_code_seed': 1234, 'sch_phi_density': 0.0, 'sch_phi_dtype': 'bf16', 'sch_phi_normalize': 1, 'sch_phi_center': 0, 'sch_g_type': 'linear', 'sch_g_hidden': 0, 'sch_g_layers': 2, 'sch_g_out_std': 0.001, 'sch_mixture': 1, 'sch_residual_rank': 0, 'sch_logit_act': 'none', 'sch_bias': 0, 'sch_input_mode': 'table', 'sch_input_hidden': 0, 'sch_product_groups': 8, 'sch_product_codebook': 256, 'sch_product_source': 'hash', 'sch_product_impl': 'dense', 'sch_phi_whiten': 0, 'sch_mixture_per_phi': 0, 'sch_mixture_topk': 0, 'sch_mixture_aux': 0.01, 'sch_monarch_m1': 0, 'sch_monarch_perm': 'none', 'sch_monarch_perm_path': '', 'sch_tier_bounds': '', 'sch_tier_caps': '', 'sch_tier_order': 'freq', 'sch_tier_perm_path': '', 'sch_proposal_rank': 32, 'sch_proposal_topk': 16384, 'sch_proposal_samples': 4096, 'sch_proposal_warmup': 0, 'sch_proposal_chunk': 2048, 'sch_proposal_aux': 1.0, 'sch_nfh_mode': 'cp', 'sch_nfh_rank': 32, 'sch_nfh_dims': '', 'sch_nfh_groups': 3, 'sch_nfh_views': 1, 'sch_nfh_perm': 'none', 'sch_nfh_perm_path': '', 'sch_nfh_g_type': 'linear', 'sch_nfh_g_hidden': 0, 'sch_rerank_mode': 'topk', 'sch_rerank_k': 64, 'sch_rerank_rank': 32, 'sch_nfh_smooth': 0, 'sch_nfh_chunk': 256, 'sap_block_T': 2048, 'sap_block_mode': 'sir_tree', 'sap_block_frac': 0.00048828125, 'sap_lambda': 1.0, 'sap_head_layers': 3, 'sap_head_heads': 0, 'sap_head_mlp_mult': 2, 'sap_enc_layers': 1, 'sap_ctx_window': 16, 'sap_latent_groups': 4, 'sap_latent_codes': 16, 'sap_latent_dim': 64, 'sap_free_bits': 0.25, 'sap_kl_anneal_steps': 2000, 'sap_gumbel_tau': 1.0, 'sap_cp_components': 8, 'sap_wta_k': 4, 'sap_u_freqs': 24, 'sap_u_interior': 0.8, 'sap_logit_chunk': 8192, 'sap_jacobi_sweeps': 2, 'sap_sir_topk': 16, 'sap_sir_rank': 32, 'sap_sir_anchor_stride': 16, 'sap_sir_fine_stride': 4, 'sap_sir_refine_frac': 0.25, 'sap_sir_tree_levels': 0, 'sap_sir_train_samples': 4, 'sap_sir_policy_weight': 1.0, 'sap_sir_posterior_mix': 0.0, 'sap_sir_draft_weight': 1.0, 'sap_sir_context_weight': 0.25, 'sap_sir_energy_weight': 0.25}
+[SAP] block head: mode=sir_tree T=2048 frac=0.00048828125 window=16 layers=3 params=7,872,512
+2026-10-03 00:30:54,599 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Building model with config: {'sequence_len': 2048, 'vocab_size': 32768, 'n_layer': 8, 'n_head': 4, 'n_kv_head': 4, 'n_embd': 512, 'use_moe': False, 'use_perm': False, 'moe_num_experts': 8, 'moe_router_dim': 64, 'moe_embed_dim': 64, 'dropout': 0.0, 'use_remix_linear': False, 'remix_context_dim': 64, 'remix_context_dim_ratio': 6, 'remix_basis_size': 64, 'remix_output_gate_rank': 16, 'remixed_linear_kwargs': {'use_basis_gate': True, 'use_output_gate': True, 'use_context': True, 'basis_gate_mode': 'mlp', 'sparse_gate_k': 0, 'gate_temperature': 1.0, 'basis_scale_factor': 4, 'n_templates': 1, 'template_routing_learned': False, 'template_topk': 0, 'tiny_expert': False, 'tiny_expert_topk': 16, 'lokr_expert': False, 'lokr_n_experts': 64, 'lokr_topk': 16, 'lokr_rank': 4, 'lokr_learned': False, 'basis_gate_rank': 8, 'disable_ln_basis': False, 'chunk_route_impl': 'compose', 'top1_gate': 'ones', 'template_delta_rank': 0, 'route_side': 'output', 'drop_basis_proj': False, 'basis_side_templates': 0, 'grad_equalize': False, 'output_gate_rank': 16, 'operator_modulation': 'none', 'lie_generators': 4, 'poly_order': 2, 'grassmann_bank_size': 4}, 'use_pos_embed': False, 'moe_use_abs_pos_embed': False, 'use_layer_context': True, 'scale_basis_size': True, 'remix_use_dual_gate': False, 'remix_use_fused': False, 'p26_output_gated_linear': 0, 'p28_shared_basis': 0, 'p28_chunk_routing_size': 0, 'p28_global_template_bank': 'none', 'p28_attn_proj_templates': 0, 'p28_attn_qk_templates': 0, 'p29_template_block_diag': 0, 'p29_template_lr_scale': 1.0, 'p29_grad_equalize': 0, 'p34_ffn_mult': 4.0, 'p34_ffn_single': 0, 'p34_dense_attn': 0, 'legacy_init_fallback': 0, 'p35_template_diversity_lambda': 0.0, 'p22_route_affine': 0, 'p34_ffn_schedule': '', 'p34_ffn_no_ffn_replacement': 'none', 'p34_ffn_last_depth': 1, 'p36_swiglu_ffn': 0, 'p36_swiglu_mult': 2.6666666666666665, 'cond_sites': 'both', 'cond_rank': 256, 'cond_mult_steps': 0, 'cond_gate_source': 'router', 'cond_coeff_act': 'centered', 'cond_router_rank': 0, 'cond_live_init': 0.0, 'cond_router_act': 'none', 'cond_chunk_size': 0, 'cond_mult_scale': -1.0, 'cond_mult_impl': 'wy', 'cond_attn_projs': 'qkvo', 'cond_layer_frac': 1.0, 'perm_expert_mode': 'low_rank', 'perm_rank': 16, 'router_context_window': -1, 'router_causal': True, 'router_num_heads': 4, 'router_num_queries': 16, 'router_n_layers': 2, 'router_use_vocab_prior': False, 'window_pattern': 'SSSL', 'cclblock_modulation': 'weight', 'cclblock_orth_lambda': 0.0, 'cclblock_context_stream': 'local', 'cclblock_ema_factor': 0.99, 'cclblock_stale_ctx_lag': 0, 'cclblock_sparse_gate_k': 0, 'cclblock_gate_temperature': 1.0, 'cclblock_context_bank_size': 0, 'cclblock_per_head_ctx': False, 'cclblock_context_source': 'norm_x', 'cclblock_chunk_size': 0, 'cclblock_aux_objective': 'none', 'cclblock_aux_lambda': 0.1, 'cclblock_boundary_token_id': 198, 'use_ral': False, 'ral_rank': 32, 'cclblock_film_gate': False, 'cclblock_attn_shadow_dim': 0, 'cclblock_dynamic_ratio': 0.25, 'cclblock_gate_rank': 8, 'cclblock_num_regimes': 8, 'cclblock_regime_temperature': 1.0, 'cclblock_poly_order': 2, 'cclblock_lie_generators': 4, 'cclblock_grassmann_bank_size': 4, 'cclblock_tucker_rank': 32, 'cclblock_tucker_modes': 8, 'cclblock_svs_rank': 64, 'cclblock_svs_eps': 0.1, 'cclblock_vq_codes': 8, 'cclblock_vq_temperature': 1.0, 'cclblock_dcu_warmup_steps': 0, 'cclblock_fsi_rotations': 8, 'cclblock_fsi_selector_dim': 64, 'cclblock_aesp_strata': 4, 'cclblock_aesp_delta_rank': 4, 'cclblock_ckr_branches': 4, 'cclblock_ckr_kernel_size': 64, 'cclblock_ckr_pos_channels': 1, 'cclblock_ckr_dual_optim': 0, 'cclblock_ckr_content_bias': 0.0, 'cclblock_giad_rank': 32, 'cclblock_psg_kernel_size': 64, 'cclblock_ss_dynamic_ratio': 0.25, 'cclblock_ss_branches': 2, 'cclblock_ss_kernel_size': 64, 'cclblock_lokr_branches': 8, 'cclblock_lokr_rank': 16, 'cclblock_ckr_temp_start': 2.0, 'cclblock_ckr_temp_end': 0.3, 'cclblock_com_kernel_size': 32, 'cclblock_ckr_ortho_init': 0, 'cclblock_ckr_branch_dropout': 0.0, 'cclblock_ckr_diversity_lambda': 0.0, 'cclblock_ckr_layer_selective': 0, 'cclblock_pgr_kernel_size': 64, 'cclblock_cil_kernel_size': 64, 'cclblock_prb_kernel_size': 64, 'p18_layer_drop': 0.0, 'p18_dynamic_activation': 0, 'p18_mixture_norm': 0, 'p18_causal_attn_bias': 0, 'p18_aux_sim_lambda': 0.0, 'p18_gradient_penalty': 0.0, 'p18_per_channel_scale': 0, 'p19_residual_gate': 0, 'p19_head_importance': 0, 'p19_residual_mix_groups': 0, 'p19_attn_logit_bias': 0, 'p19_residual_decay': 0, 'p19_grad_equilibrium': 0.0, 'p19_spectral_reparam': 0, 'p19_weight_anticollapse': 0.0, 'p19_ve_bias': 0, 'p19_weight_noise': 0.0, 'p20_hrcs_scale': 0, 'p20_lswr_scale': 0, 'p20_lswr_planes': 8, 'p20_lrcfb_branches': 0, 'p20_lrcfb_narrow': 0, 'p20_lrcfb_learned': 0, 'p20_lrcfb_topk': 0, 'p20_dgcr_branches': 0, 'p20_dgcr_aux_weight': 0.01, 'p20_mone_experts': 0, 'p20_mone_topk': 0, 'p20_mone_narrow': 1, 'p20_mone_frozen': 0, 'p20_ncea_branches': 0, 'p20_ncea_eps': 0.1, 'p20_adwi': 0, 'p20_pwu_branches': 0, 'p20_pwu_phase': 1, 'p20_fsvd_gate': 0, 'p20_wbfc_clusters': 0, 'p20_wbfc_active': 0, 'p21_per_experts': 0, 'p21_per_topk': 0, 'p21_per_learned': 0, 'p21_per_attn': 0, 'p22_attn_moe_route': 'none', 'p23_tiny_expert': 0, 'p23_n_experts': 64, 'p23_topk': 16, 'p23_learned_route': 0, 'p23_std_moe_experts': 0, 'p23_std_moe_topk': -1, 'p23_std_moe_aux_weight': 0.01, 'p23_lokr': 0, 'p23_lokr_rank': 4, 'p23_use_shared_block_router': 0, 'p23_linear_moe_experts': 0, 'p23_linear_moe_topk': 0, 'p23_quantile_route': 0, 'remix_shared_context_gates': 0, 'p24_use_sliced_weight': 0, 'p24_sliced_weight_reduction_scale': 8, 'p24_sliced_weight_min_select': 128, 'p24_sliced_weight_scope': 'per_token', 'p24_sliced_weight_balance_coeff': 0.01, 'p24_quantile_route': 0, 'p24_use_folded_mod': 0, 'p24_folded_mod_reduction_scale': 8, 'p24_folded_mod_min_dim': 128, 'p24_folded_mod_scope': 'per_layer', 'p24_folded_mod_gate_act': 'tanh_centered', 'p24_use_sequence_gated_linear': 0, 'p24_sequence_gated_scope': 'per_layer', 'p24_sequence_gated_act': 'tanh_centered', 'remix_disable_ln_basis': 0, 'dense_intermediate_ln': 0, 'use_mol': False, 'mol_n_blocks': 5, 'mol_n_shared': 1, 'mol_topk': 3, 'mol_thin_dim': 256, 'mol_head_dim': 64, 'mol_ffn_mult': 4.0, 'mol_router_aux': 0.05, 'mol_routed_attn': 'softmax', 'mol_dispatch': 1, 'mol_capacity_factor': 1.0, 'mol_block_lr_scale': 1.0, 'mol_per_block_ve': 0, 'use_binary': False, 'binary_acts': True, 'binary_weight_scale': 'row', 'binary_act_scale': 'token', 'binary_clip': 1.0, 'binary_linear': True, 'binary_embeddings': True, 'binary_skip': '', 'binary_native': False, 'binary_tau': 1.0, 'binary_hard': False, 'binary_resid_width': 0, 'binary_attn_chunk': 256, 'use_mst': False, 'mst_n_subs': 8, 'mst_sub_dim': 64, 'mst_head_dim': 0, 'mst_input_mode': 'fixed_slice', 'mst_rotated_slice_learned': False, 'mst_routing_mode': 'soft_weighted', 'mst_routing_topk': 4, 'mst_routing_aux_weight': 0.01, 'mst_diversity_weight': 0.0, 'mst_ffn_mode': 'standard', 'mst_ffn_every': 1, 'mst_transition_mode': 'parallel', 'mst_final_mode': 'aggregate_proj', 'mst_final_topk': -1, 'mst_ffn_shared_up': 0, 'mst_ffn_inner_dim': 0, 'mst_sub_dropout': 0.0, 'mst_transition_every': 1, 'mst_ffa_temperature': 1.0, 'mst_global_residual': 0, 'mst_hybrid_dense': 0, 'mst_cross_sub_kv': 0, 'mst_sub_aux_weight': 0.0, 'mst_progressive_merge': 0, 'mst_multi_scale_windows': 0, 'mst_delta_residual': 0, 'mst_sub_layers': 1, 'mst_grad_equalize': 0, 'mst_block_diagonal_muon': 0, 'mst_transition_width_mult': 1.0, 'mst_sub_lr_scale': 1.0, 'mst_shared_expert': 0, 'mst_router_entropy_weight': 0.0, 'mst_shared_kv_attn': 0, 'mst_contrastive_diversity_weight': 0.0, 'mst_transition_nonlinear': 0, 'mst_transition_gated': 0, 'mst_transition_mlp': 0, 'mst_cross_sub_gate': 0, 'mst_hyper_connect': 0, 'mst_cross_kv_inject': 0, 'mst_slice_transition': 0, 'mst_lookback_layers': 0, 'mst_bilinear_transition': 0, 'mst_cross_sub_qmod': 0, 'mst_feature_cycle': 0, 'mst_mean_transition': 0, 'mst_sub_head_dim': 0, 'mst_final_norm': 0, 'mst_per_stream_ve': 0, 'mst_ve_map': 0, 'mst_ve_map_rank': 0, 'mst_lm_head_dim': 0, 'mst_compose_windows': 0, 'mst_channel_mix': 'none', 'mst_channel_mix_site': 'layer', 'mst_distribute_block_muon': 0, 'mst_trans_spectral_lr': 0, 'mst_talking_heads': 0, 'mst_wo_mode': 'block', 'mst_stream_topk': 0, 'mst_stream_shared': 0, 'mst_stream_router_aux': 0.01, 'mst_stream_router_noise': 0.0, 'mst_stream_dispatch': 0, 'mst_stream_capacity_factor': 1.0, 'mst_stream_gate_attn': 0, 'mst_ffn_monarch': 'none', 'mst_shampoo': 0, 'mst_precond_every': 10, 'mst_shampoo_beta': 0.95, 'use_eet': False, 'eet_frozen_kv': True, 'eet_reenter_final': False, 'eet_router_type': 'mlp2', 'eet_router_hidden': 0, 'eet_freq_prior_alpha': 0.0, 'eet_pos_prior_beta': 0.0, 'eet_domain_prior': False, 'eet_warmup_frac': 0.02, 'eet_explore_frac': 0.15, 'eet_reconstruct_lambda': 1.0, 'eet_efficiency_lambda_start': 0.01, 'eet_efficiency_lambda_end': 0.1, 'eet_translator_rank': 0, 'eet_max_frozen_kv_frac': 0.75, 'eet_exit_threshold': 0.5, 'eet_min_exit_layer': 1, 'eet_loss_variant': 'reconstruct', 'eet_topk_vocab': 512, 'eet_entropy_lambda': 0.3, 'eet_surprise_lambda': 0.1, 'eet_adv_lambda': 1.0, 'eet_adv_entropy_lambda': 0.2, 'eet_quality_lambda': 1.0, 'eet_quality_entropy_bonus': 0.1, 'eet_gumbel_temp_start': 0.0, 'eet_gumbel_temp_end': 0.1, 'eet_gumbel_hard': True, 'eet_commitment_beta': 0.1, 'eet_global_router': False, 'eet_freq_efficiency_alpha': 0.0, 'eet_diversity_lambda': 0.0, 'eet_ce_guided_lambda': 1.0, 'eet_router_lr_mult': 5.0, 'eet_model_lr_mult': 1.0, 'eet_depth_weight_type': 'none', 'eet_depth_weight_max': 2.5, 'eet_use_override': 0, 'eet_override_prob_start': 0.5, 'eet_override_prob_end': 0.1, 'eet_compute_skip': False, 'eet_target_active_frac': 0.125, 'eet_capacity_schedule': 'bell', 'eet_exit_fracs': None, 'eet_capacity_alignment_lambda': 0.0, 'eet_kv_mode': 'none', 'eet_route_noise': 0.0, 'eet_route_noise_end': -1.0, 'eet_coverage_diag': False, 'deep_supervision_lambda': 0.0, 'deep_supervision_frac': 0.125, 'eet_width_power': 0.0, 'eet_width_cap': 16.0, 'eet_kv_eager': False, 'eet_router_task_grad': True, 'eet_reinforce_interval': 0, 'eet_reinforce_lambda': 0.1, 'eet_exit_adapter_rank': 0, 'eet_router_after_block': 0, 'eet_ffn_skip': False, 'eet_ffn_target_frac': 0.5, 'eet_ffn_full_attn': True, 'eet_depth_affine': False, 'eet_capacity_anneal_frac': 0.0, 'eet_learned_schedule': False, 'eet_departure_summary': False, 'eet_route_consistency_lambda': 0.0, 'eet_dense_distill_interval': 0, 'eet_dense_distill_lambda': 0.5, 'eet_depth_lr_scale': False, 'eet_depth_grad_scale': False, 'eet_detach_aux_from_backbone': False, 'eet_detach_exit_from_backbone': False, 'use_code_head': False, 'sch_head_type': 'code', 'sch_bits': 0, 'sch_order': 2, 'sch_max_m': 0, 'sch_phi_mode': 'monomial', 'sch_code_mode': 'binary', 'sch_code_path': '', 'sch_code_ecc_bits': 0, 'sch_code_seed': 1234, 'sch_phi_density': 0.0, 'sch_phi_dtype': 'bf16', 'sch_phi_normalize': 1, 'sch_phi_center': 0, 'sch_g_type': 'linear', 'sch_g_hidden': 0, 'sch_g_layers': 2, 'sch_g_out_std': 0.001, 'sch_mixture': 1, 'sch_residual_rank': 0, 'sch_logit_act': 'none', 'sch_bias': 0, 'sch_input_mode': 'table', 'sch_input_hidden': 0, 'sch_product_groups': 8, 'sch_product_codebook': 256, 'sch_product_source': 'hash', 'sch_product_impl': 'dense', 'sch_phi_whiten': 0, 'sch_mixture_per_phi': 0, 'sch_mixture_topk': 0, 'sch_mixture_aux': 0.01, 'sch_monarch_m1': 0, 'sch_monarch_perm': 'none', 'sch_monarch_perm_path': '', 'sch_tier_bounds': '', 'sch_tier_caps': '', 'sch_tier_order': 'freq', 'sch_tier_perm_path': '', 'sch_proposal_rank': 32, 'sch_proposal_topk': 16384, 'sch_proposal_samples': 4096, 'sch_proposal_warmup': 0, 'sch_proposal_chunk': 2048, 'sch_proposal_aux': 1.0, 'sch_nfh_mode': 'cp', 'sch_nfh_rank': 32, 'sch_nfh_dims': '', 'sch_nfh_groups': 3, 'sch_nfh_views': 1, 'sch_nfh_perm': 'none', 'sch_nfh_perm_path': '', 'sch_nfh_g_type': 'linear', 'sch_nfh_g_hidden': 0, 'sch_rerank_mode': 'topk', 'sch_rerank_k': 64, 'sch_rerank_rank': 32, 'sch_nfh_smooth': 0, 'sch_nfh_chunk': 256, 'sap_block_T': 0, 'sap_block_mode': 'indep', 'sap_block_frac': 0.125, 'sap_lambda': 1.0, 'sap_head_layers': 2, 'sap_head_heads': 0, 'sap_head_mlp_mult': 2, 'sap_enc_layers': 1, 'sap_ctx_window': 16, 'sap_latent_groups': 4, 'sap_latent_codes': 16, 'sap_latent_dim': 64, 'sap_free_bits': 0.25, 'sap_kl_anneal_steps': 2000, 'sap_gumbel_tau': 1.0, 'sap_cp_components': 8, 'sap_wta_k': 4, 'sap_u_freqs': 24, 'sap_u_interior': 0.8, 'sap_logit_chunk': 8192, 'sap_jacobi_sweeps': 2}
+1024 prefixes, 128 tokens each, block T=2048 (sir_tree)
+  reference ppl  next-token    63.27 | block    74.29
+  distinct 3-grams  next-token 0.979 | block 0.968
+  pairs for the LLM judge: /vol/out/s00_sap/gen_S02_sir_tree_full_TL_s1_d8.jsonl
+
+========================================================================================
+S02_sir_tree_l2_TL_s1_d8.log
+========================================================================================
+2026-10-03 00:16:01,005 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/agent-harnesses "HTTP/1.1 200 OK"
+2026-10-03 00:16:01,094 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/main/kernel-status.toml "HTTP/1.1 404 Not Found"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-10-03 00:16:01,095 - huggingface_hub.utils._http - [33m[1mWARNING[0m - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-10-03 00:16:01,186 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/tree/main/build?recursive=false&expand=false "HTTP/1.1 200 OK"
+2026-10-03 00:16:01,279 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/revision/main "HTTP/1.1 200 OK"
+2026-10-03 00:16:01,389 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/tree/de87b9b5af06dd9984df595bef90b2eba44b181a?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-10-03 00:16:01,489 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/de87b9b5af06dd9984df595bef90b2eba44b181a/build/torch29-cxx11-cu128-x86_64-linux/flash_attention_3/flash_attn_config.py "HTTP/1.1 307 Temporary Redirect"
+2026-10-03 00:16:01,503 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py=&etag=%2248f62eb48ad4005c223687f3c7e7be[1m0115633829%[0m22 "HTTP/1.1 200 OK"
+2026-10-03 00:16:01,516 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/de87b9b5af06dd9984df595bef90b2eba44b181a/build/torch29-cxx11-cu128-x86_64-linux/flash_attention_3/__init__.py "HTTP/1.1 307 Temporary Redirect"
+2026-10-03 00:16:01,517 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py=&etag=%2248f62eb48ad4005c223687f3c7e7be[1m0115633829%[0m22 "HTTP/1.1 200 OK"
+2026-10-03 00:16:01,522 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/xet-read-token/de87b9b5af06dd9984df595bef90b2eba44b181a "HTTP/1.1 200 OK"
+2026-10-03 00:16:01,528 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/de87b9b5af06dd9984df595bef90b2eba44b181a/build/torch29-cxx11-cu128-x86_64-linux/flash_attention_3/flash_attn_interface.py "HTTP/1.1 307 Temporary Redirect"
+2026-10-03 00:16:01,529 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py=&etag=%226c880f44203ba43b62b3465d6de77eb20f1e03e[1m8%[0m22 "HTTP/1.1 200 OK"
+2026-10-03 00:16:01,540 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py=&etag=%22d66ad504a8025d7e7e632f7e84d4543d66a0a68e%22 "HTTP/1.1 200 OK"
+2026-10-03 00:16:01,543 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py=&etag=%226c880f44203ba43b62b3465d6de77eb20f1e03e[1m8%[0m22 "HTTP/1.1 200 OK"
+2026-10-03 00:16:01,553 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py=&etag=%22d66ad504a8025d7e7e632f7e84d4543d66a0a68e%22 "HTTP/1.1 200 OK"
+
+                                                       █████                █████
+                                                      ░░███                ░░███
+     ████████    ██████   ████████    ██████   ██████  ░███████    ██████  ███████
+    ░░███░░███  ░░░░░███ ░░███░░███  ███░░███ ███░░███ ░███░░███  ░░░░░███░░░███░
+     ░███ ░███   ███████  ░███ ░███ ░███ ░███░███ ░░░  ░███ ░███   ███████  ░███
+     ░███ ░███  ███░░███  ░███ ░███ ░███ ░███░███  ███ ░███ ░███  ███░░███  ░███ ███
+     ████ █████░░████████ ████ █████░░██████ ░░██████  ████ █████░░███████  ░░█████
+    ░░░░ ░░░░░  ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░   ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░   ░░░░░
+    
+Autodetected device type: cuda
+2026-10-03 00:16:05,969 - nanochat.common - [32m[1mINFO[0m - Distributed world size: 1
+Device: cuda (ddp=False, world_size=1)
+GPU: NVIDIA H100 80GB HBM3 | Peak FLOPS (BF16): 9.89e+14
+COMPUTE_DTYPE: torch.bfloat16 (auto-detected: CUDA SM 90 (bf16 supported))
+✓ Using Flash Attention 3 (Hopper GPU detected) — efficient and fast.
+Vocab size: 32,768
+[SAP] block head: mode=sir_tree T=2048 frac=0.00048828125 window=16 layers=3 params=7,872,512
+Model config:
+{
+  "sequence_len": 2048,
+  "vocab_size": 32768,
+  "n_layer": 8,
+  "n_head": 4,
+  "n_kv_head": 4,
+  "n_embd": 512,
+  "use_moe": false,
+  "use_perm": false,
+  "moe_num_experts": 8,
+  "moe_router_dim": 64,
+  "moe_embed_dim": 64,
+  "dropout": 0.0,
+  "use_remix_linear": false,
+  "remix_context_dim": 64,
+  "remix_context_dim_ratio": 6,
+  "remix_basis_size": 64,
+  "remix_output_gate_rank": 16,
+  "remixed_linear_kwargs": {
+    "use_basis_gate": true,
+    "use_output_gate": true,
+    "use_context": true,
+    "basis_gate_mode": "mlp",
+    "sparse_gate_k": 0,
+    "gate_temperature": 1.0,
+    "basis_scale_factor": 4,
+    "n_templates": 1,
+    "template_routing_learned": false,
+    "template_topk": 0,
+    "tiny_expert": false,
+    "tiny_expert_topk": 16,
+    "lokr_expert": false,
+    "lokr_n_experts": 64,
+    "lokr_topk": 16,
+    "lokr_rank": 4,
+    "lokr_learned": false,
+    "basis_gate_rank": 8,
+    "disable_ln_basis": false,
+    "chunk_route_impl": "compose",
+    "top1_gate": "ones",
+    "template_delta_rank": 0,
+    "route_side": "output",
+    "drop_basis_proj": false,
+    "basis_side_templates": 0,
+    "grad_equalize": false,
+    "output_gate_rank": 16,
+    "operator_modulation": "none",
+    "lie_generators": 4,
+    "poly_order": 2,
+    "grassmann_bank_size": 4
+  },
+  "use_pos_embed": false,
+  "moe_use_abs_pos_embed": false,
+  "use_layer_context": true,
+  "scale_basis_size": true,
+  "remix_use_dual_gate": false,
+  "remix_use_fused": false,
+  "p26_output_gated_linear": 0,
+  "p28_shared_basis": 0,
+  "p28_chunk_routing_size": 0,
+  "p28_global_template_bank": "none",
+  "p28_attn_proj_templates": 0,
+  "p28_attn_qk_templates": 0,
+  "p29_template_block_diag": 0,
+  "p29_template_lr_scale": 1.0,
+  "p29_grad_equalize": 0,
+  "p34_ffn_mult": 4.0,
+  "p34_ffn_single": 0,
+  "p34_dense_attn": 0,
+  "legacy_init_fallback": 0,
+  "p35_template_diversity_lambda": 0.0,
+  "p22_route_affine": 0,
+  "p34_ffn_schedule": "",
+  "p34_ffn_no_ffn_replacement": "none",
+  "p34_ffn_last_depth": 1,
+  "p36_swiglu_ffn": 0,
+  "p36_swiglu_mult": 2.6666666666666665,
+  "cond_sites": "both",
+  "cond_rank": 256,
+  "cond_mult_steps": 0,
+  "cond_gate_source": "router",
+  "cond_coeff_act": "centered",
+  "cond_router_rank": 0,
+  "cond_live_init": 0.0,
+  "cond_router_act": "none",
+  "cond_chunk_size": 0,
+  "cond_mult_scale": -1.0,
+  "cond_mult_impl": "wy",
+  "cond_attn_projs": "qkvo",
+  "cond_layer_frac": 1.0,
+  "perm_expert_mode": "low_rank",
+  "perm_rank": 16,
+  "router_context_window": -1,
+  "router_causal": true,
+  "router_num_heads": 4,
+  "router_num_queries": 16,
+  "router_n_layers": 2,
+  "router_use_vocab_prior": false,
+  "window_pattern": "SSSL",
+  "cclblock_modulation": "weight",
+  "cclblock_orth_lambda": 0.0,
+  "cclblock_context_stream": "local",
+  "cclblock_ema_factor": 0.99,
+  "cclblock_stale_ctx_lag": 0,
+  "cclblock_sparse_gate_k": 0,
+  "cclblock_gate_temperature": 1.0,
+  "cclblock_context_bank_size": 0,
+  "cclblock_per_head_ctx": false,
+  "cclblock_context_source": "norm_x",
+  "cclblock_chunk_size": 0,
+  "cclblock_aux_objective": "none",
+  "cclblock_aux_lambda": 0.1,
+  "cclblock_boundary_token_id": 198,
+  "use_ral": false,
+  "ral_rank": 32,
+  "cclblock_film_gate": false,
+  "cclblock_attn_shadow_dim": 0,
+  "cclblock_dynamic_ratio": 0.25,
+  "cclblock_gate_rank": 8,
+  "cclblock_num_regimes": 8,
+  "cclblock_regime_temperature": 1.0,
+  "cclblock_poly_order": 2,
+  "cclblock_lie_generators": 4,
+  "cclblock_grassmann_bank_size": 4,
+  "cclblock_tucker_rank": 32,
+  "cclblock_tucker_modes": 8,
+  "cclblock_svs_rank": 64,
+  "cclblock_svs_eps": 0.1,
+  "cclblock_vq_codes": 8,
+  "cclblock_vq_temperature": 1.0,
+  "cclblock_dcu_warmup_steps": 0,
+  "cclblock_fsi_rotations": 8,
+  "cclblock_fsi_selector_dim": 64,
+  "cclblock_aesp_strata": 4,
+  "cclblock_aesp_delta_rank": 4,
+  "cclblock_ckr_branches": 4,
+  "cclblock_ckr_kernel_size": 64,
+  "cclblock_ckr_pos_channels": 1,
+  "cclblock_ckr_dual_optim": 0,
+  "cclblock_ckr_content_bias": 0.0,
+  "cclblock_giad_rank": 32,
+  "cclblock_psg_kernel_size": 64,
+  "cclblock_ss_dynamic_ratio": 0.25,
+  "cclblock_ss_branches": 2,
+  "cclblock_ss_kernel_size": 64,
+  "cclblock_lokr_branches": 8,
+  "cclblock_lokr_rank": 16,
+  "cclblock_ckr_temp_start": 2.0,
+  "cclblock_ckr_temp_end": 0.3,
+  "cclblock_com_kernel_size": 32,
+  "cclblock_ckr_ortho_init": 0,
+  "cclblock_ckr_branch_dropout": 0.0,
+  "cclblock_ckr_diversity_lambda": 0.0,
+  "cclblock_ckr_layer_selective": 0,
+  "cclblock_pgr_kernel_size": 64,
+  "cclblock_cil_kernel_size": 64,
+  "cclblock_prb_kernel_size": 64,
+  "p18_layer_drop": 0.0,
+  "p18_dynamic_activation": 0,
+  "p18_mixture_norm": 0,
+  "p18_causal_attn_bias": 0,
+  "p18_aux_sim_lambda": 0.0,
+  "p18_gradient_penalty": 0.0,
+  "p18_per_channel_scale": 0,
+  "p19_residual_gate": 0,
+  "p19_head_importance": 0,
+  "p19_residual_mix_groups": 0,
+  "p19_attn_logit_bias": 0,
+  "p19_residual_decay": 0,
+  "p19_grad_equilibrium": 0.0,
+  "p19_spectral_reparam": 0,
+  "p19_weight_anticollapse": 0.0,
+  "p19_ve_bias": 0,
+  "p19_weight_noise": 0.0,
+  "p20_hrcs_scale": 0,
+  "p20_lswr_scale": 0,
+  "p20_lswr_planes": 8,
+  "p20_lrcfb_branches": 0,
+  "p20_lrcfb_narrow": 0,
+  "p20_lrcfb_learned": 0,
+  "p20_lrcfb_topk": 0,
+  "p20_dgcr_branches": 0,
+  "p20_dgcr_aux_weight": 0.01,
+  "p20_mone_experts": 0,
+  "p20_mone_topk": 0,
+  "p20_mone_narrow": 1,
+  "p20_mone_frozen": 0,
+  "p20_ncea_branches": 0,
+  "p20_ncea_eps": 0.1,
+  "p20_adwi": 0,
+  "p20_pwu_branches": 0,
+  "p20_pwu_phase": 1,
+  "p20_fsvd_gate": 0,
+  "p20_wbfc_clusters": 0,
+  "p20_wbfc_active": 0,
+  "p21_per_experts": 0,
+  "p21_per_topk": 0,
+  "p21_per_learned": 0,
+  "p21_per_attn": 0,
+  "p22_attn_moe_route": "none",
+  "p23_tiny_expert": 0,
+  "p23_n_experts": 64,
+  "p23_topk": 16,
+  "p23_learned_route": 0,
+  "p23_std_moe_experts": 0,
+  "p23_std_moe_topk": -1,
+  "p23_std_moe_aux_weight": 0.01,
+  "p23_lokr": 0,
+  "p23_lokr_rank": 4,
+  "p23_use_shared_block_router": 0,
+  "p23_linear_moe_experts": 0,
+  "p23_linear_moe_topk": 0,
+  "p23_quantile_route": 0,
+  "remix_shared_context_gates": 0,
+  "p24_use_sliced_weight": 0,
+  "p24_sliced_weight_reduction_scale": 8,
+  "p24_sliced_weight_min_select": 128,
+  "p24_sliced_weight_scope": "per_token",
+  "p24_sliced_weight_balance_coeff": 0.01,
+  "p24_quantile_route": 0,
+  "p24_use_folded_mod": 0,
+  "p24_folded_mod_reduction_scale": 8,
+  "p24_folded_mod_min_dim": 128,
+  "p24_folded_mod_scope": "per_layer",
+  "p24_folded_mod_gate_act": "tanh_centered",
+  "p24_use_sequence_gated_linear": 0,
+  "p24_sequence_gated_scope": "per_layer",
+  "p24_sequence_gated_act": "tanh_centered",
+  "remix_disable_ln_basis": 0,
+  "dense_intermediate_ln": 0,
+  "use_mol": false,
+  "mol_n_blocks": 5,
+  "mol_n_shared": 1,
+  "mol_topk": 3,
+  "mol_thin_dim": 256,
+  "mol_head_dim": 64,
+  "mol_ffn_mult": 4.0,
+  "mol_router_aux": 0.05,
+  "mol_routed_attn": "softmax",
+  "mol_dispatch": 1,
+  "mol_capacity_factor": 1.0,
+  "mol_block_lr_scale": 1.0,
+  "mol_per_block_ve": 0,
+  "use_binary": false,
+  "binary_acts": true,
+  "binary_weight_scale": "row",
+  "binary_act_scale": "token",
+  "binary_clip": 1.0,
+  "binary_linear": true,
+  "binary_embeddings": true,
+  "binary_skip": "",
+  "binary_native": false,
+  "binary_tau": 1.0,
+  "binary_hard": false,
+  "binary_resid_width": 0,
+  "binary_attn_chunk": 256,
+  "use_mst": false,
+  "mst_n_subs": 8,
+  "mst_sub_dim": 64,
+  "mst_head_dim": 0,
+  "mst_input_mode": "fixed_slice",
+  "mst_rotated_slice_learned": false,
+  "mst_routing_mode": "soft_weighted",
+  "mst_routing_topk": 4,
+  "mst_routing_aux_weight": 0.01,
+  "mst_diversity_weight": 0.0,
+  "mst_ffn_mode": "standard",
+  "mst_ffn_every": 1,
+  "mst_transition_mode": "parallel",
+  "mst_final_mode": "aggregate_proj",
+  "mst_final_topk": -1,
+  "mst_ffn_shared_up": 0,
+  "mst_ffn_inner_dim": 0,
+  "mst_sub_dropout": 0.0,
+  "mst_transition_every": 1,
+  "mst_ffa_temperature": 1.0,
+  "mst_global_residual": 0,
+  "mst_hybrid_dense": 0,
+  "mst_cross_sub_kv": 0,
+  "mst_sub_aux_weight": 0.0,
+  "mst_progressive_merge": 0,
+  "mst_multi_scale_windows": 0,
+  "mst_delta_residual": 0,
+  "mst_sub_layers": 1,
+  "mst_grad_equalize": 0,
+  "mst_block_diagonal_muon": 0,
+  "mst_transition_width_mult": 1.0,
+  "mst_sub_lr_scale": 1.0,
+  "mst_shared_expert": 0,
+  "mst_router_entropy_weight": 0.0,
+  "mst_shared_kv_attn": 0,
+  "mst_contrastive_diversity_weight": 0.0,
+  "mst_transition_nonlinear": 0,
+  "mst_transition_gated": 0,
+  "mst_transition_mlp": 0,
+  "mst_cross_sub_gate": 0,
+  "mst_hyper_connect": 0,
+  "mst_cross_kv_inject": 0,
+  "mst_slice_transition": 0,
+  "mst_lookback_layers": 0,
+  "mst_bilinear_transition": 0,
+  "mst_cross_sub_qmod": 0,
+  "mst_feature_cycle": 0,
+  "mst_mean_transition": 0,
+  "mst_sub_head_dim": 0,
+  "mst_final_norm": 0,
+  "mst_per_stream_ve": 0,
+  "mst_ve_map": 0,
+  "mst_ve_map_rank": 0,
+  "mst_lm_head_dim": 0,
+  "mst_compose_windows": 0,
+  "mst_channel_mix": "none",
+  "mst_channel_mix_site": "layer",
+  "mst_distribute_block_muon": 0,
+  "mst_trans_spectral_lr": 0,
+  "mst_talking_heads": 0,
+  "mst_wo_mode": "block",
+  "mst_stream_topk": 0,
+  "mst_stream_shared": 0,
+  "mst_stream_router_aux": 0.01,
+  "mst_stream_router_noise": 0.0,
+  "mst_stream_dispatch": 0,
+  "mst_stream_capacity_factor": 1.0,
+  "mst_stream_gate_attn": 0,
+  "mst_ffn_monarch": "none",
+  "mst_shampoo": 0,
+  "mst_precond_every": 10,
+  "mst_shampoo_beta": 0.95,
+  "use_eet": false,
+  "eet_frozen_kv": true,
+  "eet_reenter_final": false,
+  "eet_router_type": "mlp2",
+  "eet_router_hidden": 0,
+  "eet_freq_prior_alpha": 0.0,
+  "eet_pos_prior_beta": 0.0,
+  "eet_domain_prior": false,
+  "eet_warmup_frac": 0.02,
+  "eet_explore_frac": 0.15,
+  "eet_reconstruct_lambda": 1.0,
+  "eet_efficiency_lambda_start": 0.01,
+  "eet_efficiency_lambda_end": 0.1,
+  "eet_translator_rank": 0,
+  "eet_max_frozen_kv_frac": 0.75,
+  "eet_exit_threshold": 0.5,
+  "eet_min_exit_layer": 1,
+  "eet_loss_variant": "reconstruct",
+  "eet_topk_vocab": 512,
+  "eet_entropy_lambda": 0.3,
+  "eet_surprise_lambda": 0.1,
+  "eet_adv_lambda": 1.0,
+  "eet_adv_entropy_lambda": 0.2,
+  "eet_quality_lambda": 1.0,
+  "eet_quality_entropy_bonus": 0.1,
+  "eet_gumbel_temp_start": 0.0,
+  "eet_gumbel_temp_end": 0.1,
+  "eet_gumbel_hard": true,
+  "eet_commitment_beta": 0.1,
+  "eet_global_router": false,
+  "eet_freq_efficiency_alpha": 0.0,
+  "eet_diversity_lambda": 0.0,
+  "eet_ce_guided_lambda": 1.0,
+  "eet_router_lr_mult": 5.0,
+  "eet_model_lr_mult": 1.0,
+  "eet_depth_weight_type": "none",
+  "eet_depth_weight_max": 2.5,
+  "eet_use_override": 0,
+  "eet_override_prob_start": 0.5,
+  "eet_override_prob_end": 0.1,
+  "eet_compute_skip": false,
+  "eet_target_active_frac": 0.125,
+  "eet_capacity_schedule": "bell",
+  "eet_exit_fracs": null,
+  "eet_capacity_alignment_lambda": 0.0,
+  "eet_kv_mode": "none",
+  "eet_route_noise": 0.0,
+  "eet_route_noise_end": -1.0,
+  "eet_coverage_diag": false,
+  "deep_supervision_lambda": 0.0,
+  "deep_supervision_frac": 0.125,
+  "eet_width_power": 0.0,
+  "eet_width_cap": 16.0,
+  "eet_kv_eager": false,
+  "eet_router_task_grad": true,
+  "eet_reinforce_interval": 0,
+  "eet_reinforce_lambda": 0.1,
+  "eet_exit_adapter_rank": 0,
+  "eet_router_after_block": 0,
+  "eet_ffn_skip": false,
+  "eet_ffn_target_frac": 0.5,
+  "eet_ffn_full_attn": true,
+  "eet_depth_affine": false,
+  "eet_capacity_anneal_frac": 0.0,
+  "eet_learned_schedule": false,
+  "eet_departure_summary": false,
+  "eet_route_consistency_lambda": 0.0,
+  "eet_dense_distill_interval": 0,
+  "eet_dense_distill_lambda": 0.5,
+  "eet_depth_lr_scale": false,
+  "eet_depth_grad_scale": false,
+  "eet_detach_aux_from_backbone": false,
+  "eet_detach_exit_from_backbone": false,
+  "use_code_head": false,
+  "sch_head_type": "code",
+  "sch_bits": 0,
+  "sch_order": 2,
+  "sch_max_m": 0,
+  "sch_phi_mode": "monomial",
+  "sch_code_mode": "binary",
+  "sch_code_path": "",
+  "sch_code_ecc_bits": 0,
+  "sch_code_seed": 1234,
+  "sch_phi_density": 0.0,
+  "sch_phi_dtype": "bf16",
+  "sch_phi_normalize": 1,
+  "sch_phi_center": 0,
+  "sch_g_type": "linear",
+  "sch_g_hidden": 0,
+  "sch_g_layers": 2,
+  "sch_g_out_std": 0.001,
+  "sch_mixture": 1,
+  "sch_residual_rank": 0,
+  "sch_logit_act": "none",
+  "sch_bias": 0,
+  "sch_input_mode": "table",
+  "sch_input_hidden": 0,
+  "sch_product_groups": 8,
+  "sch_product_codebook": 256,
+  "sch_product_source": "hash",
+  "sch_product_impl": "dense",
+  "sch_phi_whiten": 0,
+  "sch_mixture_per_phi": 0,
+  "sch_mixture_topk": 0,
+  "sch_mixture_aux": 0.01,
+  "sch_monarch_m1": 0,
+  "sch_monarch_perm": "none",
+  "sch_monarch_perm_path": "",
+  "sch_tier_bounds": "",
+  "sch_tier_caps": "",
+  "sch_tier_order": "freq",
+  "sch_tier_perm_path": "",
+  "sch_proposal_rank": 32,
+  "sch_proposal_topk": 16384,
+  "sch_proposal_samples": 4096,
+  "sch_proposal_warmup": 0,
+  "sch_proposal_chunk": 2048,
+  "sch_proposal_aux": 1.0,
+  "sch_nfh_mode": "cp",
+  "sch_nfh_rank": 32,
+  "sch_nfh_dims": "",
+  "sch_nfh_groups": 3,
+  "sch_nfh_views": 1,
+  "sch_nfh_perm": "none",
+  "sch_nfh_perm_path": "",
+  "sch_nfh_g_type": "linear",
+  "sch_nfh_g_hidden": 0,
+  "sch_rerank_mode": "topk",
+  "sch_rerank_k": 64,
+  "sch_rerank_rank": 32,
+  "sch_nfh_smooth": 0,
+  "sch_nfh_chunk": 256,
+  "sap_block_T": 2048,
+  "sap_block_mode": "sir_tree",
+  "sap_block_frac": 0.00048828125,
+  "sap_lambda": 1.0,
+  "sap_head_layers": 3,
+  "sap_head_heads": 0,
+  "sap_head_mlp_mult": 2,
+  "sap_enc_layers": 1,
+  "sap_ctx_window": 16,
+  "sap_latent_groups": 4,
+  "sap_latent_codes": 16,
+  "sap_latent_dim": 64,
+  "sap_free_bits": 0.25,
+  "sap_kl_anneal_steps": 2000,
+  "sap_gumbel_tau": 1.0,
+  "sap_cp_components": 8,
+  "sap_wta_k": 4,
+  "sap_u_freqs": 24,
+  "sap_u_interior": 0.8,
+  "sap_logit_chunk": 8192,
+  "sap_jacobi_sweeps": 2,
+  "sap_sir_topk": 16,
+  "sap_sir_rank": 32,
+  "sap_sir_anchor_stride": 16,
+  "sap_sir_fine_stride": 4,
+  "sap_sir_refine_frac": 0.25,
+  "sap_sir_tree_levels": 2,
+  "sap_sir_train_samples": 4,
+  "sap_sir_policy_weight": 1.0,
+  "sap_sir_posterior_mix": 0.0,
+  "sap_sir_draft_weight": 1.0,
+  "sap_sir_context_weight": 0.25,
+  "sap_sir_energy_weight": 0.25
+}
+Seeded weight init with --seed 1
+Checkpoints directory: /vol/out/s00_sap/d8/S02_sir_tree_l2_TL_s1
+Parameter counts:
+wte                     : 16,777,216
+wpe                     : 0
+value_embeds            : 67,108,864
+lm_head                 : 16,777,216
+transformer_matrices    : 25,166,336
+research                : 7,872,512
+scalars                 : 16
+total                   : 133,702,160
+Estimated FLOPs per token (total):  4.218155e+08
+COST_AXES precision=W16A16E16H16 bops_arith=5.3992e+10 energy_pj_per_token=3.3725e+08 inference_MiB=255.02 training_state_MiB=881.40
+Estimated FLOPs per token (active): 4.218155e+08
+Estimated active params:            133,702,160
+[SAP] block head: mode=sir_tree T=2048 frac=0.00048828125 window=16 layers=3 params=16,920,576
+Auto-computed optimal batch size: 262,144 tokens
+Scaling LRs by 0.7071 for batch size 262,144 (reference: 524,288)
+Scaling weight decay from 0.200000 to 0.371230 for depth 8
+Scaling the LR for the AdamW parameters ∝1/√(512/768) = 1.224745
+Calculated number of iterations from target FLOPs: 1,140
+Total number of training tokens: 298,844,160
+Tokens : Scaling params ratio: 7.12
+Total training FLOPs estimate: 1.260571e+17
+Total training FLOPs (active):  1.260571e+17
+Total active training FLOPs estimate: 1.260571e+17
+Using base scheduler: linear warmup/flat/linear warmdown
+Tokens / micro-batch / rank: 16 x 2048 = 32,768
+Tokens / micro-batch: 32,768
+Total batch size 262,144 => gradient accumulation steps: 8
+Running pre-compilation warmup (1 dummy forward+backward to init lazy allocations)...
+Warmup complete. Steady-state VRAM: 1.6 GB allocated
+step 00000/01140 (0.00%) | loss: 20.797848 | lrm: 0.17 | lr(adamw:5.824e-02, muon:2.357e-03) | dt: 502.61ms | tok/sec: 521,568 | bf16_mfu: 22.25 | epoch: 1 pq: 0 rg: 1 | total time: 0.00m
+step 00100/01140 (8.77%) | loss: 12.520534 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 421.14ms | tok/sec: 622,469 | bf16_mfu: 26.55 | epoch: 1 pq: 0 rg: 52 | total time: 0.63m | eta: 7.3m
+step 00200/01140 (17.54%) | loss: 11.721737 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 420.10ms | tok/sec: 624,004 | bf16_mfu: 26.61 | epoch: 1 pq: 1 rg: 16 | total time: 1.34m | eta: 6.6m
+step 00300/01140 (26.32%) | loss: 11.550448 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 420.25ms | tok/sec: 623,781 | bf16_mfu: 26.60 | epoch: 1 pq: 1 rg: 65 | total time: 2.04m | eta: 5.9m
+step 00400/01140 (35.09%) | loss: 11.348304 | lrm: 1.00 | lr(adamw:3.490e-01, muon:1.412e-02) | dt: 418.42ms | tok/sec: 626,512 | bf16_mfu: 26.72 | epoch: 1 pq: 2 rg: 29 | total time: 2.75m | eta: 5.2m
+step 00500/01140 (43.86%) | loss: 11.227758 | lrm: 0.87 | lr(adamw:3.042e-01, muon:1.231e-02) | dt: 419.23ms | tok/sec: 625,297 | bf16_mfu: 26.67 | epoch: 1 pq: 2 rg: 78 | total time: 3.45m | eta: 4.5m
+step 00600/01140 (52.63%) | loss: 11.152356 | lrm: 0.74 | lr(adamw:2.594e-01, muon:1.050e-02) | dt: 420.46ms | tok/sec: 623,475 | bf16_mfu: 26.59 | epoch: 1 pq: 3 rg: 43 | total time: 4.16m | eta: 3.8m
+step 00700/01140 (61.40%) | loss: 11.106961 | lrm: 0.61 | lr(adamw:2.146e-01, muon:8.685e-03) | dt: 417.60ms | tok/sec: 627,745 | bf16_mfu: 26.77 | epoch: 1 pq: 4 rg: 9 | total time: 4.87m | eta: 3.1m
+step 00800/01140 (70.18%) | loss: 11.024449 | lrm: 0.49 | lr(adamw:1.698e-01, muon:6.872e-03) | dt: 420.32ms | tok/sec: 623,670 | bf16_mfu: 26.60 | epoch: 1 pq: 4 rg: 58 | total time: 5.57m | eta: 2.4m
+step 00900/01140 (78.95%) | loss: 11.004919 | lrm: 0.36 | lr(adamw:1.250e-01, muon:5.059e-03) | dt: 421.06ms | tok/sec: 622,577 | bf16_mfu: 26.55 | epoch: 1 pq: 5 rg: 24 | total time: 6.28m | eta: 1.7m
+step 01000/01140 (87.72%) | loss: 10.901986 | lrm: 0.23 | lr(adamw:8.019e-02, muon:3.245e-03) | dt: 422.22ms | tok/sec: 620,869 | bf16_mfu: 26.48 | epoch: 1 pq: 5 rg: 72 | total time: 6.98m | eta: 1.0m
+step 01100/01140 (96.49%) | loss: 10.930117 | lrm: 0.10 | lr(adamw:3.539e-02, muon:1.432e-03) | dt: 422.70ms | tok/sec: 620,159 | bf16_mfu: 26.45 | epoch: 1 pq: 6 rg: 38 | total time: 7.69m | eta: 0.3m
+step 01139/01140 (99.91%) | loss: 10.874923 | lrm: 0.05 | lr(adamw:1.792e-02, muon:7.252e-04) | dt: 421.66ms | tok/sec: 621,691 | bf16_mfu: 26.52 | epoch: 1 pq: 6 rg: 56 | total time: 7.96m | eta: 0.0m
+Step 01140 | Validation bpb: 0.985865 | val_loss: 3.234771
+Step 01140 | SAP block bpb: n/a | next-token bpb on the same tokens: n/a | latent sensitivity: None nats
+SAP_EVAL_JSON {"step": 1140, "ntp_bpb_same_tokens": null, "block_bpb": null, "blocks": 0, "latent_sensitivity_nats": null}
+2026-10-03 00:25:54,614 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Saved model parameters to: /vol/out/s00_sap/d8/S02_sir_tree_l2_TL_s1/model_001140.pt
+2026-10-03 00:25:54,617 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Saved metadata to: /vol/out/s00_sap/d8/S02_sir_tree_l2_TL_s1/meta_001140.json
+step 01140/01140 (final) | loss: 10.874923 | early_stop: 0
+Peak memory usage: 12170.29MiB
+Total training time: 7.96m
+Minimum validation bpb: 0.985865
+Minimum validation loss (nats/byte): 3.234771
+
+========================================================================================
+decode_S02_sir_tree_l2_TL_s1_d8.log
+========================================================================================
+2026-10-03 00:30:29,788 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/agent-harnesses "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,819 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/main/kernel-status.toml "HTTP/1.1 404 Not Found"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-10-03 00:30:29,820 - huggingface_hub.utils._http - [33m[1mWARNING[0m - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-10-03 00:30:29,839 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/tree/main/build?recursive=false&expand=false "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,861 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/revision/main "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,899 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/tree/de87b9b5af06dd9984df595bef90b2eba44b181a?recursive=true&expand=false "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,928 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/de87b9b5af06dd9984df595bef90b2eba44b181a/build/torch29-cxx11-cu128-x86_64-linux/flash_attention_3/__init__.py "HTTP/1.1 307 Temporary Redirect"
+2026-10-03 00:30:29,935 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py=&etag=%226c880f44203ba43b62b3465d6de77eb20f1e03e[1m8%[0m22 "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,942 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2F__init__.py=&etag=%226c880f44203ba43b62b3465d6de77eb20f1e03e[1m8%[0m22 "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,946 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/de87b9b5af06dd9984df595bef90b2eba44b181a/build/torch29-cxx11-cu128-x86_64-linux/flash_attention_3/flash_attn_config.py "HTTP/1.1 307 Temporary Redirect"
+2026-10-03 00:30:29,952 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py=&etag=%2248f62eb48ad4005c223687f3c7e7be[1m0115633829%[0m22 "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,960 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/xet-read-token/de87b9b5af06dd9984df595bef90b2eba44b181a "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,964 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_config.py=&etag=%2248f62eb48ad4005c223687f3c7e7be[1m0115633829%[0m22 "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,964 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/de87b9b5af06dd9984df595bef90b2eba44b181a/build/torch29-cxx11-cu128-x86_64-linux/flash_attention_3/flash_attn_interface.py "HTTP/1.1 307 Temporary Redirect"
+2026-10-03 00:30:29,971 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py=&etag=%22d66ad504a8025d7e7e632f7e84d4543d66a0a68e%22 "HTTP/1.1 200 OK"
+2026-10-03 00:30:29,978 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/resolve-cache/models/varunneal/flash-attention-3/de87b9b5af06dd9984df595bef90b2eba44b181a/build%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py?%2Fvarunneal%2Fflash-attention-[1m3%[0m2Fresolve%2Fde87b9b5af06dd9984df595bef90b2eba44b181a%2Fbuild%2Ftorch29-cxx11-cu128-x86_64-linux%2Fflash_attention_[1m3%[0m2Fflash_attn_interface.py=&etag=%22d66ad504a8025d7e7e632f7e84d4543d66a0a68e%22 "HTTP/1.1 200 OK"
+2026-10-03 00:30:35,191 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Building model with config: {'sequence_len': 2048, 'vocab_size': 32768, 'n_layer': 8, 'n_head': 4, 'n_kv_head': 4, 'n_embd': 512, 'use_moe': False, 'use_perm': False, 'moe_num_experts': 8, 'moe_router_dim': 64, 'moe_embed_dim': 64, 'dropout': 0.0, 'use_remix_linear': False, 'remix_context_dim': 64, 'remix_context_dim_ratio': 6, 'remix_basis_size': 64, 'remix_output_gate_rank': 16, 'remixed_linear_kwargs': {'use_basis_gate': True, 'use_output_gate': True, 'use_context': True, 'basis_gate_mode': 'mlp', 'sparse_gate_k': 0, 'gate_temperature': 1.0, 'basis_scale_factor': 4, 'n_templates': 1, 'template_routing_learned': False, 'template_topk': 0, 'tiny_expert': False, 'tiny_expert_topk': 16, 'lokr_expert': False, 'lokr_n_experts': 64, 'lokr_topk': 16, 'lokr_rank': 4, 'lokr_learned': False, 'basis_gate_rank': 8, 'disable_ln_basis': False, 'chunk_route_impl': 'compose', 'top1_gate': 'ones', 'template_delta_rank': 0, 'route_side': 'output', 'drop_basis_proj': False, 'basis_side_templates': 0, 'grad_equalize': False, 'output_gate_rank': 16, 'operator_modulation': 'none', 'lie_generators': 4, 'poly_order': 2, 'grassmann_bank_size': 4}, 'use_pos_embed': False, 'moe_use_abs_pos_embed': False, 'use_layer_context': True, 'scale_basis_size': True, 'remix_use_dual_gate': False, 'remix_use_fused': False, 'p26_output_gated_linear': 0, 'p28_shared_basis': 0, 'p28_chunk_routing_size': 0, 'p28_global_template_bank': 'none', 'p28_attn_proj_templates': 0, 'p28_attn_qk_templates': 0, 'p29_template_block_diag': 0, 'p29_template_lr_scale': 1.0, 'p29_grad_equalize': 0, 'p34_ffn_mult': 4.0, 'p34_ffn_single': 0, 'p34_dense_attn': 0, 'legacy_init_fallback': 0, 'p35_template_diversity_lambda': 0.0, 'p22_route_affine': 0, 'p34_ffn_schedule': '', 'p34_ffn_no_ffn_replacement': 'none', 'p34_ffn_last_depth': 1, 'p36_swiglu_ffn': 0, 'p36_swiglu_mult': 2.6666666666666665, 'cond_sites': 'both', 'cond_rank': 256, 'cond_mult_steps': 0, 'cond_gate_source': 'router', 'cond_coeff_act': 'centered', 'cond_router_rank': 0, 'cond_live_init': 0.0, 'cond_router_act': 'none', 'cond_chunk_size': 0, 'cond_mult_scale': -1.0, 'cond_mult_impl': 'wy', 'cond_attn_projs': 'qkvo', 'cond_layer_frac': 1.0, 'perm_expert_mode': 'low_rank', 'perm_rank': 16, 'router_context_window': -1, 'router_causal': True, 'router_num_heads': 4, 'router_num_queries': 16, 'router_n_layers': 2, 'router_use_vocab_prior': False, 'window_pattern': 'SSSL', 'cclblock_modulation': 'weight', 'cclblock_orth_lambda': 0.0, 'cclblock_context_stream': 'local', 'cclblock_ema_factor': 0.99, 'cclblock_stale_ctx_lag': 0, 'cclblock_sparse_gate_k': 0, 'cclblock_gate_temperature': 1.0, 'cclblock_context_bank_size': 0, 'cclblock_per_head_ctx': False, 'cclblock_context_source': 'norm_x', 'cclblock_chunk_size': 0, 'cclblock_aux_objective': 'none', 'cclblock_aux_lambda': 0.1, 'cclblock_boundary_token_id': 198, 'use_ral': False, 'ral_rank': 32, 'cclblock_film_gate': False, 'cclblock_attn_shadow_dim': 0, 'cclblock_dynamic_ratio': 0.25, 'cclblock_gate_rank': 8, 'cclblock_num_regimes': 8, 'cclblock_regime_temperature': 1.0, 'cclblock_poly_order': 2, 'cclblock_lie_generators': 4, 'cclblock_grassmann_bank_size': 4, 'cclblock_tucker_rank': 32, 'cclblock_tucker_modes': 8, 'cclblock_svs_rank': 64, 'cclblock_svs_eps': 0.1, 'cclblock_vq_codes': 8, 'cclblock_vq_temperature': 1.0, 'cclblock_dcu_warmup_steps': 0, 'cclblock_fsi_rotations': 8, 'cclblock_fsi_selector_dim': 64, 'cclblock_aesp_strata': 4, 'cclblock_aesp_delta_rank': 4, 'cclblock_ckr_branches': 4, 'cclblock_ckr_kernel_size': 64, 'cclblock_ckr_pos_channels': 1, 'cclblock_ckr_dual_optim': 0, 'cclblock_ckr_content_bias': 0.0, 'cclblock_giad_rank': 32, 'cclblock_psg_kernel_size': 64, 'cclblock_ss_dynamic_ratio': 0.25, 'cclblock_ss_branches': 2, 'cclblock_ss_kernel_size': 64, 'cclblock_lokr_branches': 8, 'cclblock_lokr_rank': 16, 'cclblock_ckr_temp_start': 2.0, 'cclblock_ckr_temp_end': 0.3, 'cclblock_com_kernel_size': 32, 'cclblock_ckr_ortho_init': 0, 'cclblock_ckr_branch_dropout': 0.0, 'cclblock_ckr_diversity_lambda': 0.0, 'cclblock_ckr_layer_selective': 0, 'cclblock_pgr_kernel_size': 64, 'cclblock_cil_kernel_size': 64, 'cclblock_prb_kernel_size': 64, 'p18_layer_drop': 0.0, 'p18_dynamic_activation': 0, 'p18_mixture_norm': 0, 'p18_causal_attn_bias': 0, 'p18_aux_sim_lambda': 0.0, 'p18_gradient_penalty': 0.0, 'p18_per_channel_scale': 0, 'p19_residual_gate': 0, 'p19_head_importance': 0, 'p19_residual_mix_groups': 0, 'p19_attn_logit_bias': 0, 'p19_residual_decay': 0, 'p19_grad_equilibrium': 0.0, 'p19_spectral_reparam': 0, 'p19_weight_anticollapse': 0.0, 'p19_ve_bias': 0, 'p19_weight_noise': 0.0, 'p20_hrcs_scale': 0, 'p20_lswr_scale': 0, 'p20_lswr_planes': 8, 'p20_lrcfb_branches': 0, 'p20_lrcfb_narrow': 0, 'p20_lrcfb_learned': 0, 'p20_lrcfb_topk': 0, 'p20_dgcr_branches': 0, 'p20_dgcr_aux_weight': 0.01, 'p20_mone_experts': 0, 'p20_mone_topk': 0, 'p20_mone_narrow': 1, 'p20_mone_frozen': 0, 'p20_ncea_branches': 0, 'p20_ncea_eps': 0.1, 'p20_adwi': 0, 'p20_pwu_branches': 0, 'p20_pwu_phase': 1, 'p20_fsvd_gate': 0, 'p20_wbfc_clusters': 0, 'p20_wbfc_active': 0, 'p21_per_experts': 0, 'p21_per_topk': 0, 'p21_per_learned': 0, 'p21_per_attn': 0, 'p22_attn_moe_route': 'none', 'p23_tiny_expert': 0, 'p23_n_experts': 64, 'p23_topk': 16, 'p23_learned_route': 0, 'p23_std_moe_experts': 0, 'p23_std_moe_topk': -1, 'p23_std_moe_aux_weight': 0.01, 'p23_lokr': 0, 'p23_lokr_rank': 4, 'p23_use_shared_block_router': 0, 'p23_linear_moe_experts': 0, 'p23_linear_moe_topk': 0, 'p23_quantile_route': 0, 'remix_shared_context_gates': 0, 'p24_use_sliced_weight': 0, 'p24_sliced_weight_reduction_scale': 8, 'p24_sliced_weight_min_select': 128, 'p24_sliced_weight_scope': 'per_token', 'p24_sliced_weight_balance_coeff': 0.01, 'p24_quantile_route': 0, 'p24_use_folded_mod': 0, 'p24_folded_mod_reduction_scale': 8, 'p24_folded_mod_min_dim': 128, 'p24_folded_mod_scope': 'per_layer', 'p24_folded_mod_gate_act': 'tanh_centered', 'p24_use_sequence_gated_linear': 0, 'p24_sequence_gated_scope': 'per_layer', 'p24_sequence_gated_act': 'tanh_centered', 'remix_disable_ln_basis': 0, 'dense_intermediate_ln': 0, 'use_mol': False, 'mol_n_blocks': 5, 'mol_n_shared': 1, 'mol_topk': 3, 'mol_thin_dim': 256, 'mol_head_dim': 64, 'mol_ffn_mult': 4.0, 'mol_router_aux': 0.05, 'mol_routed_attn': 'softmax', 'mol_dispatch': 1, 'mol_capacity_factor': 1.0, 'mol_block_lr_scale': 1.0, 'mol_per_block_ve': 0, 'use_binary': False, 'binary_acts': True, 'binary_weight_scale': 'row', 'binary_act_scale': 'token', 'binary_clip': 1.0, 'binary_linear': True, 'binary_embeddings': True, 'binary_skip': '', 'binary_native': False, 'binary_tau': 1.0, 'binary_hard': False, 'binary_resid_width': 0, 'binary_attn_chunk': 256, 'use_mst': False, 'mst_n_subs': 8, 'mst_sub_dim': 64, 'mst_head_dim': 0, 'mst_input_mode': 'fixed_slice', 'mst_rotated_slice_learned': False, 'mst_routing_mode': 'soft_weighted', 'mst_routing_topk': 4, 'mst_routing_aux_weight': 0.01, 'mst_diversity_weight': 0.0, 'mst_ffn_mode': 'standard', 'mst_ffn_every': 1, 'mst_transition_mode': 'parallel', 'mst_final_mode': 'aggregate_proj', 'mst_final_topk': -1, 'mst_ffn_shared_up': 0, 'mst_ffn_inner_dim': 0, 'mst_sub_dropout': 0.0, 'mst_transition_every': 1, 'mst_ffa_temperature': 1.0, 'mst_global_residual': 0, 'mst_hybrid_dense': 0, 'mst_cross_sub_kv': 0, 'mst_sub_aux_weight': 0.0, 'mst_progressive_merge': 0, 'mst_multi_scale_windows': 0, 'mst_delta_residual': 0, 'mst_sub_layers': 1, 'mst_grad_equalize': 0, 'mst_block_diagonal_muon': 0, 'mst_transition_width_mult': 1.0, 'mst_sub_lr_scale': 1.0, 'mst_shared_expert': 0, 'mst_router_entropy_weight': 0.0, 'mst_shared_kv_attn': 0, 'mst_contrastive_diversity_weight': 0.0, 'mst_transition_nonlinear': 0, 'mst_transition_gated': 0, 'mst_transition_mlp': 0, 'mst_cross_sub_gate': 0, 'mst_hyper_connect': 0, 'mst_cross_kv_inject': 0, 'mst_slice_transition': 0, 'mst_lookback_layers': 0, 'mst_bilinear_transition': 0, 'mst_cross_sub_qmod': 0, 'mst_feature_cycle': 0, 'mst_mean_transition': 0, 'mst_sub_head_dim': 0, 'mst_final_norm': 0, 'mst_per_stream_ve': 0, 'mst_ve_map': 0, 'mst_ve_map_rank': 0, 'mst_lm_head_dim': 0, 'mst_compose_windows': 0, 'mst_channel_mix': 'none', 'mst_channel_mix_site': 'layer', 'mst_distribute_block_muon': 0, 'mst_trans_spectral_lr': 0, 'mst_talking_heads': 0, 'mst_wo_mode': 'block', 'mst_stream_topk': 0, 'mst_stream_shared': 0, 'mst_stream_router_aux': 0.01, 'mst_stream_router_noise': 0.0, 'mst_stream_dispatch': 0, 'mst_stream_capacity_factor': 1.0, 'mst_stream_gate_attn': 0, 'mst_ffn_monarch': 'none', 'mst_shampoo': 0, 'mst_precond_every': 10, 'mst_shampoo_beta': 0.95, 'use_eet': False, 'eet_frozen_kv': True, 'eet_reenter_final': False, 'eet_router_type': 'mlp2', 'eet_router_hidden': 0, 'eet_freq_prior_alpha': 0.0, 'eet_pos_prior_beta': 0.0, 'eet_domain_prior': False, 'eet_warmup_frac': 0.02, 'eet_explore_frac': 0.15, 'eet_reconstruct_lambda': 1.0, 'eet_efficiency_lambda_start': 0.01, 'eet_efficiency_lambda_end': 0.1, 'eet_translator_rank': 0, 'eet_max_frozen_kv_frac': 0.75, 'eet_exit_threshold': 0.5, 'eet_min_exit_layer': 1, 'eet_loss_variant': 'reconstruct', 'eet_topk_vocab': 512, 'eet_entropy_lambda': 0.3, 'eet_surprise_lambda': 0.1, 'eet_adv_lambda': 1.0, 'eet_adv_entropy_lambda': 0.2, 'eet_quality_lambda': 1.0, 'eet_quality_entropy_bonus': 0.1, 'eet_gumbel_temp_start': 0.0, 'eet_gumbel_temp_end': 0.1, 'eet_gumbel_hard': True, 'eet_commitment_beta': 0.1, 'eet_global_router': False, 'eet_freq_efficiency_alpha': 0.0, 'eet_diversity_lambda': 0.0, 'eet_ce_guided_lambda': 1.0, 'eet_router_lr_mult': 5.0, 'eet_model_lr_mult': 1.0, 'eet_depth_weight_type': 'none', 'eet_depth_weight_max': 2.5, 'eet_use_override': 0, 'eet_override_prob_start': 0.5, 'eet_override_prob_end': 0.1, 'eet_compute_skip': False, 'eet_target_active_frac': 0.125, 'eet_capacity_schedule': 'bell', 'eet_exit_fracs': None, 'eet_capacity_alignment_lambda': 0.0, 'eet_kv_mode': 'none', 'eet_route_noise': 0.0, 'eet_route_noise_end': -1.0, 'eet_coverage_diag': False, 'deep_supervision_lambda': 0.0, 'deep_supervision_frac': 0.125, 'eet_width_power': 0.0, 'eet_width_cap': 16.0, 'eet_kv_eager': False, 'eet_router_task_grad': True, 'eet_reinforce_interval': 0, 'eet_reinforce_lambda': 0.1, 'eet_exit_adapter_rank': 0, 'eet_router_after_block': 0, 'eet_ffn_skip': False, 'eet_ffn_target_frac': 0.5, 'eet_ffn_full_attn': True, 'eet_depth_affine': False, 'eet_capacity_anneal_frac': 0.0, 'eet_learned_schedule': False, 'eet_departure_summary': False, 'eet_route_consistency_lambda': 0.0, 'eet_dense_distill_interval': 0, 'eet_dense_distill_lambda': 0.5, 'eet_depth_lr_scale': False, 'eet_depth_grad_scale': False, 'eet_detach_aux_from_backbone': False, 'eet_detach_exit_from_backbone': False, 'use_code_head': False, 'sch_head_type': 'code', 'sch_bits': 0, 'sch_order': 2, 'sch_max_m': 0, 'sch_phi_mode': 'monomial', 'sch_code_mode': 'binary', 'sch_code_path': '', 'sch_code_ecc_bits': 0, 'sch_code_seed': 1234, 'sch_phi_density': 0.0, 'sch_phi_dtype': 'bf16', 'sch_phi_normalize': 1, 'sch_phi_center': 0, 'sch_g_type': 'linear', 'sch_g_hidden': 0, 'sch_g_layers': 2, 'sch_g_out_std': 0.001, 'sch_mixture': 1, 'sch_residual_rank': 0, 'sch_logit_act': 'none', 'sch_bias': 0, 'sch_input_mode': 'table', 'sch_input_hidden': 0, 'sch_product_groups': 8, 'sch_product_codebook': 256, 'sch_product_source': 'hash', 'sch_product_impl': 'dense', 'sch_phi_whiten': 0, 'sch_mixture_per_phi': 0, 'sch_mixture_topk': 0, 'sch_mixture_aux': 0.01, 'sch_monarch_m1': 0, 'sch_monarch_perm': 'none', 'sch_monarch_perm_path': '', 'sch_tier_bounds': '', 'sch_tier_caps': '', 'sch_tier_order': 'freq', 'sch_tier_perm_path': '', 'sch_proposal_rank': 32, 'sch_proposal_topk': 16384, 'sch_proposal_samples': 4096, 'sch_proposal_warmup': 0, 'sch_proposal_chunk': 2048, 'sch_proposal_aux': 1.0, 'sch_nfh_mode': 'cp', 'sch_nfh_rank': 32, 'sch_nfh_dims': '', 'sch_nfh_groups': 3, 'sch_nfh_views': 1, 'sch_nfh_perm': 'none', 'sch_nfh_perm_path': '', 'sch_nfh_g_type': 'linear', 'sch_nfh_g_hidden': 0, 'sch_rerank_mode': 'topk', 'sch_rerank_k': 64, 'sch_rerank_rank': 32, 'sch_nfh_smooth': 0, 'sch_nfh_chunk': 256, 'sap_block_T': 2048, 'sap_block_mode': 'sir_tree', 'sap_block_frac': 0.00048828125, 'sap_lambda': 1.0, 'sap_head_layers': 3, 'sap_head_heads': 0, 'sap_head_mlp_mult': 2, 'sap_enc_layers': 1, 'sap_ctx_window': 16, 'sap_latent_groups': 4, 'sap_latent_codes': 16, 'sap_latent_dim': 64, 'sap_free_bits': 0.25, 'sap_kl_anneal_steps': 2000, 'sap_gumbel_tau': 1.0, 'sap_cp_components': 8, 'sap_wta_k': 4, 'sap_u_freqs': 24, 'sap_u_interior': 0.8, 'sap_logit_chunk': 8192, 'sap_jacobi_sweeps': 2, 'sap_sir_topk': 16, 'sap_sir_rank': 32, 'sap_sir_anchor_stride': 16, 'sap_sir_fine_stride': 4, 'sap_sir_refine_frac': 0.25, 'sap_sir_tree_levels': 2, 'sap_sir_train_samples': 4, 'sap_sir_policy_weight': 1.0, 'sap_sir_posterior_mix': 0.0, 'sap_sir_draft_weight': 1.0, 'sap_sir_context_weight': 0.25, 'sap_sir_energy_weight': 0.25}
+[SAP] block head: mode=sir_tree T=2048 frac=0.00048828125 window=16 layers=3 params=7,872,512
+
+========================================================================================
+gen_S02_sir_tree_l2_TL_s1_d8.log
+========================================================================================
+2026-10-03 00:30:48,968 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/main/kernel-status.toml "HTTP/1.1 404 Not Found"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-10-03 00:30:48,969 - huggingface_hub.utils._http - [33m[1mWARNING[0m - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+2026-10-03 00:30:48,988 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/tree/main/build?recursive=false&expand=false "HTTP/1.1 200 OK"
+2026-10-03 00:30:49,012 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/revision/main "HTTP/1.1 200 OK"
+2026-10-03 00:30:49,783 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Building model with config: {'sequence_len': 2048, 'vocab_size': 32768, 'n_layer': 8, 'n_head': 4, 'n_kv_head': 4, 'n_embd': 512, 'use_moe': False, 'use_perm': False, 'moe_num_experts': 8, 'moe_router_dim': 64, 'moe_embed_dim': 64, 'dropout': 0.0, 'use_remix_linear': False, 'remix_context_dim': 64, 'remix_context_dim_ratio': 6, 'remix_basis_size': 64, 'remix_output_gate_rank': 16, 'remixed_linear_kwargs': {'use_basis_gate': True, 'use_output_gate': True, 'use_context': True, 'basis_gate_mode': 'mlp', 'sparse_gate_k': 0, 'gate_temperature': 1.0, 'basis_scale_factor': 4, 'n_templates': 1, 'template_routing_learned': False, 'template_topk': 0, 'tiny_expert': False, 'tiny_expert_topk': 16, 'lokr_expert': False, 'lokr_n_experts': 64, 'lokr_topk': 16, 'lokr_rank': 4, 'lokr_learned': False, 'basis_gate_rank': 8, 'disable_ln_basis': False, 'chunk_route_impl': 'compose', 'top1_gate': 'ones', 'template_delta_rank': 0, 'route_side': 'output', 'drop_basis_proj': False, 'basis_side_templates': 0, 'grad_equalize': False, 'output_gate_rank': 16, 'operator_modulation': 'none', 'lie_generators': 4, 'poly_order': 2, 'grassmann_bank_size': 4}, 'use_pos_embed': False, 'moe_use_abs_pos_embed': False, 'use_layer_context': True, 'scale_basis_size': True, 'remix_use_dual_gate': False, 'remix_use_fused': False, 'p26_output_gated_linear': 0, 'p28_shared_basis': 0, 'p28_chunk_routing_size': 0, 'p28_global_template_bank': 'none', 'p28_attn_proj_templates': 0, 'p28_attn_qk_templates': 0, 'p29_template_block_diag': 0, 'p29_template_lr_scale': 1.0, 'p29_grad_equalize': 0, 'p34_ffn_mult': 4.0, 'p34_ffn_single': 0, 'p34_dense_attn': 0, 'legacy_init_fallback': 0, 'p35_template_diversity_lambda': 0.0, 'p22_route_affine': 0, 'p34_ffn_schedule': '', 'p34_ffn_no_ffn_replacement': 'none', 'p34_ffn_last_depth': 1, 'p36_swiglu_ffn': 0, 'p36_swiglu_mult': 2.6666666666666665, 'cond_sites': 'both', 'cond_rank': 256, 'cond_mult_steps': 0, 'cond_gate_source': 'router', 'cond_coeff_act': 'centered', 'cond_router_rank': 0, 'cond_live_init': 0.0, 'cond_router_act': 'none', 'cond_chunk_size': 0, 'cond_mult_scale': -1.0, 'cond_mult_impl': 'wy', 'cond_attn_projs': 'qkvo', 'cond_layer_frac': 1.0, 'perm_expert_mode': 'low_rank', 'perm_rank': 16, 'router_context_window': -1, 'router_causal': True, 'router_num_heads': 4, 'router_num_queries': 16, 'router_n_layers': 2, 'router_use_vocab_prior': False, 'window_pattern': 'SSSL', 'cclblock_modulation': 'weight', 'cclblock_orth_lambda': 0.0, 'cclblock_context_stream': 'local', 'cclblock_ema_factor': 0.99, 'cclblock_stale_ctx_lag': 0, 'cclblock_sparse_gate_k': 0, 'cclblock_gate_temperature': 1.0, 'cclblock_context_bank_size': 0, 'cclblock_per_head_ctx': False, 'cclblock_context_source': 'norm_x', 'cclblock_chunk_size': 0, 'cclblock_aux_objective': 'none', 'cclblock_aux_lambda': 0.1, 'cclblock_boundary_token_id': 198, 'use_ral': False, 'ral_rank': 32, 'cclblock_film_gate': False, 'cclblock_attn_shadow_dim': 0, 'cclblock_dynamic_ratio': 0.25, 'cclblock_gate_rank': 8, 'cclblock_num_regimes': 8, 'cclblock_regime_temperature': 1.0, 'cclblock_poly_order': 2, 'cclblock_lie_generators': 4, 'cclblock_grassmann_bank_size': 4, 'cclblock_tucker_rank': 32, 'cclblock_tucker_modes': 8, 'cclblock_svs_rank': 64, 'cclblock_svs_eps': 0.1, 'cclblock_vq_codes': 8, 'cclblock_vq_temperature': 1.0, 'cclblock_dcu_warmup_steps': 0, 'cclblock_fsi_rotations': 8, 'cclblock_fsi_selector_dim': 64, 'cclblock_aesp_strata': 4, 'cclblock_aesp_delta_rank': 4, 'cclblock_ckr_branches': 4, 'cclblock_ckr_kernel_size': 64, 'cclblock_ckr_pos_channels': 1, 'cclblock_ckr_dual_optim': 0, 'cclblock_ckr_content_bias': 0.0, 'cclblock_giad_rank': 32, 'cclblock_psg_kernel_size': 64, 'cclblock_ss_dynamic_ratio': 0.25, 'cclblock_ss_branches': 2, 'cclblock_ss_kernel_size': 64, 'cclblock_lokr_branches': 8, 'cclblock_lokr_rank': 16, 'cclblock_ckr_temp_start': 2.0, 'cclblock_ckr_temp_end': 0.3, 'cclblock_com_kernel_size': 32, 'cclblock_ckr_ortho_init': 0, 'cclblock_ckr_branch_dropout': 0.0, 'cclblock_ckr_diversity_lambda': 0.0, 'cclblock_ckr_layer_selective': 0, 'cclblock_pgr_kernel_size': 64, 'cclblock_cil_kernel_size': 64, 'cclblock_prb_kernel_size': 64, 'p18_layer_drop': 0.0, 'p18_dynamic_activation': 0, 'p18_mixture_norm': 0, 'p18_causal_attn_bias': 0, 'p18_aux_sim_lambda': 0.0, 'p18_gradient_penalty': 0.0, 'p18_per_channel_scale': 0, 'p19_residual_gate': 0, 'p19_head_importance': 0, 'p19_residual_mix_groups': 0, 'p19_attn_logit_bias': 0, 'p19_residual_decay': 0, 'p19_grad_equilibrium': 0.0, 'p19_spectral_reparam': 0, 'p19_weight_anticollapse': 0.0, 'p19_ve_bias': 0, 'p19_weight_noise': 0.0, 'p20_hrcs_scale': 0, 'p20_lswr_scale': 0, 'p20_lswr_planes': 8, 'p20_lrcfb_branches': 0, 'p20_lrcfb_narrow': 0, 'p20_lrcfb_learned': 0, 'p20_lrcfb_topk': 0, 'p20_dgcr_branches': 0, 'p20_dgcr_aux_weight': 0.01, 'p20_mone_experts': 0, 'p20_mone_topk': 0, 'p20_mone_narrow': 1, 'p20_mone_frozen': 0, 'p20_ncea_branches': 0, 'p20_ncea_eps': 0.1, 'p20_adwi': 0, 'p20_pwu_branches': 0, 'p20_pwu_phase': 1, 'p20_fsvd_gate': 0, 'p20_wbfc_clusters': 0, 'p20_wbfc_active': 0, 'p21_per_experts': 0, 'p21_per_topk': 0, 'p21_per_learned': 0, 'p21_per_attn': 0, 'p22_attn_moe_route': 'none', 'p23_tiny_expert': 0, 'p23_n_experts': 64, 'p23_topk': 16, 'p23_learned_route': 0, 'p23_std_moe_experts': 0, 'p23_std_moe_topk': -1, 'p23_std_moe_aux_weight': 0.01, 'p23_lokr': 0, 'p23_lokr_rank': 4, 'p23_use_shared_block_router': 0, 'p23_linear_moe_experts': 0, 'p23_linear_moe_topk': 0, 'p23_quantile_route': 0, 'remix_shared_context_gates': 0, 'p24_use_sliced_weight': 0, 'p24_sliced_weight_reduction_scale': 8, 'p24_sliced_weight_min_select': 128, 'p24_sliced_weight_scope': 'per_token', 'p24_sliced_weight_balance_coeff': 0.01, 'p24_quantile_route': 0, 'p24_use_folded_mod': 0, 'p24_folded_mod_reduction_scale': 8, 'p24_folded_mod_min_dim': 128, 'p24_folded_mod_scope': 'per_layer', 'p24_folded_mod_gate_act': 'tanh_centered', 'p24_use_sequence_gated_linear': 0, 'p24_sequence_gated_scope': 'per_layer', 'p24_sequence_gated_act': 'tanh_centered', 'remix_disable_ln_basis': 0, 'dense_intermediate_ln': 0, 'use_mol': False, 'mol_n_blocks': 5, 'mol_n_shared': 1, 'mol_topk': 3, 'mol_thin_dim': 256, 'mol_head_dim': 64, 'mol_ffn_mult': 4.0, 'mol_router_aux': 0.05, 'mol_routed_attn': 'softmax', 'mol_dispatch': 1, 'mol_capacity_factor': 1.0, 'mol_block_lr_scale': 1.0, 'mol_per_block_ve': 0, 'use_binary': False, 'binary_acts': True, 'binary_weight_scale': 'row', 'binary_act_scale': 'token', 'binary_clip': 1.0, 'binary_linear': True, 'binary_embeddings': True, 'binary_skip': '', 'binary_native': False, 'binary_tau': 1.0, 'binary_hard': False, 'binary_resid_width': 0, 'binary_attn_chunk': 256, 'use_mst': False, 'mst_n_subs': 8, 'mst_sub_dim': 64, 'mst_head_dim': 0, 'mst_input_mode': 'fixed_slice', 'mst_rotated_slice_learned': False, 'mst_routing_mode': 'soft_weighted', 'mst_routing_topk': 4, 'mst_routing_aux_weight': 0.01, 'mst_diversity_weight': 0.0, 'mst_ffn_mode': 'standard', 'mst_ffn_every': 1, 'mst_transition_mode': 'parallel', 'mst_final_mode': 'aggregate_proj', 'mst_final_topk': -1, 'mst_ffn_shared_up': 0, 'mst_ffn_inner_dim': 0, 'mst_sub_dropout': 0.0, 'mst_transition_every': 1, 'mst_ffa_temperature': 1.0, 'mst_global_residual': 0, 'mst_hybrid_dense': 0, 'mst_cross_sub_kv': 0, 'mst_sub_aux_weight': 0.0, 'mst_progressive_merge': 0, 'mst_multi_scale_windows': 0, 'mst_delta_residual': 0, 'mst_sub_layers': 1, 'mst_grad_equalize': 0, 'mst_block_diagonal_muon': 0, 'mst_transition_width_mult': 1.0, 'mst_sub_lr_scale': 1.0, 'mst_shared_expert': 0, 'mst_router_entropy_weight': 0.0, 'mst_shared_kv_attn': 0, 'mst_contrastive_diversity_weight': 0.0, 'mst_transition_nonlinear': 0, 'mst_transition_gated': 0, 'mst_transition_mlp': 0, 'mst_cross_sub_gate': 0, 'mst_hyper_connect': 0, 'mst_cross_kv_inject': 0, 'mst_slice_transition': 0, 'mst_lookback_layers': 0, 'mst_bilinear_transition': 0, 'mst_cross_sub_qmod': 0, 'mst_feature_cycle': 0, 'mst_mean_transition': 0, 'mst_sub_head_dim': 0, 'mst_final_norm': 0, 'mst_per_stream_ve': 0, 'mst_ve_map': 0, 'mst_ve_map_rank': 0, 'mst_lm_head_dim': 0, 'mst_compose_windows': 0, 'mst_channel_mix': 'none', 'mst_channel_mix_site': 'layer', 'mst_distribute_block_muon': 0, 'mst_trans_spectral_lr': 0, 'mst_talking_heads': 0, 'mst_wo_mode': 'block', 'mst_stream_topk': 0, 'mst_stream_shared': 0, 'mst_stream_router_aux': 0.01, 'mst_stream_router_noise': 0.0, 'mst_stream_dispatch': 0, 'mst_stream_capacity_factor': 1.0, 'mst_stream_gate_attn': 0, 'mst_ffn_monarch': 'none', 'mst_shampoo': 0, 'mst_precond_every': 10, 'mst_shampoo_beta': 0.95, 'use_eet': False, 'eet_frozen_kv': True, 'eet_reenter_final': False, 'eet_router_type': 'mlp2', 'eet_router_hidden': 0, 'eet_freq_prior_alpha': 0.0, 'eet_pos_prior_beta': 0.0, 'eet_domain_prior': False, 'eet_warmup_frac': 0.02, 'eet_explore_frac': 0.15, 'eet_reconstruct_lambda': 1.0, 'eet_efficiency_lambda_start': 0.01, 'eet_efficiency_lambda_end': 0.1, 'eet_translator_rank': 0, 'eet_max_frozen_kv_frac': 0.75, 'eet_exit_threshold': 0.5, 'eet_min_exit_layer': 1, 'eet_loss_variant': 'reconstruct', 'eet_topk_vocab': 512, 'eet_entropy_lambda': 0.3, 'eet_surprise_lambda': 0.1, 'eet_adv_lambda': 1.0, 'eet_adv_entropy_lambda': 0.2, 'eet_quality_lambda': 1.0, 'eet_quality_entropy_bonus': 0.1, 'eet_gumbel_temp_start': 0.0, 'eet_gumbel_temp_end': 0.1, 'eet_gumbel_hard': True, 'eet_commitment_beta': 0.1, 'eet_global_router': False, 'eet_freq_efficiency_alpha': 0.0, 'eet_diversity_lambda': 0.0, 'eet_ce_guided_lambda': 1.0, 'eet_router_lr_mult': 5.0, 'eet_model_lr_mult': 1.0, 'eet_depth_weight_type': 'none', 'eet_depth_weight_max': 2.5, 'eet_use_override': 0, 'eet_override_prob_start': 0.5, 'eet_override_prob_end': 0.1, 'eet_compute_skip': False, 'eet_target_active_frac': 0.125, 'eet_capacity_schedule': 'bell', 'eet_exit_fracs': None, 'eet_capacity_alignment_lambda': 0.0, 'eet_kv_mode': 'none', 'eet_route_noise': 0.0, 'eet_route_noise_end': -1.0, 'eet_coverage_diag': False, 'deep_supervision_lambda': 0.0, 'deep_supervision_frac': 0.125, 'eet_width_power': 0.0, 'eet_width_cap': 16.0, 'eet_kv_eager': False, 'eet_router_task_grad': True, 'eet_reinforce_interval': 0, 'eet_reinforce_lambda': 0.1, 'eet_exit_adapter_rank': 0, 'eet_router_after_block': 0, 'eet_ffn_skip': False, 'eet_ffn_target_frac': 0.5, 'eet_ffn_full_attn': True, 'eet_depth_affine': False, 'eet_capacity_anneal_frac': 0.0, 'eet_learned_schedule': False, 'eet_departure_summary': False, 'eet_route_consistency_lambda': 0.0, 'eet_dense_distill_interval': 0, 'eet_dense_distill_lambda': 0.5, 'eet_depth_lr_scale': False, 'eet_depth_grad_scale': False, 'eet_detach_aux_from_backbone': False, 'eet_detach_exit_from_backbone': False, 'use_code_head': False, 'sch_head_type': 'code', 'sch_bits': 0, 'sch_order': 2, 'sch_max_m': 0, 'sch_phi_mode': 'monomial', 'sch_code_mode': 'binary', 'sch_code_path': '', 'sch_code_ecc_bits': 0, 'sch_code_seed': 1234, 'sch_phi_density': 0.0, 'sch_phi_dtype': 'bf16', 'sch_phi_normalize': 1, 'sch_phi_center': 0, 'sch_g_type': 'linear', 'sch_g_hidden': 0, 'sch_g_layers': 2, 'sch_g_out_std': 0.001, 'sch_mixture': 1, 'sch_residual_rank': 0, 'sch_logit_act': 'none', 'sch_bias': 0, 'sch_input_mode': 'table', 'sch_input_hidden': 0, 'sch_product_groups': 8, 'sch_product_codebook': 256, 'sch_product_source': 'hash', 'sch_product_impl': 'dense', 'sch_phi_whiten': 0, 'sch_mixture_per_phi': 0, 'sch_mixture_topk': 0, 'sch_mixture_aux': 0.01, 'sch_monarch_m1': 0, 'sch_monarch_perm': 'none', 'sch_monarch_perm_path': '', 'sch_tier_bounds': '', 'sch_tier_caps': '', 'sch_tier_order': 'freq', 'sch_tier_perm_path': '', 'sch_proposal_rank': 32, 'sch_proposal_topk': 16384, 'sch_proposal_samples': 4096, 'sch_proposal_warmup': 0, 'sch_proposal_chunk': 2048, 'sch_proposal_aux': 1.0, 'sch_nfh_mode': 'cp', 'sch_nfh_rank': 32, 'sch_nfh_dims': '', 'sch_nfh_groups': 3, 'sch_nfh_views': 1, 'sch_nfh_perm': 'none', 'sch_nfh_perm_path': '', 'sch_nfh_g_type': 'linear', 'sch_nfh_g_hidden': 0, 'sch_rerank_mode': 'topk', 'sch_rerank_k': 64, 'sch_rerank_rank': 32, 'sch_nfh_smooth': 0, 'sch_nfh_chunk': 256, 'sap_block_T': 2048, 'sap_block_mode': 'sir_tree', 'sap_block_frac': 0.00048828125, 'sap_lambda': 1.0, 'sap_head_layers': 3, 'sap_head_heads': 0, 'sap_head_mlp_mult': 2, 'sap_enc_layers': 1, 'sap_ctx_window': 16, 'sap_latent_groups': 4, 'sap_latent_codes': 16, 'sap_latent_dim': 64, 'sap_free_bits': 0.25, 'sap_kl_anneal_steps': 2000, 'sap_gumbel_tau': 1.0, 'sap_cp_components': 8, 'sap_wta_k': 4, 'sap_u_freqs': 24, 'sap_u_interior': 0.8, 'sap_logit_chunk': 8192, 'sap_jacobi_sweeps': 2, 'sap_sir_topk': 16, 'sap_sir_rank': 32, 'sap_sir_anchor_stride': 16, 'sap_sir_fine_stride': 4, 'sap_sir_refine_frac': 0.25, 'sap_sir_tree_levels': 2, 'sap_sir_train_samples': 4, 'sap_sir_policy_weight': 1.0, 'sap_sir_posterior_mix': 0.0, 'sap_sir_draft_weight': 1.0, 'sap_sir_context_weight': 0.25, 'sap_sir_energy_weight': 0.25}
+[SAP] block head: mode=sir_tree T=2048 frac=0.00048828125 window=16 layers=3 params=7,872,512
+2026-10-03 00:30:50,704 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Building model with config: {'sequence_len': 2048, 'vocab_size': 32768, 'n_layer': 8, 'n_head': 4, 'n_kv_head': 4, 'n_embd': 512, 'use_moe': False, 'use_perm': False, 'moe_num_experts': 8, 'moe_router_dim': 64, 'moe_embed_dim': 64, 'dropout': 0.0, 'use_remix_linear': False, 'remix_context_dim': 64, 'remix_context_dim_ratio': 6, 'remix_basis_size': 64, 'remix_output_gate_rank': 16, 'remixed_linear_kwargs': {'use_basis_gate': True, 'use_output_gate': True, 'use_context': True, 'basis_gate_mode': 'mlp', 'sparse_gate_k': 0, 'gate_temperature': 1.0, 'basis_scale_factor': 4, 'n_templates': 1, 'template_routing_learned': False, 'template_topk': 0, 'tiny_expert': False, 'tiny_expert_topk': 16, 'lokr_expert': False, 'lokr_n_experts': 64, 'lokr_topk': 16, 'lokr_rank': 4, 'lokr_learned': False, 'basis_gate_rank': 8, 'disable_ln_basis': False, 'chunk_route_impl': 'compose', 'top1_gate': 'ones', 'template_delta_rank': 0, 'route_side': 'output', 'drop_basis_proj': False, 'basis_side_templates': 0, 'grad_equalize': False, 'output_gate_rank': 16, 'operator_modulation': 'none', 'lie_generators': 4, 'poly_order': 2, 'grassmann_bank_size': 4}, 'use_pos_embed': False, 'moe_use_abs_pos_embed': False, 'use_layer_context': True, 'scale_basis_size': True, 'remix_use_dual_gate': False, 'remix_use_fused': False, 'p26_output_gated_linear': 0, 'p28_shared_basis': 0, 'p28_chunk_routing_size': 0, 'p28_global_template_bank': 'none', 'p28_attn_proj_templates': 0, 'p28_attn_qk_templates': 0, 'p29_template_block_diag': 0, 'p29_template_lr_scale': 1.0, 'p29_grad_equalize': 0, 'p34_ffn_mult': 4.0, 'p34_ffn_single': 0, 'p34_dense_attn': 0, 'legacy_init_fallback': 0, 'p35_template_diversity_lambda': 0.0, 'p22_route_affine': 0, 'p34_ffn_schedule': '', 'p34_ffn_no_ffn_replacement': 'none', 'p34_ffn_last_depth': 1, 'p36_swiglu_ffn': 0, 'p36_swiglu_mult': 2.6666666666666665, 'cond_sites': 'both', 'cond_rank': 256, 'cond_mult_steps': 0, 'cond_gate_source': 'router', 'cond_coeff_act': 'centered', 'cond_router_rank': 0, 'cond_live_init': 0.0, 'cond_router_act': 'none', 'cond_chunk_size': 0, 'cond_mult_scale': -1.0, 'cond_mult_impl': 'wy', 'cond_attn_projs': 'qkvo', 'cond_layer_frac': 1.0, 'perm_expert_mode': 'low_rank', 'perm_rank': 16, 'router_context_window': -1, 'router_causal': True, 'router_num_heads': 4, 'router_num_queries': 16, 'router_n_layers': 2, 'router_use_vocab_prior': False, 'window_pattern': 'SSSL', 'cclblock_modulation': 'weight', 'cclblock_orth_lambda': 0.0, 'cclblock_context_stream': 'local', 'cclblock_ema_factor': 0.99, 'cclblock_stale_ctx_lag': 0, 'cclblock_sparse_gate_k': 0, 'cclblock_gate_temperature': 1.0, 'cclblock_context_bank_size': 0, 'cclblock_per_head_ctx': False, 'cclblock_context_source': 'norm_x', 'cclblock_chunk_size': 0, 'cclblock_aux_objective': 'none', 'cclblock_aux_lambda': 0.1, 'cclblock_boundary_token_id': 198, 'use_ral': False, 'ral_rank': 32, 'cclblock_film_gate': False, 'cclblock_attn_shadow_dim': 0, 'cclblock_dynamic_ratio': 0.25, 'cclblock_gate_rank': 8, 'cclblock_num_regimes': 8, 'cclblock_regime_temperature': 1.0, 'cclblock_poly_order': 2, 'cclblock_lie_generators': 4, 'cclblock_grassmann_bank_size': 4, 'cclblock_tucker_rank': 32, 'cclblock_tucker_modes': 8, 'cclblock_svs_rank': 64, 'cclblock_svs_eps': 0.1, 'cclblock_vq_codes': 8, 'cclblock_vq_temperature': 1.0, 'cclblock_dcu_warmup_steps': 0, 'cclblock_fsi_rotations': 8, 'cclblock_fsi_selector_dim': 64, 'cclblock_aesp_strata': 4, 'cclblock_aesp_delta_rank': 4, 'cclblock_ckr_branches': 4, 'cclblock_ckr_kernel_size': 64, 'cclblock_ckr_pos_channels': 1, 'cclblock_ckr_dual_optim': 0, 'cclblock_ckr_content_bias': 0.0, 'cclblock_giad_rank': 32, 'cclblock_psg_kernel_size': 64, 'cclblock_ss_dynamic_ratio': 0.25, 'cclblock_ss_branches': 2, 'cclblock_ss_kernel_size': 64, 'cclblock_lokr_branches': 8, 'cclblock_lokr_rank': 16, 'cclblock_ckr_temp_start': 2.0, 'cclblock_ckr_temp_end': 0.3, 'cclblock_com_kernel_size': 32, 'cclblock_ckr_ortho_init': 0, 'cclblock_ckr_branch_dropout': 0.0, 'cclblock_ckr_diversity_lambda': 0.0, 'cclblock_ckr_layer_selective': 0, 'cclblock_pgr_kernel_size': 64, 'cclblock_cil_kernel_size': 64, 'cclblock_prb_kernel_size': 64, 'p18_layer_drop': 0.0, 'p18_dynamic_activation': 0, 'p18_mixture_norm': 0, 'p18_causal_attn_bias': 0, 'p18_aux_sim_lambda': 0.0, 'p18_gradient_penalty': 0.0, 'p18_per_channel_scale': 0, 'p19_residual_gate': 0, 'p19_head_importance': 0, 'p19_residual_mix_groups': 0, 'p19_attn_logit_bias': 0, 'p19_residual_decay': 0, 'p19_grad_equilibrium': 0.0, 'p19_spectral_reparam': 0, 'p19_weight_anticollapse': 0.0, 'p19_ve_bias': 0, 'p19_weight_noise': 0.0, 'p20_hrcs_scale': 0, 'p20_lswr_scale': 0, 'p20_lswr_planes': 8, 'p20_lrcfb_branches': 0, 'p20_lrcfb_narrow': 0, 'p20_lrcfb_learned': 0, 'p20_lrcfb_topk': 0, 'p20_dgcr_branches': 0, 'p20_dgcr_aux_weight': 0.01, 'p20_mone_experts': 0, 'p20_mone_topk': 0, 'p20_mone_narrow': 1, 'p20_mone_frozen': 0, 'p20_ncea_branches': 0, 'p20_ncea_eps': 0.1, 'p20_adwi': 0, 'p20_pwu_branches': 0, 'p20_pwu_phase': 1, 'p20_fsvd_gate': 0, 'p20_wbfc_clusters': 0, 'p20_wbfc_active': 0, 'p21_per_experts': 0, 'p21_per_topk': 0, 'p21_per_learned': 0, 'p21_per_attn': 0, 'p22_attn_moe_route': 'none', 'p23_tiny_expert': 0, 'p23_n_experts': 64, 'p23_topk': 16, 'p23_learned_route': 0, 'p23_std_moe_experts': 0, 'p23_std_moe_topk': -1, 'p23_std_moe_aux_weight': 0.01, 'p23_lokr': 0, 'p23_lokr_rank': 4, 'p23_use_shared_block_router': 0, 'p23_linear_moe_experts': 0, 'p23_linear_moe_topk': 0, 'p23_quantile_route': 0, 'remix_shared_context_gates': 0, 'p24_use_sliced_weight': 0, 'p24_sliced_weight_reduction_scale': 8, 'p24_sliced_weight_min_select': 128, 'p24_sliced_weight_scope': 'per_token', 'p24_sliced_weight_balance_coeff': 0.01, 'p24_quantile_route': 0, 'p24_use_folded_mod': 0, 'p24_folded_mod_reduction_scale': 8, 'p24_folded_mod_min_dim': 128, 'p24_folded_mod_scope': 'per_layer', 'p24_folded_mod_gate_act': 'tanh_centered', 'p24_use_sequence_gated_linear': 0, 'p24_sequence_gated_scope': 'per_layer', 'p24_sequence_gated_act': 'tanh_centered', 'remix_disable_ln_basis': 0, 'dense_intermediate_ln': 0, 'use_mol': False, 'mol_n_blocks': 5, 'mol_n_shared': 1, 'mol_topk': 3, 'mol_thin_dim': 256, 'mol_head_dim': 64, 'mol_ffn_mult': 4.0, 'mol_router_aux': 0.05, 'mol_routed_attn': 'softmax', 'mol_dispatch': 1, 'mol_capacity_factor': 1.0, 'mol_block_lr_scale': 1.0, 'mol_per_block_ve': 0, 'use_binary': False, 'binary_acts': True, 'binary_weight_scale': 'row', 'binary_act_scale': 'token', 'binary_clip': 1.0, 'binary_linear': True, 'binary_embeddings': True, 'binary_skip': '', 'binary_native': False, 'binary_tau': 1.0, 'binary_hard': False, 'binary_resid_width': 0, 'binary_attn_chunk': 256, 'use_mst': False, 'mst_n_subs': 8, 'mst_sub_dim': 64, 'mst_head_dim': 0, 'mst_input_mode': 'fixed_slice', 'mst_rotated_slice_learned': False, 'mst_routing_mode': 'soft_weighted', 'mst_routing_topk': 4, 'mst_routing_aux_weight': 0.01, 'mst_diversity_weight': 0.0, 'mst_ffn_mode': 'standard', 'mst_ffn_every': 1, 'mst_transition_mode': 'parallel', 'mst_final_mode': 'aggregate_proj', 'mst_final_topk': -1, 'mst_ffn_shared_up': 0, 'mst_ffn_inner_dim': 0, 'mst_sub_dropout': 0.0, 'mst_transition_every': 1, 'mst_ffa_temperature': 1.0, 'mst_global_residual': 0, 'mst_hybrid_dense': 0, 'mst_cross_sub_kv': 0, 'mst_sub_aux_weight': 0.0, 'mst_progressive_merge': 0, 'mst_multi_scale_windows': 0, 'mst_delta_residual': 0, 'mst_sub_layers': 1, 'mst_grad_equalize': 0, 'mst_block_diagonal_muon': 0, 'mst_transition_width_mult': 1.0, 'mst_sub_lr_scale': 1.0, 'mst_shared_expert': 0, 'mst_router_entropy_weight': 0.0, 'mst_shared_kv_attn': 0, 'mst_contrastive_diversity_weight': 0.0, 'mst_transition_nonlinear': 0, 'mst_transition_gated': 0, 'mst_transition_mlp': 0, 'mst_cross_sub_gate': 0, 'mst_hyper_connect': 0, 'mst_cross_kv_inject': 0, 'mst_slice_transition': 0, 'mst_lookback_layers': 0, 'mst_bilinear_transition': 0, 'mst_cross_sub_qmod': 0, 'mst_feature_cycle': 0, 'mst_mean_transition': 0, 'mst_sub_head_dim': 0, 'mst_final_norm': 0, 'mst_per_stream_ve': 0, 'mst_ve_map': 0, 'mst_ve_map_rank': 0, 'mst_lm_head_dim': 0, 'mst_compose_windows': 0, 'mst_channel_mix': 'none', 'mst_channel_mix_site': 'layer', 'mst_distribute_block_muon': 0, 'mst_trans_spectral_lr': 0, 'mst_talking_heads': 0, 'mst_wo_mode': 'block', 'mst_stream_topk': 0, 'mst_stream_shared': 0, 'mst_stream_router_aux': 0.01, 'mst_stream_router_noise': 0.0, 'mst_stream_dispatch': 0, 'mst_stream_capacity_factor': 1.0, 'mst_stream_gate_attn': 0, 'mst_ffn_monarch': 'none', 'mst_shampoo': 0, 'mst_precond_every': 10, 'mst_shampoo_beta': 0.95, 'use_eet': False, 'eet_frozen_kv': True, 'eet_reenter_final': False, 'eet_router_type': 'mlp2', 'eet_router_hidden': 0, 'eet_freq_prior_alpha': 0.0, 'eet_pos_prior_beta': 0.0, 'eet_domain_prior': False, 'eet_warmup_frac': 0.02, 'eet_explore_frac': 0.15, 'eet_reconstruct_lambda': 1.0, 'eet_efficiency_lambda_start': 0.01, 'eet_efficiency_lambda_end': 0.1, 'eet_translator_rank': 0, 'eet_max_frozen_kv_frac': 0.75, 'eet_exit_threshold': 0.5, 'eet_min_exit_layer': 1, 'eet_loss_variant': 'reconstruct', 'eet_topk_vocab': 512, 'eet_entropy_lambda': 0.3, 'eet_surprise_lambda': 0.1, 'eet_adv_lambda': 1.0, 'eet_adv_entropy_lambda': 0.2, 'eet_quality_lambda': 1.0, 'eet_quality_entropy_bonus': 0.1, 'eet_gumbel_temp_start': 0.0, 'eet_gumbel_temp_end': 0.1, 'eet_gumbel_hard': True, 'eet_commitment_beta': 0.1, 'eet_global_router': False, 'eet_freq_efficiency_alpha': 0.0, 'eet_diversity_lambda': 0.0, 'eet_ce_guided_lambda': 1.0, 'eet_router_lr_mult': 5.0, 'eet_model_lr_mult': 1.0, 'eet_depth_weight_type': 'none', 'eet_depth_weight_max': 2.5, 'eet_use_override': 0, 'eet_override_prob_start': 0.5, 'eet_override_prob_end': 0.1, 'eet_compute_skip': False, 'eet_target_active_frac': 0.125, 'eet_capacity_schedule': 'bell', 'eet_exit_fracs': None, 'eet_capacity_alignment_lambda': 0.0, 'eet_kv_mode': 'none', 'eet_route_noise': 0.0, 'eet_route_noise_end': -1.0, 'eet_coverage_diag': False, 'deep_supervision_lambda': 0.0, 'deep_supervision_frac': 0.125, 'eet_width_power': 0.0, 'eet_width_cap': 16.0, 'eet_kv_eager': False, 'eet_router_task_grad': True, 'eet_reinforce_interval': 0, 'eet_reinforce_lambda': 0.1, 'eet_exit_adapter_rank': 0, 'eet_router_after_block': 0, 'eet_ffn_skip': False, 'eet_ffn_target_frac': 0.5, 'eet_ffn_full_attn': True, 'eet_depth_affine': False, 'eet_capacity_anneal_frac': 0.0, 'eet_learned_schedule': False, 'eet_departure_summary': False, 'eet_route_consistency_lambda': 0.0, 'eet_dense_distill_interval': 0, 'eet_dense_distill_lambda': 0.5, 'eet_depth_lr_scale': False, 'eet_depth_grad_scale': False, 'eet_detach_aux_from_backbone': False, 'eet_detach_exit_from_backbone': False, 'use_code_head': False, 'sch_head_type': 'code', 'sch_bits': 0, 'sch_order': 2, 'sch_max_m': 0, 'sch_phi_mode': 'monomial', 'sch_code_mode': 'binary', 'sch_code_path': '', 'sch_code_ecc_bits': 0, 'sch_code_seed': 1234, 'sch_phi_density': 0.0, 'sch_phi_dtype': 'bf16', 'sch_phi_normalize': 1, 'sch_phi_center': 0, 'sch_g_type': 'linear', 'sch_g_hidden': 0, 'sch_g_layers': 2, 'sch_g_out_std': 0.001, 'sch_mixture': 1, 'sch_residual_rank': 0, 'sch_logit_act': 'none', 'sch_bias': 0, 'sch_input_mode': 'table', 'sch_input_hidden': 0, 'sch_product_groups': 8, 'sch_product_codebook': 256, 'sch_product_source': 'hash', 'sch_product_impl': 'dense', 'sch_phi_whiten': 0, 'sch_mixture_per_phi': 0, 'sch_mixture_topk': 0, 'sch_mixture_aux': 0.01, 'sch_monarch_m1': 0, 'sch_monarch_perm': 'none', 'sch_monarch_perm_path': '', 'sch_tier_bounds': '', 'sch_tier_caps': '', 'sch_tier_order': 'freq', 'sch_tier_perm_path': '', 'sch_proposal_rank': 32, 'sch_proposal_topk': 16384, 'sch_proposal_samples': 4096, 'sch_proposal_warmup': 0, 'sch_proposal_chunk': 2048, 'sch_proposal_aux': 1.0, 'sch_nfh_mode': 'cp', 'sch_nfh_rank': 32, 'sch_nfh_dims': '', 'sch_nfh_groups': 3, 'sch_nfh_views': 1, 'sch_nfh_perm': 'none', 'sch_nfh_perm_path': '', 'sch_nfh_g_type': 'linear', 'sch_nfh_g_hidden': 0, 'sch_rerank_mode': 'topk', 'sch_rerank_k': 64, 'sch_rerank_rank': 32, 'sch_nfh_smooth': 0, 'sch_nfh_chunk': 256, 'sap_block_T': 0, 'sap_block_mode': 'indep', 'sap_block_frac': 0.125, 'sap_lambda': 1.0, 'sap_head_layers': 2, 'sap_head_heads': 0, 'sap_head_mlp_mult': 2, 'sap_enc_layers': 1, 'sap_ctx_window': 16, 'sap_latent_groups': 4, 'sap_latent_codes': 16, 'sap_latent_dim': 64, 'sap_free_bits': 0.25, 'sap_kl_anneal_steps': 2000, 'sap_gumbel_tau': 1.0, 'sap_cp_components': 8, 'sap_wta_k': 4, 'sap_u_freqs': 24, 'sap_u_interior': 0.8, 'sap_logit_chunk': 8192, 'sap_jacobi_sweeps': 2}
+1024 prefixes, 128 tokens each, block T=2048 (sir_tree)
+  reference ppl  next-token    57.18 | block   115.21
+  distinct 3-grams  next-token 0.981 | block 0.968
+  pairs for the LLM judge: /vol/out/s00_sap/gen_S02_sir_tree_l2_TL_s1_d8.jsonl

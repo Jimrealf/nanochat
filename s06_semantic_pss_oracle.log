@@ -1,0 +1,184 @@
+S06-S — semantic-PSS free oracle
+================================
+True HMM state/transition/context plus arbitrary optimal per-state token permutations.
+This strictly upper-bounds a learned global semantic code with XOR/affine actions.
+No evaluation-sample parameters are fitted. Gate: block KL <= 0.10 and invalid <= 3%.
+
+T=4 V=512 HMM states=452 distinct spectra=9 seed=0
+
+  C       N         KL      KL SE    invalid     inv SE  gate
+------------------------------------------------------------------------
+  1    4096   1.122975   0.017256   0.335205   0.007377  FAIL
+  1   16384   1.154204   0.008854   0.343506   0.003710  FAIL
+  2    4096   0.014589   0.002491   0.000000   0.000000  PASS
+  2   16384   0.014680   0.001289   0.000000   0.000000  PASS
+  3    4096   0.008154   0.001969   0.000000   0.000000  PASS
+  3   16384   0.008888   0.001001   0.000000   0.000000  PASS
+  5    4096   0.002442   0.001026   0.000000   0.000000  PASS
+  5   16384   0.003087   0.000545   0.000000   0.000000  PASS
+  9    4096  -0.000000   0.000000   0.000000   0.000000  PASS
+  9   16384   0.000000   0.000000   0.000000   0.000000  PASS
+
+Full result
+-----------
+{
+  "T": 4,
+  "distinct_emission_spectra": 9,
+  "experiment": "S06-S semantic-PSS oracle",
+  "hmm_states": 452,
+  "rows": [
+    {
+      "actual_spectrum_classes": 1,
+      "block_kl": 1.1229745149612427,
+      "block_kl_se": 0.017256084829568863,
+      "contexts": 4096,
+      "fitted_parameters": 0,
+      "gate": "FAIL",
+      "invalid_rate": 0.335205078125,
+      "invalid_se": 0.007376871071755886,
+      "oracle": "free true-state/per-state-permutation upper bound",
+      "permutation_entries": 231424,
+      "requested_spectrum_classes": 1,
+      "sample_nll_valid": 9.414306640625,
+      "stochastic_rounds": 1
+    },
+    {
+      "actual_spectrum_classes": 1,
+      "block_kl": 1.15420401096344,
+      "block_kl_se": 0.008854180574417114,
+      "contexts": 16384,
+      "fitted_parameters": 0,
+      "gate": "FAIL",
+      "invalid_rate": 0.343505859375,
+      "invalid_se": 0.0037101013585925102,
+      "oracle": "free true-state/per-state-permutation upper bound",
+      "permutation_entries": 231424,
+      "requested_spectrum_classes": 1,
+      "sample_nll_valid": 9.430917739868164,
+      "stochastic_rounds": 1
+    },
+    {
+      "actual_spectrum_classes": 2,
+      "block_kl": 0.014588871970772743,
+      "block_kl_se": 0.0024910017382353544,
+      "contexts": 4096,
+      "fitted_parameters": 0,
+      "gate": "PASS",
+      "invalid_rate": 0.0,
+      "invalid_se": 0.0,
+      "oracle": "free true-state/per-state-permutation upper bound",
+      "permutation_entries": 231424,
+      "requested_spectrum_classes": 2,
+      "sample_nll_valid": 9.941262245178223,
+      "stochastic_rounds": 1
+    },
+    {
+      "actual_spectrum_classes": 2,
+      "block_kl": 0.014680382795631886,
+      "block_kl_se": 0.0012894397368654609,
+      "contexts": 16384,
+      "fitted_parameters": 0,
+      "gate": "PASS",
+      "invalid_rate": 0.0,
+      "invalid_se": 0.0,
+      "oracle": "free true-state/per-state-permutation upper bound",
+      "permutation_entries": 231424,
+      "requested_spectrum_classes": 2,
+      "sample_nll_valid": 10.093769073486328,
+      "stochastic_rounds": 1
+    },
+    {
+      "actual_spectrum_classes": 3,
+      "block_kl": 0.008153533563017845,
+      "block_kl_se": 0.0019685341976583004,
+      "contexts": 4096,
+      "fitted_parameters": 0,
+      "gate": "PASS",
+      "invalid_rate": 0.0,
+      "invalid_se": 0.0,
+      "oracle": "free true-state/per-state-permutation upper bound",
+      "permutation_entries": 231424,
+      "requested_spectrum_classes": 3,
+      "sample_nll_valid": 9.874031066894531,
+      "stochastic_rounds": 1
+    },
+    {
+      "actual_spectrum_classes": 3,
+      "block_kl": 0.008887614123523235,
+      "block_kl_se": 0.001001285039819777,
+      "contexts": 16384,
+      "fitted_parameters": 0,
+      "gate": "PASS",
+      "invalid_rate": 0.0,
+      "invalid_se": 0.0,
+      "oracle": "free true-state/per-state-permutation upper bound",
+      "permutation_entries": 231424,
+      "requested_spectrum_classes": 3,
+      "sample_nll_valid": 10.04401683807373,
+      "stochastic_rounds": 1
+    },
+    {
+      "actual_spectrum_classes": 5,
+      "block_kl": 0.002441613469272852,
+      "block_kl_se": 0.0010261102579534054,
+      "contexts": 4096,
+      "fitted_parameters": 0,
+      "gate": "PASS",
+      "invalid_rate": 0.0,
+      "invalid_se": 0.0,
+      "oracle": "free true-state/per-state-permutation upper bound",
+      "permutation_entries": 231424,
+      "requested_spectrum_classes": 5,
+      "sample_nll_valid": 9.944862365722656,
+      "stochastic_rounds": 1
+    },
+    {
+      "actual_spectrum_classes": 5,
+      "block_kl": 0.0030871571507304907,
+      "block_kl_se": 0.0005450102034956217,
+      "contexts": 16384,
+      "fitted_parameters": 0,
+      "gate": "PASS",
+      "invalid_rate": 0.0,
+      "invalid_se": 0.0,
+      "oracle": "free true-state/per-state-permutation upper bound",
+      "permutation_entries": 231424,
+      "requested_spectrum_classes": 5,
+      "sample_nll_valid": 10.048422813415527,
+      "stochastic_rounds": 1
+    },
+    {
+      "actual_spectrum_classes": 9,
+      "block_kl": -2.7939677238464355e-09,
+      "block_kl_se": 1.637726843028986e-09,
+      "contexts": 4096,
+      "fitted_parameters": 0,
+      "gate": "PASS",
+      "invalid_rate": 0.0,
+      "invalid_se": 0.0,
+      "oracle": "free true-state/per-state-permutation upper bound",
+      "permutation_entries": 231424,
+      "requested_spectrum_classes": 9,
+      "sample_nll_valid": 9.885807037353516,
+      "stochastic_rounds": 1
+    },
+    {
+      "actual_spectrum_classes": 9,
+      "block_kl": 2.9103830456733704e-10,
+      "block_kl_se": 9.394982569688182e-10,
+      "contexts": 16384,
+      "fitted_parameters": 0,
+      "gate": "PASS",
+      "invalid_rate": 0.0,
+      "invalid_se": 0.0,
+      "oracle": "free true-state/per-state-permutation upper bound",
+      "permutation_entries": 231424,
+      "requested_spectrum_classes": 9,
+      "sample_nll_valid": 9.943553924560547,
+      "stochastic_rounds": 1
+    }
+  ],
+  "seconds": 5.49,
+  "seed": 0,
+  "vocab": 512
+}

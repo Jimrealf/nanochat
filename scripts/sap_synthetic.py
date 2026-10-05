@@ -50,7 +50,8 @@ from dataclasses import dataclass
 import torch
 import torch.nn.functional as F
 
-from nanochat.block_head import SAP_MODES, target_bins
+from nanochat.block_head import CUT_MODES, SAP_MODES, SIR_MODES, STRUCT_MODES, V4_MODES, target_bins
+from nanochat.sap_tables import tables_from_sequences
 from nanochat.gpt import GPT, GPTConfig
 
 
@@ -170,22 +171,62 @@ def true_next_entropy(hmm: PhraseHMM, alpha: torch.Tensor) -> torch.Tensor:
 
 # ----------------------------------------------------------------------------- model
 def build_model(args, mode, T, V, device):
+    # SIR places sampling between decoder layers. Keep each ablation at its minimum
+    # structurally valid depth unless the caller explicitly asks for a deeper head.
+    required_layers = 3 if mode in ("sir_conf", "sir_pyramid", "sir_tree", "sir_full") else (
+        2 if (mode in SIR_MODES or mode in CUT_MODES) else 1)
+    head_layers = max(args.head_layers, required_layers)
     cfg = GPTConfig(
         sequence_len=args.seq_len, vocab_size=V, n_layer=args.depth,
         n_head=max(1, args.n_embd // 64), n_kv_head=max(1, args.n_embd // 64), n_embd=args.n_embd,
         window_pattern="L",
         sap_block_T=T, sap_block_mode=mode, sap_block_frac=args.block_frac,
-        sap_head_layers=args.head_layers, sap_ctx_window=args.ctx_window,
+        sap_head_layers=head_layers, sap_ctx_window=args.ctx_window,
         sap_latent_groups=args.latent_groups, sap_latent_codes=args.latent_codes,
         sap_latent_dim=args.latent_dim, sap_free_bits=args.free_bits,
         sap_kl_anneal_steps=args.kl_anneal, sap_cp_components=args.cp_components,
-        sap_wta_k=args.wta_k,
+        sap_field_rank=args.field_rank,
+        sap_field_samples=args.field_samples, sap_field_energy_weight=args.field_energy_weight,
+        sap_field_topk=args.field_topk,
+        sap_wta_k=args.wta_k, sap_gumbel_tau=args.gumbel_tau,
+        sap_sir_topk=args.sir_topk, sap_sir_rank=args.sir_rank,
+        sap_sir_anchor_stride=args.sir_anchor_stride, sap_sir_fine_stride=args.sir_fine_stride,
+        sap_sir_refine_frac=args.sir_refine_frac, sap_sir_tree_levels=args.sir_tree_levels,
+        sap_sir_train_samples=args.sir_train_samples,
+        sap_sir_policy_weight=args.sir_policy_weight, sap_sir_posterior_mix=args.sir_posterior_mix,
+        sap_sir_draft_weight=args.sir_draft_weight,
+        sap_sir_context_weight=args.sir_context_weight, sap_sir_energy_weight=args.sir_energy_weight,
+        sap_trunk_grad=args.trunk_grad, sap_lattice_k=args.lattice_k, sap_pair_rank=args.pair_rank,
+        sap_tt_rank=args.tt_rank, sap_cp_codes=args.cp_codes,
+        sap_nce_props=args.nce_props if mode in STRUCT_MODES else 0, sap_nce_neg=args.nce_neg,
+        sap_nce_weight=args.nce_weight,
+        sap_supp_min_count=args.supp_min_count if mode in ("lat_crf", "cut_crf") else 0,
+        sap_soft_eps=args.soft_eps if mode in STRUCT_MODES else 0.0,
+        sap_code_classes=args.code_classes,
     )
     with torch.device("meta"):
         model = GPT(cfg)
+    if model.sap_head._table_keys():
+        # The synthetic language's "corpus tables" come from its own training stream: a fresh
+        # sample of the generator, never the evaluation sequences.
+        model.sap_head.set_tables(synthetic_tables(args, V, device))
     model.to_empty(device=device)
     model.init_weights()
     return model
+
+
+_TABLE_CACHE = {}
+
+
+def synthetic_tables(args, V, device):
+    key = (args.hmm_seed, V, args.table_seqs, args.seq_len, args.code_classes)
+    if key not in _TABLE_CACHE:
+        hmm = build_phrase_hmm(V=V, seed=args.hmm_seed, device=device)
+        seqs = sample_sequences(hmm, args.table_seqs, args.seq_len + 1,
+                                torch.Generator(device=device).manual_seed(777))
+        _TABLE_CACHE[key] = tables_from_sequences(seqs, V, top_m=min(256, V), pmi_min_count=3,
+                                                  n_classes=args.code_classes, svd_rank=min(64, V - 1))
+    return _TABLE_CACHE[key]
 
 
 def lr_at(step, total, warmup):
@@ -216,19 +257,93 @@ class SequencePool:
         return out
 
 
-def train(model, hmm, args, device, seed):
+def train(model, hmm, args, device, seed, checkpoint_commit=None):
     gen = torch.Generator(device=device).manual_seed(10_000 + seed)
     pool = SequencePool(hmm, args.seq_len + 1, args.pool, gen)
     opt = model.setup_optimizer()
     model.train()
     t0 = time.time()
     last = {}
-    for step in range(args.steps):
-        mult = lr_at(step, args.steps, args.warmup)
+    milestone_rows = []
+    milestones = set(args.eval_milestones)
+    head_only = False
+    frozen_versions = {}
+
+    def freeze_to_head():
+        nonlocal head_only, frozen_versions
+        if head_only:
+            return
+        head_ids = {id(p) for p in model.sap_head.parameters()}
+        frozen_versions = {}
+        for name, p in model.named_parameters():
+            keep = id(p) in head_ids
+            p.requires_grad_(keep)
+            if not keep:
+                frozen_versions[name] = (p, p._version)
+        # requires_grad=False prevents new gradients, but Muon momentum can still move a
+        # parameter already registered in the optimizer. Remove frozen tensors from the
+        # optimizer itself and discard their state; this is the actual freeze boundary.
+        for group in opt.param_groups:
+            group["params"] = [p for p in group["params"] if id(p) in head_ids]
+        for p in list(opt.state):
+            if id(p) not in head_ids:
+                del opt.state[p]
+        head_only = True
+
+    start_step = 0
+    elapsed_before = 0.0
+    if args.resume_checkpoint and os.path.exists(args.resume_checkpoint):
+        ck = torch.load(args.resume_checkpoint, map_location="cpu", weights_only=False)
+        model.load_state_dict(ck["model"])
+        start_step = int(ck["step"])
+        if args.freeze_trunk_after >= 0 and start_step > args.freeze_trunk_after:
+            freeze_to_head()
+        opt.load_state_dict(ck["optimizer"])
+        gen.set_state(ck["data_generator_state"])
+        pool.pool = None if ck["pool"] is None else ck["pool"].to(device)
+        pool.used = int(ck["pool_used"])
+        torch.set_rng_state(ck["torch_rng_cpu"])
+        if device.type == "cuda" and ck.get("torch_rng_cuda") is not None:
+            torch.cuda.set_rng_state(ck["torch_rng_cuda"], device)
+        last = ck.get("last", {})
+        milestone_rows = ck.get("milestones", [])
+        elapsed_before = float(ck.get("elapsed", 0.0))
+        print(f"    resumed {args.resume_checkpoint} at completed step {start_step}", flush=True)
+
+    for step in range(start_step, args.steps):
+        if args.freeze_trunk_after >= 0 and step == args.freeze_trunk_after:
+            freeze_to_head()
+            for name, p in model.named_parameters():
+                if not p.requires_grad:
+                    frozen_versions[name] = (p, p._version)
+            trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+            print(f"    froze solved trunk at step {step}; {trainable:,} SAP-head parameters remain trainable",
+                  flush=True)
+        if args.freeze_trunk_after > 0:
+            if step < args.freeze_trunk_after:
+                # Reproduce the original 2k trajectory exactly before the audit resumes.
+                mult = lr_at(step, args.freeze_trunk_after, args.warmup)
+            else:
+                # A fresh head-only schedule after the freeze avoids inheriting the 2k
+                # run's terminal 0.05x learning rate for the entire continuation.
+                mult = lr_at(step - args.freeze_trunk_after,
+                             args.steps - args.freeze_trunk_after, args.warmup)
+        else:
+            mult = lr_at(step, args.steps, args.warmup)
         for grp in opt.param_groups:
             grp["lr"] = grp["initial_lr"] * mult
         tok = pool.batch(args.batch)
-        loss = model(tok[:, :-1].contiguous(), tok[:, 1:].contiguous())
+        x, y = tok[:, :-1].contiguous(), tok[:, 1:].contiguous()
+        if head_only:
+            # The trunk and shared vocabulary matrices are fixed diagnostics now. Running
+            # the trunk under no_grad saves backward compute while preserving the exact
+            # hidden-state distribution that the head saw at the freeze point.
+            with torch.no_grad():
+                hid = model(x, skip_logits=True)
+            loss, sap_stats = model._sap_block_loss(hid.detach(), y, None)
+            model._sap_stats = sap_stats
+        else:
+            loss = model(x, y)
         loss.backward()
         opt.step()
         model.zero_grad(set_to_none=True)
@@ -237,7 +352,40 @@ def train(model, hmm, args, device, seed):
                   for k, v in (getattr(model, "_sap_stats", None) or {}).items()}
             last = {"step": step, "loss": round(loss.item(), 4), **st}
             print(f"    step {step:5d} loss {loss.item():.4f} {st} ({time.time() - t0:.0f}s)", flush=True)
-    return last
+        completed = step + 1
+        if completed in milestones:
+            changed = [name for name, (p, version) in frozen_versions.items()
+                       if p._version != version]
+            if changed:
+                raise RuntimeError(f"frozen parameters changed after optimizer pruning: {changed[:8]}")
+            res = evaluate(model, hmm, args, device, model.sap_head.T, seed)
+            milestone_rows.append({"step": completed, "head_only": head_only,
+                                   "train": dict(last), **res})
+            model.train()
+            print(f"    milestone {completed}: block_kl={res['block_kl']:.4f} "
+                  f"invalid={res['invalid_rate']:.4f} "
+                  f"oracle={res.get('invalid_rate_oracle_anchors')}", flush=True)
+        if args.checkpoint_every > 0 and args.resume_checkpoint and \
+                (completed % args.checkpoint_every == 0 or completed == args.steps):
+            payload = {
+                "step": completed,
+                "model": model.state_dict(),
+                "optimizer": opt.state_dict(),
+                "data_generator_state": gen.get_state(),
+                "pool": pool.pool,
+                "pool_used": pool.used,
+                "torch_rng_cpu": torch.get_rng_state(),
+                "torch_rng_cuda": torch.cuda.get_rng_state(device) if device.type == "cuda" else None,
+                "last": last,
+                "milestones": milestone_rows,
+                "elapsed": elapsed_before + time.time() - t0,
+            }
+            os.makedirs(os.path.dirname(args.resume_checkpoint) or ".", exist_ok=True)
+            torch.save(payload, args.resume_checkpoint)
+            if checkpoint_commit is not None:
+                checkpoint_commit()
+            print(f"    checkpointed completed step {completed} -> {args.resume_checkpoint}", flush=True)
+    return last, milestone_rows
 
 
 # ----------------------------------------------------------------------------- evaluation
@@ -276,10 +424,18 @@ def evaluate(model, hmm, args, device, T, seed):
         u_bins = (lo.view(-1, T - 1), w.view(-1, T - 1))
     elif head.mode == "inv_head":
         u_bins = (torch.zeros(yb.size(0), 0, device=device),) * 2
+    h_future = hid[b, (t + T - 1).clamp(max=hid.size(1) - 1)]
     lp_model = head.block_logprob(hid[b, t], ctx, cv, yb, model._sap_readout,
                                   embed=model.transformer.wte, u_bins=u_bins,
-                                  n_samples=args.iwae_samples)
+                                  n_samples=args.iwae_samples, h_future=h_future)
     block_kl = None if lp_model is None else (lp_true - lp_model).mean().item()
+    # Self-contrastive heads: the exact number above is the proposal q's; p ∝ q·exp(phi) has
+    # only an importance-sampling estimate, reported beside it and never in its place.
+    block_kl_nce_est = None
+    if getattr(head, "nce_props", 0) > 0:
+        lp_nce = head.nce_logprob_estimate(hid[b, t], ctx, cv, yb, model._sap_readout,
+                                           embed=model.transformer.wte, n_props=max(64, head.nce_props))
+        block_kl_nce_est = (lp_true - lp_nce).mean().item()
 
     # sample-based coherence, comparable across every mode including the likelihood-free one
     S = args.samples_per_ctx
@@ -296,12 +452,24 @@ def evaluate(model, hmm, args, device, T, seed):
     # from the TRUE block. Clean here but dirty above means the prior is the bottleneck;
     # dirty in both means the decoder (or the plan's capacity) is.
     invalid_posterior = None
+    invalid_oracle_anchors = None
     if head.mode in ("p1_discrete", "p2_gauss"):
         samp_q = head.sample(hs, ctx_s, cv_s, model._sap_readout, embed=model.transformer.wte,
                              embed_table=model.transformer.wte.weight, temperature=1.0, generator=gs,
                              posterior_y=yb.repeat_interleave(S, dim=0))
         lp_q = true_block_logprob(hmm, a_t.repeat_interleave(S, dim=0), samp_q)
         invalid_posterior = (~torch.isfinite(lp_q)).float().mean().item()
+    elif head.mode == "sir_anchor" or head.mode in CUT_MODES:
+        # Capacity diagnostic: keep the same refiner and final sampler, but replace its
+        # independently sampled anchors with anchors from a valid observed continuation.
+        # A clean oracle result with a dirty prior result localises the failure to anchor
+        # generation rather than the refiner.
+        samp_q = head.sample(
+            hs, ctx_s, cv_s, model._sap_readout, embed=model.transformer.wte,
+            embed_table=model.transformer.wte.weight, temperature=1.0, generator=gs,
+            posterior_y=yb.repeat_interleave(S, dim=0))
+        lp_q = true_block_logprob(hmm, a_t.repeat_interleave(S, dim=0), samp_q)
+        invalid_oracle_anchors = (~torch.isfinite(lp_q)).float().mean().item()
 
     # the trunk's own autoregressive samples: the reference invalid rate
     ar_invalid = None
@@ -321,8 +489,9 @@ def evaluate(model, hmm, args, device, T, seed):
     sens = head.latent_sensitivity(hid[b, t], ctx, cv, model._sap_readout, n_samples=8)
     return {
         "ntp_ce": ntp_ce, "true_entropy": ent, "ntp_excess": ntp_ce - ent,
-        "tc": tc, "block_kl": block_kl, "ar_block_kl": ar_block_kl,
+        "tc": tc, "block_kl": block_kl, "block_kl_nce_est": block_kl_nce_est, "ar_block_kl": ar_block_kl,
         "invalid_rate": invalid, "invalid_rate_posterior": invalid_posterior,
+        "invalid_rate_oracle_anchors": invalid_oracle_anchors,
         "ar_invalid_rate": ar_invalid, "sample_nll": sample_nll,
         "sensitivity": None if sens is None else sens.mean().item(),
         "head_flops_per_token": head.flops_per_token(hmm.V),
@@ -367,6 +536,42 @@ def gate_verdicts(rows):
         if r is not None and r["sensitivity"] is not None:
             out.append(f"  control plain_noise: sensitivity {r['sensitivity']:.4f} nats "
                        f"({'ignores its noise, as predicted' if r['sensitivity'] < 0.05 else 'USES its noise: the motivating claim fails here'})")
+        for name in ("field_cp", "field_energy"):
+            r = g.get(name)
+            if r is None:
+                continue
+            kl_ok = r["block_kl"] is not None and r["block_kl"] <= 0.10
+            inv_ok = r["invalid_rate"] <= 0.03
+            out.append(f"  {name}: {'ADVANCE' if kl_ok and inv_ok else 'KILL'} | "
+                       f"block_kl {r['block_kl']} (needs <= 0.10), invalid "
+                       f"{r['invalid_rate']:.3f} (needs <= 0.03)")
+        tree = g.get("sir_tree")
+        for name in V4_MODES:
+            r = g.get(name)
+            if r is None:
+                continue
+            kl_ok = r["block_kl"] is not None and r["block_kl"] <= 0.10
+            inv_ok = r["invalid_rate"] <= 0.03
+            extra = ""
+            if tree is not None and tree["block_kl"] is not None and r["block_kl"] is not None:
+                extra = f", vs full tree {tree['block_kl']:.4f} ({'better' if r['block_kl'] < tree['block_kl'] else 'NOT better'})"
+            if r.get("block_kl_nce_est") is not None:
+                extra += f", NCE-resampled estimate {r['block_kl_nce_est']:.4f}"
+            out.append(f"  {name}: {'ADVANCE' if kl_ok and inv_ok else 'KILL'} | block_kl {r['block_kl']} "
+                       f"(needs <= 0.10), invalid {r['invalid_rate']:.3f} (needs <= 0.03), "
+                       f"trunk ntp_excess {r['ntp_excess']:.4f}{extra}")
+        for name in ("sir", "sir_soft", "sir_compat", "sir_context", "sir_conf", "sir_anchor",
+                     "sir_pyramid", "sir_tree", "sir_lattice", "sir_energy", "sir_full"):
+            r = g.get(name)
+            if r is None:
+                continue
+            # S01's mechanism gate is deliberately much stricter than merely beating P1:
+            # at T=4 it must close ~80% of P1's gap toward the exact local head.
+            kl_ok = r["block_kl"] is not None and r["block_kl"] <= 0.10
+            inv_ok = r["invalid_rate"] <= 0.03
+            out.append(f"  {name}: {'ADVANCE' if kl_ok and inv_ok else 'KILL'} | "
+                       f"block_kl {r['block_kl']} (needs <= 0.10), invalid {r['invalid_rate']:.3f} "
+                       f"(needs <= 0.03)")
     return out
 
 
@@ -376,6 +581,14 @@ def build_parser():
     p.add_argument("--T", nargs="+", type=int, default=[2, 4])
     p.add_argument("--seeds", type=int, default=1)
     p.add_argument("--steps", type=int, default=2000)
+    p.add_argument("--freeze-trunk-after", type=int, default=-1,
+                   help="after this many joint steps, freeze everything except sap_head; -1 disables")
+    p.add_argument("--eval-milestones", nargs="*", type=int, default=[],
+                   help="completed-step counts at which to record exact learning-curve metrics")
+    p.add_argument("--resume-checkpoint", type=str, default="",
+                   help="optional model/optimizer/data-state checkpoint used for preemption-safe resume")
+    p.add_argument("--checkpoint-every", type=int, default=0,
+                   help="save resume state every N completed steps; 0 disables")
     p.add_argument("--warmup", type=int, default=100)
     p.add_argument("--batch", type=int, default=32)
     p.add_argument("--seq-len", type=int, default=256)
@@ -391,7 +604,43 @@ def build_parser():
     p.add_argument("--free-bits", type=float, default=0.25)
     p.add_argument("--kl-anneal", type=int, default=500)
     p.add_argument("--cp-components", type=int, default=16)
+    p.add_argument("--field-rank", type=int, default=8)
+    p.add_argument("--field-samples", type=int, default=4,
+                   help="training prior draws for field_energy; inference always uses one")
+    p.add_argument("--field-energy-weight", type=float, default=0.25)
+    p.add_argument("--field-topk", type=int, default=16,
+                   help="soft-gradient candidates; hard Gumbel draw still ranges over full vocab")
     p.add_argument("--wta-k", type=int, default=4)
+    p.add_argument("--gumbel-tau", type=float, default=1.0)
+    p.add_argument("--sir-topk", type=int, default=16)
+    p.add_argument("--sir-rank", type=int, default=32)
+    p.add_argument("--sir-anchor-stride", type=int, default=2,
+                   help="coarse spacing; T=4 gate uses 2 (full T=L sweep uses 16)")
+    p.add_argument("--sir-fine-stride", type=int, default=1,
+                   help="fine spacing; T=4 gate uses 1 (full T=L sweep uses 4)")
+    p.add_argument("--sir-refine-frac", type=float, default=0.25)
+    p.add_argument("--sir-tree-levels", type=int, default=0,
+                   help="correlated tree anchor rounds; 0 expands until every position is committed")
+    p.add_argument("--sir-train-samples", type=int, default=4)
+    p.add_argument("--sir-policy-weight", type=float, default=1.0)
+    p.add_argument("--sir-posterior-mix", type=float, default=0.5)
+    p.add_argument("--sir-draft-weight", type=float, default=1.0)
+    p.add_argument("--sir-context-weight", type=float, default=0.25)
+    p.add_argument("--sir-energy-weight", type=float, default=0.25)
+    # SAP v4
+    p.add_argument("--trunk-grad", type=float, default=1.0,
+                   help="gradient the block loss sends into the trunk/lm_head/wte (0 = detached)")
+    p.add_argument("--lattice-k", type=int, default=64)
+    p.add_argument("--pair-rank", type=int, default=32)
+    p.add_argument("--tt-rank", type=int, default=32)
+    p.add_argument("--cp-codes", type=int, default=256)
+    p.add_argument("--nce-props", type=int, default=0, help="self-contrastive resampling proposals (lattice/cut heads)")
+    p.add_argument("--nce-neg", type=int, default=4)
+    p.add_argument("--nce-weight", type=float, default=1.0)
+    p.add_argument("--supp-min-count", type=int, default=0, help="corpus support mask on CRF pairs (lat_crf, cut_crf)")
+    p.add_argument("--soft-eps", type=float, default=0.0, help="n-gram soft-target auxiliary (lattice/cut heads)")
+    p.add_argument("--code-classes", type=int, default=64)
+    p.add_argument("--table-seqs", type=int, default=20000, help="generator sequences behind the synthetic corpus tables")
     p.add_argument("--eval-seqs", type=int, default=128)
     p.add_argument("--eval-positions", nargs="+", type=int, default=[48, 96, 144, 192])
     p.add_argument("--samples-per-ctx", type=int, default=4)
@@ -415,7 +664,7 @@ def apply_smoke(args):
     return args
 
 
-def run_one(args, mode, T, seed, hmm=None):
+def run_one(args, mode, T, seed, hmm=None, checkpoint_commit=None):
     """Train one (mode, T, seed) from scratch on the phrase HMM and score it. Returns the row."""
     device = torch.device(args.device)
     if hmm is None:
@@ -424,15 +673,45 @@ def run_one(args, mode, T, seed, hmm=None):
     print(f"== mode={mode} T={T} seed={seed}", flush=True)
     t0 = time.time()
     model = build_model(args, mode, T, hmm.V, device)
-    last = train(model, hmm, args, device, seed)
-    res = evaluate(model, hmm, args, device, T, seed)
+    last, milestones = train(model, hmm, args, device, seed,
+                             checkpoint_commit=checkpoint_commit)
+    if milestones and milestones[-1]["step"] == args.steps:
+        res = {k: v for k, v in milestones[-1].items()
+               if k not in ("step", "head_only", "train")}
+    else:
+        res = evaluate(model, hmm, args, device, T, seed)
     kl = last.get("kl_per_group")
     if kl is not None:
         res["train_kl_nats"] = float(sum(kl) if isinstance(kl, list) else kl)
     elif last.get("kl_per_block") is not None:
         res["train_kl_nats"] = float(last["kl_per_block"])
     row = {"mode": mode, "T": T, "seed": seed, "steps": args.steps,
-           "seconds": round(time.time() - t0, 1), "final_train": last, **res}
+           "seconds": round(time.time() - t0, 1), "final_train": last,
+           "training_milestones": milestones, **res}
+    if mode.startswith("sir"):
+        # Persist resolved values, not only CLI argv: parser defaults can change between
+        # experiments, and an omitted flag must not make an archived row ambiguous.
+        row["sir_config"] = {
+            "topk": args.sir_topk,
+            "rank": args.sir_rank,
+            "anchor_stride": args.sir_anchor_stride,
+            "fine_stride": args.sir_fine_stride,
+            "refine_frac": args.sir_refine_frac,
+            "tree_levels": args.sir_tree_levels,
+            "train_samples": args.sir_train_samples,
+            "policy_weight": args.sir_policy_weight,
+            "posterior_mix": args.sir_posterior_mix,
+            "draft_weight": args.sir_draft_weight,
+            "context_weight": args.sir_context_weight,
+            "energy_weight": args.sir_energy_weight,
+        }
+    if mode in V4_MODES:
+        row["v4_config"] = {
+            "trunk_grad": args.trunk_grad, "lattice_k": args.lattice_k, "pair_rank": args.pair_rank,
+            "tt_rank": args.tt_rank, "cp_codes": args.cp_codes, "nce_props": args.nce_props,
+            "nce_neg": args.nce_neg, "supp_min_count": args.supp_min_count, "soft_eps": args.soft_eps,
+            "code_classes": args.code_classes, "head_layers": args.head_layers,
+        }
     bk = "  n/a " if res["block_kl"] is None else f"{res['block_kl']:6.3f}"
     print(f"   -> block_kl {bk} | tc {res['tc']:.3f} | ar_block_kl {res['ar_block_kl']:.3f} "
           f"| invalid {res['invalid_rate']:.3f} (AR {res['ar_invalid_rate']}) "

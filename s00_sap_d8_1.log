@@ -1,0 +1,2390 @@
+2026-10-02 13:16:58,852 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/main/kernel-status.toml "HTTP/1.1 404 Not Found"
+2026-10-02 13:16:58,932 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/tree/main/build?recursive=false&expand=false "HTTP/1.1 200 OK"
+2026-10-02 13:16:59,030 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/revision/main "HTTP/1.1 200 OK"
+
+                                                       █████                █████
+                                                      ░░███                ░░███
+     ████████    ██████   ████████    ██████   ██████  ░███████    ██████  ███████
+    ░░███░░███  ░░░░░███ ░░███░░███  ███░░███ ███░░███ ░███░░███  ░░░░░███░░░███░
+     ░███ ░███   ███████  ░███ ░███ ░███ ░███░███ ░░░  ░███ ░███   ███████  ░███
+     ░███ ░███  ███░░███  ░███ ░███ ░███ ░███░███  ███ ░███ ░███  ███░░███  ░███ ███
+     ████ █████░░████████ ████ █████░░██████ ░░██████  ████ █████░░███████  ░░█████
+    ░░░░ ░░░░░  ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░   ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░   ░░░░░
+    
+Autodetected device type: cuda
+2026-10-02 13:17:03,218 - nanochat.common - [32m[1mINFO[0m - Distributed world size: 1
+Device: cuda (ddp=True, world_size=1)
+GPU: NVIDIA H200 | Peak FLOPS (BF16): 9.89e+14
+COMPUTE_DTYPE: torch.bfloat16 (auto-detected: CUDA SM 90 (bf16 supported))
+✓ Using Flash Attention 3 (Hopper GPU detected) — efficient and fast.
+Vocab size: 32,768
+Model config:
+{
+  "sequence_len": 2048,
+  "vocab_size": 32768,
+  "n_layer": 8,
+  "n_head": 4,
+  "n_kv_head": 4,
+  "n_embd": 512,
+  "use_moe": false,
+  "use_perm": false,
+  "moe_num_experts": 8,
+  "moe_router_dim": 64,
+  "moe_embed_dim": 64,
+  "dropout": 0.0,
+  "use_remix_linear": false,
+  "remix_context_dim": 64,
+  "remix_context_dim_ratio": 6,
+  "remix_basis_size": 64,
+  "remix_output_gate_rank": 16,
+  "remixed_linear_kwargs": {
+    "use_basis_gate": true,
+    "use_output_gate": true,
+    "use_context": true,
+    "basis_gate_mode": "mlp",
+    "sparse_gate_k": 0,
+    "gate_temperature": 1.0,
+    "basis_scale_factor": 4,
+    "n_templates": 1,
+    "template_routing_learned": false,
+    "template_topk": 0,
+    "tiny_expert": false,
+    "tiny_expert_topk": 16,
+    "lokr_expert": false,
+    "lokr_n_experts": 64,
+    "lokr_topk": 16,
+    "lokr_rank": 4,
+    "lokr_learned": false,
+    "basis_gate_rank": 8,
+    "disable_ln_basis": false,
+    "chunk_route_impl": "compose",
+    "top1_gate": "ones",
+    "template_delta_rank": 0,
+    "route_side": "output",
+    "drop_basis_proj": false,
+    "basis_side_templates": 0,
+    "grad_equalize": false,
+    "output_gate_rank": 16,
+    "operator_modulation": "none",
+    "lie_generators": 4,
+    "poly_order": 2,
+    "grassmann_bank_size": 4
+  },
+  "use_pos_embed": false,
+  "moe_use_abs_pos_embed": false,
+  "use_layer_context": true,
+  "scale_basis_size": true,
+  "remix_use_dual_gate": false,
+  "remix_use_fused": false,
+  "p26_output_gated_linear": 0,
+  "p28_shared_basis": 0,
+  "p28_chunk_routing_size": 0,
+  "p28_global_template_bank": "none",
+  "p28_attn_proj_templates": 0,
+  "p28_attn_qk_templates": 0,
+  "p29_template_block_diag": 0,
+  "p29_template_lr_scale": 1.0,
+  "p29_grad_equalize": 0,
+  "p34_ffn_mult": 4.0,
+  "p34_ffn_single": 0,
+  "p34_dense_attn": 0,
+  "legacy_init_fallback": 0,
+  "p35_template_diversity_lambda": 0.0,
+  "p22_route_affine": 0,
+  "p34_ffn_schedule": "",
+  "p34_ffn_no_ffn_replacement": "none",
+  "p34_ffn_last_depth": 1,
+  "p36_swiglu_ffn": 0,
+  "p36_swiglu_mult": 2.6666666666666665,
+  "cond_sites": "both",
+  "cond_rank": 256,
+  "cond_mult_steps": 0,
+  "cond_gate_source": "router",
+  "cond_coeff_act": "centered",
+  "cond_router_rank": 0,
+  "cond_live_init": 0.0,
+  "cond_router_act": "none",
+  "cond_chunk_size": 0,
+  "cond_mult_scale": -1.0,
+  "cond_mult_impl": "wy",
+  "cond_attn_projs": "qkvo",
+  "cond_layer_frac": 1.0,
+  "perm_expert_mode": "low_rank",
+  "perm_rank": 16,
+  "router_context_window": -1,
+  "router_causal": true,
+  "router_num_heads": 4,
+  "router_num_queries": 16,
+  "router_n_layers": 2,
+  "router_use_vocab_prior": false,
+  "window_pattern": "SSSL",
+  "cclblock_modulation": "weight",
+  "cclblock_orth_lambda": 0.0,
+  "cclblock_context_stream": "local",
+  "cclblock_ema_factor": 0.99,
+  "cclblock_stale_ctx_lag": 0,
+  "cclblock_sparse_gate_k": 0,
+  "cclblock_gate_temperature": 1.0,
+  "cclblock_context_bank_size": 0,
+  "cclblock_per_head_ctx": false,
+  "cclblock_context_source": "norm_x",
+  "cclblock_chunk_size": 0,
+  "cclblock_aux_objective": "none",
+  "cclblock_aux_lambda": 0.1,
+  "cclblock_boundary_token_id": 198,
+  "use_ral": false,
+  "ral_rank": 32,
+  "cclblock_film_gate": false,
+  "cclblock_attn_shadow_dim": 0,
+  "cclblock_dynamic_ratio": 0.25,
+  "cclblock_gate_rank": 8,
+  "cclblock_num_regimes": 8,
+  "cclblock_regime_temperature": 1.0,
+  "cclblock_poly_order": 2,
+  "cclblock_lie_generators": 4,
+  "cclblock_grassmann_bank_size": 4,
+  "cclblock_tucker_rank": 32,
+  "cclblock_tucker_modes": 8,
+  "cclblock_svs_rank": 64,
+  "cclblock_svs_eps": 0.1,
+  "cclblock_vq_codes": 8,
+  "cclblock_vq_temperature": 1.0,
+  "cclblock_dcu_warmup_steps": 0,
+  "cclblock_fsi_rotations": 8,
+  "cclblock_fsi_selector_dim": 64,
+  "cclblock_aesp_strata": 4,
+  "cclblock_aesp_delta_rank": 4,
+  "cclblock_ckr_branches": 4,
+  "cclblock_ckr_kernel_size": 64,
+  "cclblock_ckr_pos_channels": 1,
+  "cclblock_ckr_dual_optim": 0,
+  "cclblock_ckr_content_bias": 0.0,
+  "cclblock_giad_rank": 32,
+  "cclblock_psg_kernel_size": 64,
+  "cclblock_ss_dynamic_ratio": 0.25,
+  "cclblock_ss_branches": 2,
+  "cclblock_ss_kernel_size": 64,
+  "cclblock_lokr_branches": 8,
+  "cclblock_lokr_rank": 16,
+  "cclblock_ckr_temp_start": 2.0,
+  "cclblock_ckr_temp_end": 0.3,
+  "cclblock_com_kernel_size": 32,
+  "cclblock_ckr_ortho_init": 0,
+  "cclblock_ckr_branch_dropout": 0.0,
+  "cclblock_ckr_diversity_lambda": 0.0,
+  "cclblock_ckr_layer_selective": 0,
+  "cclblock_pgr_kernel_size": 64,
+  "cclblock_cil_kernel_size": 64,
+  "cclblock_prb_kernel_size": 64,
+  "p18_layer_drop": 0.0,
+  "p18_dynamic_activation": 0,
+  "p18_mixture_norm": 0,
+  "p18_causal_attn_bias": 0,
+  "p18_aux_sim_lambda": 0.0,
+  "p18_gradient_penalty": 0.0,
+  "p18_per_channel_scale": 0,
+  "p19_residual_gate": 0,
+  "p19_head_importance": 0,
+  "p19_residual_mix_groups": 0,
+  "p19_attn_logit_bias": 0,
+  "p19_residual_decay": 0,
+  "p19_grad_equilibrium": 0.0,
+  "p19_spectral_reparam": 0,
+  "p19_weight_anticollapse": 0.0,
+  "p19_ve_bias": 0,
+  "p19_weight_noise": 0.0,
+  "p20_hrcs_scale": 0,
+  "p20_lswr_scale": 0,
+  "p20_lswr_planes": 8,
+  "p20_lrcfb_branches": 0,
+  "p20_lrcfb_narrow": 0,
+  "p20_lrcfb_learned": 0,
+  "p20_lrcfb_topk": 0,
+  "p20_dgcr_branches": 0,
+  "p20_dgcr_aux_weight": 0.01,
+  "p20_mone_experts": 0,
+  "p20_mone_topk": 0,
+  "p20_mone_narrow": 1,
+  "p20_mone_frozen": 0,
+  "p20_ncea_branches": 0,
+  "p20_ncea_eps": 0.1,
+  "p20_adwi": 0,
+  "p20_pwu_branches": 0,
+  "p20_pwu_phase": 1,
+  "p20_fsvd_gate": 0,
+  "p20_wbfc_clusters": 0,
+  "p20_wbfc_active": 0,
+  "p21_per_experts": 0,
+  "p21_per_topk": 0,
+  "p21_per_learned": 0,
+  "p21_per_attn": 0,
+  "p22_attn_moe_route": "none",
+  "p23_tiny_expert": 0,
+  "p23_n_experts": 64,
+  "p23_topk": 16,
+  "p23_learned_route": 0,
+  "p23_std_moe_experts": 0,
+  "p23_std_moe_topk": -1,
+  "p23_std_moe_aux_weight": 0.01,
+  "p23_lokr": 0,
+  "p23_lokr_rank": 4,
+  "p23_use_shared_block_router": 0,
+  "p23_linear_moe_experts": 0,
+  "p23_linear_moe_topk": 0,
+  "p23_quantile_route": 0,
+  "remix_shared_context_gates": 0,
+  "p24_use_sliced_weight": 0,
+  "p24_sliced_weight_reduction_scale": 8,
+  "p24_sliced_weight_min_select": 128,
+  "p24_sliced_weight_scope": "per_token",
+  "p24_sliced_weight_balance_coeff": 0.01,
+  "p24_quantile_route": 0,
+  "p24_use_folded_mod": 0,
+  "p24_folded_mod_reduction_scale": 8,
+  "p24_folded_mod_min_dim": 128,
+  "p24_folded_mod_scope": "per_layer",
+  "p24_folded_mod_gate_act": "tanh_centered",
+  "p24_use_sequence_gated_linear": 0,
+  "p24_sequence_gated_scope": "per_layer",
+  "p24_sequence_gated_act": "tanh_centered",
+  "remix_disable_ln_basis": 0,
+  "dense_intermediate_ln": 0,
+  "use_mol": false,
+  "mol_n_blocks": 5,
+  "mol_n_shared": 1,
+  "mol_topk": 3,
+  "mol_thin_dim": 256,
+  "mol_head_dim": 64,
+  "mol_ffn_mult": 4.0,
+  "mol_router_aux": 0.05,
+  "mol_routed_attn": "softmax",
+  "mol_dispatch": 1,
+  "mol_capacity_factor": 1.0,
+  "mol_block_lr_scale": 1.0,
+  "mol_per_block_ve": 0,
+  "use_binary": false,
+  "binary_acts": true,
+  "binary_weight_scale": "row",
+  "binary_act_scale": "token",
+  "binary_clip": 1.0,
+  "binary_linear": true,
+  "binary_embeddings": true,
+  "binary_skip": "",
+  "binary_native": false,
+  "binary_tau": 1.0,
+  "binary_hard": false,
+  "binary_resid_width": 0,
+  "binary_attn_chunk": 256,
+  "use_mst": false,
+  "mst_n_subs": 8,
+  "mst_sub_dim": 64,
+  "mst_head_dim": 0,
+  "mst_input_mode": "fixed_slice",
+  "mst_rotated_slice_learned": false,
+  "mst_routing_mode": "soft_weighted",
+  "mst_routing_topk": 4,
+  "mst_routing_aux_weight": 0.01,
+  "mst_diversity_weight": 0.0,
+  "mst_ffn_mode": "standard",
+  "mst_ffn_every": 1,
+  "mst_transition_mode": "parallel",
+  "mst_final_mode": "aggregate_proj",
+  "mst_final_topk": -1,
+  "mst_ffn_shared_up": 0,
+  "mst_ffn_inner_dim": 0,
+  "mst_sub_dropout": 0.0,
+  "mst_transition_every": 1,
+  "mst_ffa_temperature": 1.0,
+  "mst_global_residual": 0,
+  "mst_hybrid_dense": 0,
+  "mst_cross_sub_kv": 0,
+  "mst_sub_aux_weight": 0.0,
+  "mst_progressive_merge": 0,
+  "mst_multi_scale_windows": 0,
+  "mst_delta_residual": 0,
+  "mst_sub_layers": 1,
+  "mst_grad_equalize": 0,
+  "mst_block_diagonal_muon": 0,
+  "mst_transition_width_mult": 1.0,
+  "mst_sub_lr_scale": 1.0,
+  "mst_shared_expert": 0,
+  "mst_router_entropy_weight": 0.0,
+  "mst_shared_kv_attn": 0,
+  "mst_contrastive_diversity_weight": 0.0,
+  "mst_transition_nonlinear": 0,
+  "mst_transition_gated": 0,
+  "mst_transition_mlp": 0,
+  "mst_cross_sub_gate": 0,
+  "mst_hyper_connect": 0,
+  "mst_cross_kv_inject": 0,
+  "mst_slice_transition": 0,
+  "mst_lookback_layers": 0,
+  "mst_bilinear_transition": 0,
+  "mst_cross_sub_qmod": 0,
+  "mst_feature_cycle": 0,
+  "mst_mean_transition": 0,
+  "mst_sub_head_dim": 0,
+  "mst_final_norm": 0,
+  "mst_per_stream_ve": 0,
+  "mst_ve_map": 0,
+  "mst_ve_map_rank": 0,
+  "mst_lm_head_dim": 0,
+  "mst_compose_windows": 0,
+  "mst_channel_mix": "none",
+  "mst_channel_mix_site": "layer",
+  "mst_distribute_block_muon": 0,
+  "mst_trans_spectral_lr": 0,
+  "mst_talking_heads": 0,
+  "mst_wo_mode": "block",
+  "mst_stream_topk": 0,
+  "mst_stream_shared": 0,
+  "mst_stream_router_aux": 0.01,
+  "mst_stream_router_noise": 0.0,
+  "mst_stream_dispatch": 0,
+  "mst_stream_capacity_factor": 1.0,
+  "mst_stream_gate_attn": 0,
+  "mst_ffn_monarch": "none",
+  "mst_shampoo": 0,
+  "mst_precond_every": 10,
+  "mst_shampoo_beta": 0.95,
+  "use_eet": false,
+  "eet_frozen_kv": true,
+  "eet_reenter_final": false,
+  "eet_router_type": "mlp2",
+  "eet_router_hidden": 0,
+  "eet_freq_prior_alpha": 0.0,
+  "eet_pos_prior_beta": 0.0,
+  "eet_domain_prior": false,
+  "eet_warmup_frac": 0.02,
+  "eet_explore_frac": 0.15,
+  "eet_reconstruct_lambda": 1.0,
+  "eet_efficiency_lambda_start": 0.01,
+  "eet_efficiency_lambda_end": 0.1,
+  "eet_translator_rank": 0,
+  "eet_max_frozen_kv_frac": 0.75,
+  "eet_exit_threshold": 0.5,
+  "eet_min_exit_layer": 1,
+  "eet_loss_variant": "reconstruct",
+  "eet_topk_vocab": 512,
+  "eet_entropy_lambda": 0.3,
+  "eet_surprise_lambda": 0.1,
+  "eet_adv_lambda": 1.0,
+  "eet_adv_entropy_lambda": 0.2,
+  "eet_quality_lambda": 1.0,
+  "eet_quality_entropy_bonus": 0.1,
+  "eet_gumbel_temp_start": 0.0,
+  "eet_gumbel_temp_end": 0.1,
+  "eet_gumbel_hard": true,
+  "eet_commitment_beta": 0.1,
+  "eet_global_router": false,
+  "eet_freq_efficiency_alpha": 0.0,
+  "eet_diversity_lambda": 0.0,
+  "eet_ce_guided_lambda": 1.0,
+  "eet_router_lr_mult": 5.0,
+  "eet_model_lr_mult": 1.0,
+  "eet_depth_weight_type": "none",
+  "eet_depth_weight_max": 2.5,
+  "eet_use_override": 0,
+  "eet_override_prob_start": 0.5,
+  "eet_override_prob_end": 0.1,
+  "eet_compute_skip": false,
+  "eet_target_active_frac": 0.125,
+  "eet_capacity_schedule": "bell",
+  "eet_exit_fracs": null,
+  "eet_capacity_alignment_lambda": 0.0,
+  "eet_kv_mode": "none",
+  "eet_route_noise": 0.0,
+  "eet_route_noise_end": -1.0,
+  "eet_coverage_diag": false,
+  "deep_supervision_lambda": 0.0,
+  "deep_supervision_frac": 0.125,
+  "eet_width_power": 0.0,
+  "eet_width_cap": 16.0,
+  "eet_kv_eager": false,
+  "eet_router_task_grad": true,
+  "eet_reinforce_interval": 0,
+  "eet_reinforce_lambda": 0.1,
+  "eet_exit_adapter_rank": 0,
+  "eet_router_after_block": 0,
+  "eet_ffn_skip": false,
+  "eet_ffn_target_frac": 0.5,
+  "eet_ffn_full_attn": true,
+  "eet_depth_affine": false,
+  "eet_capacity_anneal_frac": 0.0,
+  "eet_learned_schedule": false,
+  "eet_departure_summary": false,
+  "eet_route_consistency_lambda": 0.0,
+  "eet_dense_distill_interval": 0,
+  "eet_dense_distill_lambda": 0.5,
+  "eet_depth_lr_scale": false,
+  "eet_depth_grad_scale": false,
+  "eet_detach_aux_from_backbone": false,
+  "eet_detach_exit_from_backbone": false,
+  "use_code_head": false,
+  "sch_head_type": "code",
+  "sch_bits": 0,
+  "sch_order": 2,
+  "sch_max_m": 0,
+  "sch_phi_mode": "monomial",
+  "sch_code_mode": "binary",
+  "sch_code_path": "",
+  "sch_code_ecc_bits": 0,
+  "sch_code_seed": 1234,
+  "sch_phi_density": 0.0,
+  "sch_phi_dtype": "bf16",
+  "sch_phi_normalize": 1,
+  "sch_phi_center": 0,
+  "sch_g_type": "linear",
+  "sch_g_hidden": 0,
+  "sch_g_layers": 2,
+  "sch_g_out_std": 0.001,
+  "sch_mixture": 1,
+  "sch_residual_rank": 0,
+  "sch_logit_act": "none",
+  "sch_bias": 0,
+  "sch_input_mode": "table",
+  "sch_input_hidden": 0,
+  "sch_product_groups": 8,
+  "sch_product_codebook": 256,
+  "sch_product_source": "hash",
+  "sch_product_impl": "dense",
+  "sch_phi_whiten": 0,
+  "sch_mixture_per_phi": 0,
+  "sch_mixture_topk": 0,
+  "sch_mixture_aux": 0.01,
+  "sch_monarch_m1": 0,
+  "sch_monarch_perm": "none",
+  "sch_monarch_perm_path": "",
+  "sch_tier_bounds": "",
+  "sch_tier_caps": "",
+  "sch_tier_order": "freq",
+  "sch_tier_perm_path": "",
+  "sch_proposal_rank": 32,
+  "sch_proposal_topk": 16384,
+  "sch_proposal_samples": 4096,
+  "sch_proposal_warmup": 0,
+  "sch_proposal_chunk": 2048,
+  "sch_proposal_aux": 1.0,
+  "sch_nfh_mode": "cp",
+  "sch_nfh_rank": 32,
+  "sch_nfh_dims": "",
+  "sch_nfh_groups": 3,
+  "sch_nfh_views": 1,
+  "sch_nfh_perm": "none",
+  "sch_nfh_perm_path": "",
+  "sch_nfh_g_type": "linear",
+  "sch_nfh_g_hidden": 0,
+  "sch_rerank_mode": "topk",
+  "sch_rerank_k": 64,
+  "sch_rerank_rank": 32,
+  "sch_nfh_smooth": 0,
+  "sch_nfh_chunk": 256,
+  "sap_block_T": 0,
+  "sap_block_mode": "indep",
+  "sap_block_frac": 0.125,
+  "sap_lambda": 1.0,
+  "sap_head_layers": 2,
+  "sap_head_heads": 0,
+  "sap_head_mlp_mult": 2,
+  "sap_enc_layers": 1,
+  "sap_ctx_window": 16,
+  "sap_latent_groups": 4,
+  "sap_latent_codes": 16,
+  "sap_latent_dim": 64,
+  "sap_free_bits": 0.25,
+  "sap_kl_anneal_steps": 2000,
+  "sap_gumbel_tau": 1.0,
+  "sap_cp_components": 8,
+  "sap_wta_k": 4,
+  "sap_u_freqs": 24,
+  "sap_u_interior": 0.8,
+  "sap_logit_chunk": 8192,
+  "sap_jacobi_sweeps": 2
+}
+Seeded weight init with --seed 1
+Checkpoints directory: /__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/out/s00_sap/d8/B1_dense_s1
+✓ Wrapping model with DistributedDataParallel (rank 0, find_unused_parameters=False, broadcast_buffers=True)
+Parameter counts:
+wte                     : 16,777,216
+wpe                     : 0
+value_embeds            : 67,108,864
+lm_head                 : 16,777,216
+transformer_matrices    : 25,166,336
+research                : 0
+scalars                 : 16
+total                   : 125,829,648
+Estimated FLOPs per token (total):  2.862643e+08
+COST_AXES precision=W16A16E16H16 bops_arith=3.6642e+10 energy_pj_per_token=2.3436e+08 inference_MiB=240.00 training_state_MiB=829.50
+Estimated FLOPs per token (active): 2.862643e+08
+Estimated active params:            125,829,648
+Auto-computed optimal batch size: 262,144 tokens
+Scaling LRs by 0.7071 for batch size 262,144 (reference: 524,288)
+Scaling weight decay from 0.200000 to 0.371230 for depth 8
+Scaling the LR for the AdamW parameters ∝1/√(512/768) = 1.224745
+Calculated number of iterations from target FLOPs: 1,680
+Total number of training tokens: 440,401,920
+Tokens : Scaling params ratio: 10.50
+Total training FLOPs estimate: 1.260714e+17
+Total training FLOPs (active):  1.260714e+17
+Total active training FLOPs estimate: 1.260714e+17
+Using base scheduler: linear warmup/flat/linear warmdown
+Tokens / micro-batch / rank: 128 x 2048 = 262,144
+Tokens / micro-batch: 262,144
+Total batch size 262,144 => gradient accumulation steps: 1
+Running pre-compilation warmup (1 dummy forward+backward to init lazy allocations)...
+[rank0]:W1002 13:17:04.496000 401 site-packages/torch/_logging/_internal.py:1199] [0/0] Profiler function <class 'torch.autograd.profiler.record_function'> will be ignored
+Warmup complete. Steady-state VRAM: 5.8 GB allocated
+step 00000/01680 (0.00%) | loss: 10.397748 | lrm: 0.12 | lr(adamw:4.368e-02, muon:1.768e-03) | dt: 312.87ms | tok/sec: 837,855 | bf16_mfu: 24.25 | epoch: 1 pq: 0 rg: 1 | total time: 0.00m
+step 00100/01680 (5.95%) | loss: 4.631804 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 201.61ms | tok/sec: 1,300,261 | bf16_mfu: 37.64 | epoch: 1 pq: 0 rg: 52 | total time: 0.30m | eta: 5.3m
+step 00200/01680 (11.90%) | loss: 3.970609 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 200.65ms | tok/sec: 1,306,469 | bf16_mfu: 37.82 | epoch: 1 pq: 1 rg: 17 | total time: 0.64m | eta: 5.0m
+step 00300/01680 (17.86%) | loss: 3.783258 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 201.47ms | tok/sec: 1,301,129 | bf16_mfu: 37.66 | epoch: 1 pq: 1 rg: 65 | total time: 0.98m | eta: 4.7m
+step 00400/01680 (23.81%) | loss: 3.656732 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 203.49ms | tok/sec: 1,288,226 | bf16_mfu: 37.29 | epoch: 1 pq: 2 rg: 30 | total time: 1.32m | eta: 4.3m
+step 00500/01680 (29.76%) | loss: 3.589068 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 202.78ms | tok/sec: 1,292,775 | bf16_mfu: 37.42 | epoch: 1 pq: 2 rg: 78 | total time: 1.66m | eta: 4.0m
+step 00600/01680 (35.71%) | loss: 3.528555 | lrm: 0.99 | lr(adamw:3.458e-01, muon:1.399e-02) | dt: 201.81ms | tok/sec: 1,298,962 | bf16_mfu: 37.60 | epoch: 1 pq: 3 rg: 43 | total time: 2.00m | eta: 3.7m
+step 00700/01680 (41.67%) | loss: 3.465383 | lrm: 0.90 | lr(adamw:3.154e-01, muon:1.276e-02) | dt: 201.76ms | tok/sec: 1,299,258 | bf16_mfu: 37.61 | epoch: 1 pq: 4 rg: 10 | total time: 2.34m | eta: 3.3m
+step 00800/01680 (47.62%) | loss: 3.421528 | lrm: 0.82 | lr(adamw:2.850e-01, muon:1.153e-02) | dt: 205.13ms | tok/sec: 1,277,969 | bf16_mfu: 36.99 | epoch: 1 pq: 4 rg: 58 | total time: 2.69m | eta: 3.0m
+step 00900/01680 (53.57%) | loss: 3.380191 | lrm: 0.73 | lr(adamw:2.546e-01, muon:1.030e-02) | dt: 204.16ms | tok/sec: 1,284,012 | bf16_mfu: 37.17 | epoch: 1 pq: 5 rg: 24 | total time: 3.03m | eta: 2.7m
+step 01000/01680 (59.52%) | loss: 3.340788 | lrm: 0.64 | lr(adamw:2.242e-01, muon:9.073e-03) | dt: 205.00ms | tok/sec: 1,278,721 | bf16_mfu: 37.01 | epoch: 1 pq: 5 rg: 73 | total time: 3.37m | eta: 2.3m
+step 01100/01680 (65.48%) | loss: 3.303515 | lrm: 0.55 | lr(adamw:1.938e-01, muon:7.843e-03) | dt: 202.76ms | tok/sec: 1,292,907 | bf16_mfu: 37.42 | epoch: 1 pq: 6 rg: 38 | total time: 3.71m | eta: 2.0m
+step 01200/01680 (71.43%) | loss: 3.273475 | lrm: 0.47 | lr(adamw:1.634e-01, muon:6.613e-03) | dt: 203.93ms | tok/sec: 1,285,485 | bf16_mfu: 37.21 | epoch: 1 pq: 7 rg: 4 | total time: 4.05m | eta: 1.6m
+step 01300/01680 (77.38%) | loss: 3.225294 | lrm: 0.38 | lr(adamw:1.330e-01, muon:5.382e-03) | dt: 202.75ms | tok/sec: 1,292,910 | bf16_mfu: 37.42 | epoch: 1 pq: 7 rg: 53 | total time: 4.40m | eta: 1.3m
+step 01400/01680 (83.33%) | loss: 3.206711 | lrm: 0.29 | lr(adamw:1.026e-01, muon:4.152e-03) | dt: 222.31ms | tok/sec: 1,179,171 | bf16_mfu: 34.13 | epoch: 1 pq: 8 rg: 19 | total time: 4.76m | eta: 1.0m
+step 01500/01680 (89.29%) | loss: 3.177778 | lrm: 0.21 | lr(adamw:7.219e-02, muon:2.922e-03) | dt: 207.16ms | tok/sec: 1,265,393 | bf16_mfu: 36.63 | epoch: 1 pq: 8 rg: 68 | total time: 5.10m | eta: 0.6m
+step 01600/01680 (95.24%) | loss: 3.158274 | lrm: 0.12 | lr(adamw:4.179e-02, muon:1.691e-03) | dt: 204.81ms | tok/sec: 1,279,947 | bf16_mfu: 37.05 | epoch: 1 pq: 9 rg: 34 | total time: 5.44m | eta: 0.3m
+step 01679/01680 (99.94%) | loss: 3.151059 | lrm: 0.05 | lr(adamw:1.778e-02, muon:7.194e-04) | dt: 200.57ms | tok/sec: 1,306,995 | bf16_mfu: 37.83 | epoch: 1 pq: 9 rg: 72 | total time: 5.72m | eta: 0.0m
+/usr/local/lib/python3.12/site-packages/torch/_dynamo/variables/functions.py:1598: UserWarning: Dynamo does not know how to trace the builtin `torch._C._distributed_c10d.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1._broadcast_coalesced.` This function is either a Python builtin (e.g. _warnings.warn) or a third-party C/C++ Python extension (perhaps created with pybind).
+If it is a Python builtin, please file an issue on GitHub so the PyTorch team can add support for it and see the next case for a workaround.
+If it is a third-party C/C++ Python extension, please either wrap it into a PyTorch-understood custom operator (see https://pytorch.org/tutorials/advanced/custom_ops_landing_page.html for more details) or, if it is traceable, use `torch.compiler.allow_in_graph`.
+  torch._dynamo.utils.warn_once(explanation + "\n" + "\n".join(hints))
+Step 01680 | Validation bpb: 0.958369 | val_loss: 3.144554
+2026-10-02 13:24:32,646 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Saved model parameters to: /__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/out/s00_sap/d8/B1_dense_s1/model_001680.pt
+2026-10-02 13:24:32,650 - nanochat.checkpoint_manager - [32m[1mINFO[0m - Saved metadata to: /__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/out/s00_sap/d8/B1_dense_s1/meta_001680.json
+step 01680/01680 (final) | loss: 3.151059 | early_stop: 0
+Peak memory usage: 62902.33MiB
+Total training time: 5.72m
+Minimum validation bpb: 0.958369
+Minimum validation loss (nats/byte): 3.144554
+2026-10-02 13:24:44,961 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/main/kernel-status.toml "HTTP/1.1 404 Not Found"
+2026-10-02 13:24:45,039 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/tree/main/build?recursive=false&expand=false "HTTP/1.1 200 OK"
+2026-10-02 13:24:45,111 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/revision/main "HTTP/1.1 200 OK"
+
+                                                       █████                █████
+                                                      ░░███                ░░███
+     ████████    ██████   ████████    ██████   ██████  ░███████    ██████  ███████
+    ░░███░░███  ░░░░░███ ░░███░░███  ███░░███ ███░░███ ░███░░███  ░░░░░███░░░███░
+     ░███ ░███   ███████  ░███ ░███ ░███ ░███░███ ░░░  ░███ ░███   ███████  ░███
+     ░███ ░███  ███░░███  ░███ ░███ ░███ ░███░███  ███ ░███ ░███  ███░░███  ░███ ███
+     ████ █████░░████████ ████ █████░░██████ ░░██████  ████ █████░░███████  ░░█████
+    ░░░░ ░░░░░  ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░   ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░   ░░░░░
+    
+Autodetected device type: cuda
+2026-10-02 13:24:46,392 - nanochat.common - [32m[1mINFO[0m - Distributed world size: 1
+Device: cuda (ddp=True, world_size=1)
+GPU: NVIDIA H200 | Peak FLOPS (BF16): 9.89e+14
+COMPUTE_DTYPE: torch.bfloat16 (auto-detected: CUDA SM 90 (bf16 supported))
+✓ Using Flash Attention 3 (Hopper GPU detected) — efficient and fast.
+Vocab size: 32,768
+[SAP] block head: mode=p1_discrete T=2048 frac=0.00048828125 window=16 layers=2 params=10,659,840
+Model config:
+{
+  "sequence_len": 2048,
+  "vocab_size": 32768,
+  "n_layer": 8,
+  "n_head": 4,
+  "n_kv_head": 4,
+  "n_embd": 512,
+  "use_moe": false,
+  "use_perm": false,
+  "moe_num_experts": 8,
+  "moe_router_dim": 64,
+  "moe_embed_dim": 64,
+  "dropout": 0.0,
+  "use_remix_linear": false,
+  "remix_context_dim": 64,
+  "remix_context_dim_ratio": 6,
+  "remix_basis_size": 64,
+  "remix_output_gate_rank": 16,
+  "remixed_linear_kwargs": {
+    "use_basis_gate": true,
+    "use_output_gate": true,
+    "use_context": true,
+    "basis_gate_mode": "mlp",
+    "sparse_gate_k": 0,
+    "gate_temperature": 1.0,
+    "basis_scale_factor": 4,
+    "n_templates": 1,
+    "template_routing_learned": false,
+    "template_topk": 0,
+    "tiny_expert": false,
+    "tiny_expert_topk": 16,
+    "lokr_expert": false,
+    "lokr_n_experts": 64,
+    "lokr_topk": 16,
+    "lokr_rank": 4,
+    "lokr_learned": false,
+    "basis_gate_rank": 8,
+    "disable_ln_basis": false,
+    "chunk_route_impl": "compose",
+    "top1_gate": "ones",
+    "template_delta_rank": 0,
+    "route_side": "output",
+    "drop_basis_proj": false,
+    "basis_side_templates": 0,
+    "grad_equalize": false,
+    "output_gate_rank": 16,
+    "operator_modulation": "none",
+    "lie_generators": 4,
+    "poly_order": 2,
+    "grassmann_bank_size": 4
+  },
+  "use_pos_embed": false,
+  "moe_use_abs_pos_embed": false,
+  "use_layer_context": true,
+  "scale_basis_size": true,
+  "remix_use_dual_gate": false,
+  "remix_use_fused": false,
+  "p26_output_gated_linear": 0,
+  "p28_shared_basis": 0,
+  "p28_chunk_routing_size": 0,
+  "p28_global_template_bank": "none",
+  "p28_attn_proj_templates": 0,
+  "p28_attn_qk_templates": 0,
+  "p29_template_block_diag": 0,
+  "p29_template_lr_scale": 1.0,
+  "p29_grad_equalize": 0,
+  "p34_ffn_mult": 4.0,
+  "p34_ffn_single": 0,
+  "p34_dense_attn": 0,
+  "legacy_init_fallback": 0,
+  "p35_template_diversity_lambda": 0.0,
+  "p22_route_affine": 0,
+  "p34_ffn_schedule": "",
+  "p34_ffn_no_ffn_replacement": "none",
+  "p34_ffn_last_depth": 1,
+  "p36_swiglu_ffn": 0,
+  "p36_swiglu_mult": 2.6666666666666665,
+  "cond_sites": "both",
+  "cond_rank": 256,
+  "cond_mult_steps": 0,
+  "cond_gate_source": "router",
+  "cond_coeff_act": "centered",
+  "cond_router_rank": 0,
+  "cond_live_init": 0.0,
+  "cond_router_act": "none",
+  "cond_chunk_size": 0,
+  "cond_mult_scale": -1.0,
+  "cond_mult_impl": "wy",
+  "cond_attn_projs": "qkvo",
+  "cond_layer_frac": 1.0,
+  "perm_expert_mode": "low_rank",
+  "perm_rank": 16,
+  "router_context_window": -1,
+  "router_causal": true,
+  "router_num_heads": 4,
+  "router_num_queries": 16,
+  "router_n_layers": 2,
+  "router_use_vocab_prior": false,
+  "window_pattern": "SSSL",
+  "cclblock_modulation": "weight",
+  "cclblock_orth_lambda": 0.0,
+  "cclblock_context_stream": "local",
+  "cclblock_ema_factor": 0.99,
+  "cclblock_stale_ctx_lag": 0,
+  "cclblock_sparse_gate_k": 0,
+  "cclblock_gate_temperature": 1.0,
+  "cclblock_context_bank_size": 0,
+  "cclblock_per_head_ctx": false,
+  "cclblock_context_source": "norm_x",
+  "cclblock_chunk_size": 0,
+  "cclblock_aux_objective": "none",
+  "cclblock_aux_lambda": 0.1,
+  "cclblock_boundary_token_id": 198,
+  "use_ral": false,
+  "ral_rank": 32,
+  "cclblock_film_gate": false,
+  "cclblock_attn_shadow_dim": 0,
+  "cclblock_dynamic_ratio": 0.25,
+  "cclblock_gate_rank": 8,
+  "cclblock_num_regimes": 8,
+  "cclblock_regime_temperature": 1.0,
+  "cclblock_poly_order": 2,
+  "cclblock_lie_generators": 4,
+  "cclblock_grassmann_bank_size": 4,
+  "cclblock_tucker_rank": 32,
+  "cclblock_tucker_modes": 8,
+  "cclblock_svs_rank": 64,
+  "cclblock_svs_eps": 0.1,
+  "cclblock_vq_codes": 8,
+  "cclblock_vq_temperature": 1.0,
+  "cclblock_dcu_warmup_steps": 0,
+  "cclblock_fsi_rotations": 8,
+  "cclblock_fsi_selector_dim": 64,
+  "cclblock_aesp_strata": 4,
+  "cclblock_aesp_delta_rank": 4,
+  "cclblock_ckr_branches": 4,
+  "cclblock_ckr_kernel_size": 64,
+  "cclblock_ckr_pos_channels": 1,
+  "cclblock_ckr_dual_optim": 0,
+  "cclblock_ckr_content_bias": 0.0,
+  "cclblock_giad_rank": 32,
+  "cclblock_psg_kernel_size": 64,
+  "cclblock_ss_dynamic_ratio": 0.25,
+  "cclblock_ss_branches": 2,
+  "cclblock_ss_kernel_size": 64,
+  "cclblock_lokr_branches": 8,
+  "cclblock_lokr_rank": 16,
+  "cclblock_ckr_temp_start": 2.0,
+  "cclblock_ckr_temp_end": 0.3,
+  "cclblock_com_kernel_size": 32,
+  "cclblock_ckr_ortho_init": 0,
+  "cclblock_ckr_branch_dropout": 0.0,
+  "cclblock_ckr_diversity_lambda": 0.0,
+  "cclblock_ckr_layer_selective": 0,
+  "cclblock_pgr_kernel_size": 64,
+  "cclblock_cil_kernel_size": 64,
+  "cclblock_prb_kernel_size": 64,
+  "p18_layer_drop": 0.0,
+  "p18_dynamic_activation": 0,
+  "p18_mixture_norm": 0,
+  "p18_causal_attn_bias": 0,
+  "p18_aux_sim_lambda": 0.0,
+  "p18_gradient_penalty": 0.0,
+  "p18_per_channel_scale": 0,
+  "p19_residual_gate": 0,
+  "p19_head_importance": 0,
+  "p19_residual_mix_groups": 0,
+  "p19_attn_logit_bias": 0,
+  "p19_residual_decay": 0,
+  "p19_grad_equilibrium": 0.0,
+  "p19_spectral_reparam": 0,
+  "p19_weight_anticollapse": 0.0,
+  "p19_ve_bias": 0,
+  "p19_weight_noise": 0.0,
+  "p20_hrcs_scale": 0,
+  "p20_lswr_scale": 0,
+  "p20_lswr_planes": 8,
+  "p20_lrcfb_branches": 0,
+  "p20_lrcfb_narrow": 0,
+  "p20_lrcfb_learned": 0,
+  "p20_lrcfb_topk": 0,
+  "p20_dgcr_branches": 0,
+  "p20_dgcr_aux_weight": 0.01,
+  "p20_mone_experts": 0,
+  "p20_mone_topk": 0,
+  "p20_mone_narrow": 1,
+  "p20_mone_frozen": 0,
+  "p20_ncea_branches": 0,
+  "p20_ncea_eps": 0.1,
+  "p20_adwi": 0,
+  "p20_pwu_branches": 0,
+  "p20_pwu_phase": 1,
+  "p20_fsvd_gate": 0,
+  "p20_wbfc_clusters": 0,
+  "p20_wbfc_active": 0,
+  "p21_per_experts": 0,
+  "p21_per_topk": 0,
+  "p21_per_learned": 0,
+  "p21_per_attn": 0,
+  "p22_attn_moe_route": "none",
+  "p23_tiny_expert": 0,
+  "p23_n_experts": 64,
+  "p23_topk": 16,
+  "p23_learned_route": 0,
+  "p23_std_moe_experts": 0,
+  "p23_std_moe_topk": -1,
+  "p23_std_moe_aux_weight": 0.01,
+  "p23_lokr": 0,
+  "p23_lokr_rank": 4,
+  "p23_use_shared_block_router": 0,
+  "p23_linear_moe_experts": 0,
+  "p23_linear_moe_topk": 0,
+  "p23_quantile_route": 0,
+  "remix_shared_context_gates": 0,
+  "p24_use_sliced_weight": 0,
+  "p24_sliced_weight_reduction_scale": 8,
+  "p24_sliced_weight_min_select": 128,
+  "p24_sliced_weight_scope": "per_token",
+  "p24_sliced_weight_balance_coeff": 0.01,
+  "p24_quantile_route": 0,
+  "p24_use_folded_mod": 0,
+  "p24_folded_mod_reduction_scale": 8,
+  "p24_folded_mod_min_dim": 128,
+  "p24_folded_mod_scope": "per_layer",
+  "p24_folded_mod_gate_act": "tanh_centered",
+  "p24_use_sequence_gated_linear": 0,
+  "p24_sequence_gated_scope": "per_layer",
+  "p24_sequence_gated_act": "tanh_centered",
+  "remix_disable_ln_basis": 0,
+  "dense_intermediate_ln": 0,
+  "use_mol": false,
+  "mol_n_blocks": 5,
+  "mol_n_shared": 1,
+  "mol_topk": 3,
+  "mol_thin_dim": 256,
+  "mol_head_dim": 64,
+  "mol_ffn_mult": 4.0,
+  "mol_router_aux": 0.05,
+  "mol_routed_attn": "softmax",
+  "mol_dispatch": 1,
+  "mol_capacity_factor": 1.0,
+  "mol_block_lr_scale": 1.0,
+  "mol_per_block_ve": 0,
+  "use_binary": false,
+  "binary_acts": true,
+  "binary_weight_scale": "row",
+  "binary_act_scale": "token",
+  "binary_clip": 1.0,
+  "binary_linear": true,
+  "binary_embeddings": true,
+  "binary_skip": "",
+  "binary_native": false,
+  "binary_tau": 1.0,
+  "binary_hard": false,
+  "binary_resid_width": 0,
+  "binary_attn_chunk": 256,
+  "use_mst": false,
+  "mst_n_subs": 8,
+  "mst_sub_dim": 64,
+  "mst_head_dim": 0,
+  "mst_input_mode": "fixed_slice",
+  "mst_rotated_slice_learned": false,
+  "mst_routing_mode": "soft_weighted",
+  "mst_routing_topk": 4,
+  "mst_routing_aux_weight": 0.01,
+  "mst_diversity_weight": 0.0,
+  "mst_ffn_mode": "standard",
+  "mst_ffn_every": 1,
+  "mst_transition_mode": "parallel",
+  "mst_final_mode": "aggregate_proj",
+  "mst_final_topk": -1,
+  "mst_ffn_shared_up": 0,
+  "mst_ffn_inner_dim": 0,
+  "mst_sub_dropout": 0.0,
+  "mst_transition_every": 1,
+  "mst_ffa_temperature": 1.0,
+  "mst_global_residual": 0,
+  "mst_hybrid_dense": 0,
+  "mst_cross_sub_kv": 0,
+  "mst_sub_aux_weight": 0.0,
+  "mst_progressive_merge": 0,
+  "mst_multi_scale_windows": 0,
+  "mst_delta_residual": 0,
+  "mst_sub_layers": 1,
+  "mst_grad_equalize": 0,
+  "mst_block_diagonal_muon": 0,
+  "mst_transition_width_mult": 1.0,
+  "mst_sub_lr_scale": 1.0,
+  "mst_shared_expert": 0,
+  "mst_router_entropy_weight": 0.0,
+  "mst_shared_kv_attn": 0,
+  "mst_contrastive_diversity_weight": 0.0,
+  "mst_transition_nonlinear": 0,
+  "mst_transition_gated": 0,
+  "mst_transition_mlp": 0,
+  "mst_cross_sub_gate": 0,
+  "mst_hyper_connect": 0,
+  "mst_cross_kv_inject": 0,
+  "mst_slice_transition": 0,
+  "mst_lookback_layers": 0,
+  "mst_bilinear_transition": 0,
+  "mst_cross_sub_qmod": 0,
+  "mst_feature_cycle": 0,
+  "mst_mean_transition": 0,
+  "mst_sub_head_dim": 0,
+  "mst_final_norm": 0,
+  "mst_per_stream_ve": 0,
+  "mst_ve_map": 0,
+  "mst_ve_map_rank": 0,
+  "mst_lm_head_dim": 0,
+  "mst_compose_windows": 0,
+  "mst_channel_mix": "none",
+  "mst_channel_mix_site": "layer",
+  "mst_distribute_block_muon": 0,
+  "mst_trans_spectral_lr": 0,
+  "mst_talking_heads": 0,
+  "mst_wo_mode": "block",
+  "mst_stream_topk": 0,
+  "mst_stream_shared": 0,
+  "mst_stream_router_aux": 0.01,
+  "mst_stream_router_noise": 0.0,
+  "mst_stream_dispatch": 0,
+  "mst_stream_capacity_factor": 1.0,
+  "mst_stream_gate_attn": 0,
+  "mst_ffn_monarch": "none",
+  "mst_shampoo": 0,
+  "mst_precond_every": 10,
+  "mst_shampoo_beta": 0.95,
+  "use_eet": false,
+  "eet_frozen_kv": true,
+  "eet_reenter_final": false,
+  "eet_router_type": "mlp2",
+  "eet_router_hidden": 0,
+  "eet_freq_prior_alpha": 0.0,
+  "eet_pos_prior_beta": 0.0,
+  "eet_domain_prior": false,
+  "eet_warmup_frac": 0.02,
+  "eet_explore_frac": 0.15,
+  "eet_reconstruct_lambda": 1.0,
+  "eet_efficiency_lambda_start": 0.01,
+  "eet_efficiency_lambda_end": 0.1,
+  "eet_translator_rank": 0,
+  "eet_max_frozen_kv_frac": 0.75,
+  "eet_exit_threshold": 0.5,
+  "eet_min_exit_layer": 1,
+  "eet_loss_variant": "reconstruct",
+  "eet_topk_vocab": 512,
+  "eet_entropy_lambda": 0.3,
+  "eet_surprise_lambda": 0.1,
+  "eet_adv_lambda": 1.0,
+  "eet_adv_entropy_lambda": 0.2,
+  "eet_quality_lambda": 1.0,
+  "eet_quality_entropy_bonus": 0.1,
+  "eet_gumbel_temp_start": 0.0,
+  "eet_gumbel_temp_end": 0.1,
+  "eet_gumbel_hard": true,
+  "eet_commitment_beta": 0.1,
+  "eet_global_router": false,
+  "eet_freq_efficiency_alpha": 0.0,
+  "eet_diversity_lambda": 0.0,
+  "eet_ce_guided_lambda": 1.0,
+  "eet_router_lr_mult": 5.0,
+  "eet_model_lr_mult": 1.0,
+  "eet_depth_weight_type": "none",
+  "eet_depth_weight_max": 2.5,
+  "eet_use_override": 0,
+  "eet_override_prob_start": 0.5,
+  "eet_override_prob_end": 0.1,
+  "eet_compute_skip": false,
+  "eet_target_active_frac": 0.125,
+  "eet_capacity_schedule": "bell",
+  "eet_exit_fracs": null,
+  "eet_capacity_alignment_lambda": 0.0,
+  "eet_kv_mode": "none",
+  "eet_route_noise": 0.0,
+  "eet_route_noise_end": -1.0,
+  "eet_coverage_diag": false,
+  "deep_supervision_lambda": 0.0,
+  "deep_supervision_frac": 0.125,
+  "eet_width_power": 0.0,
+  "eet_width_cap": 16.0,
+  "eet_kv_eager": false,
+  "eet_router_task_grad": true,
+  "eet_reinforce_interval": 0,
+  "eet_reinforce_lambda": 0.1,
+  "eet_exit_adapter_rank": 0,
+  "eet_router_after_block": 0,
+  "eet_ffn_skip": false,
+  "eet_ffn_target_frac": 0.5,
+  "eet_ffn_full_attn": true,
+  "eet_depth_affine": false,
+  "eet_capacity_anneal_frac": 0.0,
+  "eet_learned_schedule": false,
+  "eet_departure_summary": false,
+  "eet_route_consistency_lambda": 0.0,
+  "eet_dense_distill_interval": 0,
+  "eet_dense_distill_lambda": 0.5,
+  "eet_depth_lr_scale": false,
+  "eet_depth_grad_scale": false,
+  "eet_detach_aux_from_backbone": false,
+  "eet_detach_exit_from_backbone": false,
+  "use_code_head": false,
+  "sch_head_type": "code",
+  "sch_bits": 0,
+  "sch_order": 2,
+  "sch_max_m": 0,
+  "sch_phi_mode": "monomial",
+  "sch_code_mode": "binary",
+  "sch_code_path": "",
+  "sch_code_ecc_bits": 0,
+  "sch_code_seed": 1234,
+  "sch_phi_density": 0.0,
+  "sch_phi_dtype": "bf16",
+  "sch_phi_normalize": 1,
+  "sch_phi_center": 0,
+  "sch_g_type": "linear",
+  "sch_g_hidden": 0,
+  "sch_g_layers": 2,
+  "sch_g_out_std": 0.001,
+  "sch_mixture": 1,
+  "sch_residual_rank": 0,
+  "sch_logit_act": "none",
+  "sch_bias": 0,
+  "sch_input_mode": "table",
+  "sch_input_hidden": 0,
+  "sch_product_groups": 8,
+  "sch_product_codebook": 256,
+  "sch_product_source": "hash",
+  "sch_product_impl": "dense",
+  "sch_phi_whiten": 0,
+  "sch_mixture_per_phi": 0,
+  "sch_mixture_topk": 0,
+  "sch_mixture_aux": 0.01,
+  "sch_monarch_m1": 0,
+  "sch_monarch_perm": "none",
+  "sch_monarch_perm_path": "",
+  "sch_tier_bounds": "",
+  "sch_tier_caps": "",
+  "sch_tier_order": "freq",
+  "sch_tier_perm_path": "",
+  "sch_proposal_rank": 32,
+  "sch_proposal_topk": 16384,
+  "sch_proposal_samples": 4096,
+  "sch_proposal_warmup": 0,
+  "sch_proposal_chunk": 2048,
+  "sch_proposal_aux": 1.0,
+  "sch_nfh_mode": "cp",
+  "sch_nfh_rank": 32,
+  "sch_nfh_dims": "",
+  "sch_nfh_groups": 3,
+  "sch_nfh_views": 1,
+  "sch_nfh_perm": "none",
+  "sch_nfh_perm_path": "",
+  "sch_nfh_g_type": "linear",
+  "sch_nfh_g_hidden": 0,
+  "sch_rerank_mode": "topk",
+  "sch_rerank_k": 64,
+  "sch_rerank_rank": 32,
+  "sch_nfh_smooth": 0,
+  "sch_nfh_chunk": 256,
+  "sap_block_T": 2048,
+  "sap_block_mode": "p1_discrete",
+  "sap_block_frac": 0.00048828125,
+  "sap_lambda": 1.0,
+  "sap_head_layers": 2,
+  "sap_head_heads": 0,
+  "sap_head_mlp_mult": 2,
+  "sap_enc_layers": 1,
+  "sap_ctx_window": 16,
+  "sap_latent_groups": 4,
+  "sap_latent_codes": 64,
+  "sap_latent_dim": 64,
+  "sap_free_bits": 0.25,
+  "sap_kl_anneal_steps": 2000,
+  "sap_gumbel_tau": 1.0,
+  "sap_cp_components": 8,
+  "sap_wta_k": 4,
+  "sap_u_freqs": 24,
+  "sap_u_interior": 0.8,
+  "sap_logit_chunk": 8192,
+  "sap_jacobi_sweeps": 2
+}
+Seeded weight init with --seed 1
+Checkpoints directory: /__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/out/s00_sap/d8/SAP_p1_discrete_TL_s1
+✓ Wrapping model with DistributedDataParallel (rank 0, find_unused_parameters=False, broadcast_buffers=True)
+Parameter counts:
+wte                     : 16,777,216
+wpe                     : 0
+value_embeds            : 67,108,864
+lm_head                 : 16,777,216
+transformer_matrices    : 25,166,336
+research                : 10,659,840
+scalars                 : 16
+total                   : 136,489,488
+Estimated FLOPs per token (total):  4.627073e+08
+COST_AXES precision=W16A16E16H16 bops_arith=5.9227e+10 energy_pj_per_token=3.6836e+08 inference_MiB=260.33 training_state_MiB=899.78
+Estimated FLOPs per token (active): 4.627073e+08
+Estimated active params:            136,489,488
+[SAP] block head: mode=p1_discrete T=2048 frac=0.00048828125 window=16 layers=2 params=22,084,608
+Auto-computed optimal batch size: 262,144 tokens
+Scaling LRs by 0.7071 for batch size 262,144 (reference: 524,288)
+Scaling weight decay from 0.200000 to 0.371230 for depth 8
+Scaling the LR for the AdamW parameters ∝1/√(512/768) = 1.224745
+Calculated number of iterations from target FLOPs: 1,039
+Total number of training tokens: 272,367,616
+Tokens : Scaling params ratio: 6.49
+Total training FLOPs estimate: 1.260265e+17
+Total training FLOPs (active):  1.260265e+17
+Total active training FLOPs estimate: 1.260265e+17
+Using base scheduler: linear warmup/flat/linear warmdown
+Tokens / micro-batch / rank: 128 x 2048 = 262,144
+Tokens / micro-batch: 262,144
+Total batch size 262,144 => gradient accumulation steps: 1
+Running pre-compilation warmup (1 dummy forward+backward to init lazy allocations)...
+[rank0]:W1002 13:24:47.126000 29130 site-packages/torch/_logging/_internal.py:1199] [0/0] Profiler function <class 'torch.autograd.profiler.record_function'> will be ignored
+Warmup complete. Steady-state VRAM: 5.9 GB allocated
+step 00000/01039 (0.00%) | loss: 20.796490 | lrm: 0.20 | lr(adamw:6.989e-02, muon:2.828e-03) | dt: 587.33ms | tok/sec: 446,335 | bf16_mfu: 20.88 | epoch: 1 pq: 0 rg: 1 | total time: 0.00m
+step 00100/01039 (9.62%) | loss: 12.428322 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 465.84ms | tok/sec: 562,729 | bf16_mfu: 26.33 | epoch: 1 pq: 0 rg: 52 | total time: 0.70m | eta: 7.3m
+step 00200/01039 (19.25%) | loss: 11.645197 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 545.37ms | tok/sec: 480,675 | bf16_mfu: 22.49 | epoch: 1 pq: 1 rg: 17 | total time: 1.48m | eta: 6.5m
+step 00300/01039 (28.87%) | loss: 11.425158 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 471.10ms | tok/sec: 556,452 | bf16_mfu: 26.03 | epoch: 1 pq: 1 rg: 65 | total time: 2.41m | eta: 6.1m
+step 00400/01039 (38.50%) | loss: 11.284072 | lrm: 0.95 | lr(adamw:3.317e-01, muon:1.343e-02) | dt: 467.18ms | tok/sec: 561,125 | bf16_mfu: 26.25 | epoch: 1 pq: 2 rg: 30 | total time: 3.19m | eta: 5.2m
+step 00500/01039 (48.12%) | loss: 11.162867 | lrm: 0.81 | lr(adamw:2.825e-01, muon:1.144e-02) | dt: 465.70ms | tok/sec: 562,902 | bf16_mfu: 26.34 | epoch: 1 pq: 2 rg: 78 | total time: 3.97m | eta: 4.4m
+step 00600/01039 (57.75%) | loss: 11.063476 | lrm: 0.67 | lr(adamw:2.334e-01, muon:9.445e-03) | dt: 464.78ms | tok/sec: 564,018 | bf16_mfu: 26.39 | epoch: 1 pq: 3 rg: 43 | total time: 4.74m | eta: 3.5m
+step 00700/01039 (67.37%) | loss: 10.980166 | lrm: 0.53 | lr(adamw:1.842e-01, muon:7.454e-03) | dt: 463.57ms | tok/sec: 565,489 | bf16_mfu: 26.46 | epoch: 1 pq: 4 rg: 10 | total time: 5.52m | eta: 2.7m
+step 00800/01039 (77.00%) | loss: 10.914488 | lrm: 0.39 | lr(adamw:1.350e-01, muon:5.464e-03) | dt: 466.24ms | tok/sec: 562,254 | bf16_mfu: 26.31 | epoch: 1 pq: 4 rg: 58 | total time: 6.30m | eta: 1.9m
+step 00900/01039 (86.62%) | loss: 10.850849 | lrm: 0.25 | lr(adamw:8.583e-02, muon:3.474e-03) | dt: 465.55ms | tok/sec: 563,081 | bf16_mfu: 26.34 | epoch: 1 pq: 5 rg: 24 | total time: 7.08m | eta: 1.1m
+step 01000/01039 (96.25%) | loss: 10.807506 | lrm: 0.10 | lr(adamw:3.665e-02, muon:1.483e-03) | dt: 465.02ms | tok/sec: 563,729 | bf16_mfu: 26.37 | epoch: 1 pq: 5 rg: 73 | total time: 7.85m | eta: 0.3m
+step 01038/01039 (99.90%) | loss: 10.783131 | lrm: 0.05 | lr(adamw:1.796e-02, muon:7.270e-04) | dt: 465.74ms | tok/sec: 562,851 | bf16_mfu: 26.33 | epoch: 1 pq: 6 rg: 8 | total time: 8.15m | eta: 0.0m
+/usr/local/lib/python3.12/site-packages/torch/_dynamo/variables/functions.py:1598: UserWarning: Dynamo does not know how to trace the builtin `torch._C._distributed_c10d.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1._broadcast_coalesced.` This function is either a Python builtin (e.g. _warnings.warn) or a third-party C/C++ Python extension (perhaps created with pybind).
+If it is a Python builtin, please file an issue on GitHub so the PyTorch team can add support for it and see the next case for a workaround.
+If it is a third-party C/C++ Python extension, please either wrap it into a PyTorch-understood custom operator (see https://pytorch.org/tutorials/advanced/custom_ops_landing_page.html for more details) or, if it is traceable, use `torch.compiler.allow_in_graph`.
+  torch._dynamo.utils.warn_once(explanation + "\n" + "\n".join(hints))
+Step 01039 | Validation bpb: 0.991951 | val_loss: 3.254743
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank0]:   File "<frozen runpy>", line 88, in _run_code
+[rank0]:   File "/__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/scripts/base_train.py", line 2401, in <module>
+[rank0]:     _sap_eval = evaluate_block_bpb(orig_model, build_val_loader(), args.sap_eval_steps, token_bytes)
+[rank0]:                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/usr/local/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+[rank0]:     return func(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/nanochat/block_head.py", line 829, in evaluate_block_bpb
+[rank0]:     s = head.latent_sensitivity(hid[b, t], ctx, cv, model._sap_readout)
+[rank0]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/usr/local/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+[rank0]:     return func(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/nanochat/block_head.py", line 697, in latent_sensitivity
+[rank0]:     probs.append(torch.softmax(readout(s.reshape(-1, self.d)), -1).view(N, self.T, -1))
+[rank0]:                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/nanochat/gpt.py", line 11944, in _sap_readout
+[rank0]:     return 20.0 * torch.tanh(logits / 20.0)
+[rank0]:                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 32.00 GiB. GPU 0 has a total capacity of 139.80 GiB of which 3.55 GiB is free. Process 1 has 136.21 GiB memory in use. Of the allocated memory 102.88 GiB is allocated by PyTorch, and 32.05 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+[rank0]:[W1002 13:35:28.418266356 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+E1002 13:35:30.179000 29124 site-packages/torch/distributed/elastic/multiprocessing/api.py:882] failed (exitcode: 1) local_rank: 0 (pid: 29130) of binary: /usr/local/bin/python
+Traceback (most recent call last):
+  File "/usr/local/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/torch/distributed/run.py", line 936, in main
+    run(args)
+  File "/usr/local/lib/python3.12/site-packages/torch/distributed/run.py", line 927, in run
+    elastic_launch(
+  File "/usr/local/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 156, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 293, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+scripts.base_train FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-10-02_13:35:30
+  host      : localhost
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 29130)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
+2026-10-02 13:35:39,894 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/main/kernel-status.toml "HTTP/1.1 404 Not Found"
+2026-10-02 13:35:39,966 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/tree/main/build?recursive=false&expand=false "HTTP/1.1 200 OK"
+2026-10-02 13:35:40,045 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/revision/main "HTTP/1.1 200 OK"
+
+                                                       █████                █████
+                                                      ░░███                ░░███
+     ████████    ██████   ████████    ██████   ██████  ░███████    ██████  ███████
+    ░░███░░███  ░░░░░███ ░░███░░███  ███░░███ ███░░███ ░███░░███  ░░░░░███░░░███░
+     ░███ ░███   ███████  ░███ ░███ ░███ ░███░███ ░░░  ░███ ░███   ███████  ░███
+     ░███ ░███  ███░░███  ░███ ░███ ░███ ░███░███  ███ ░███ ░███  ███░░███  ░███ ███
+     ████ █████░░████████ ████ █████░░██████ ░░██████  ████ █████░░███████  ░░█████
+    ░░░░ ░░░░░  ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░   ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░   ░░░░░
+    
+Autodetected device type: cuda
+2026-10-02 13:35:41,285 - nanochat.common - [32m[1mINFO[0m - Distributed world size: 1
+Device: cuda (ddp=True, world_size=1)
+GPU: NVIDIA H200 | Peak FLOPS (BF16): 9.89e+14
+COMPUTE_DTYPE: torch.bfloat16 (auto-detected: CUDA SM 90 (bf16 supported))
+✓ Using Flash Attention 3 (Hopper GPU detected) — efficient and fast.
+Vocab size: 32,768
+[SAP] block head: mode=local_jacobi T=2048 frac=0.00048828125 window=16 layers=2 params=5,775,360
+Model config:
+{
+  "sequence_len": 2048,
+  "vocab_size": 32768,
+  "n_layer": 8,
+  "n_head": 4,
+  "n_kv_head": 4,
+  "n_embd": 512,
+  "use_moe": false,
+  "use_perm": false,
+  "moe_num_experts": 8,
+  "moe_router_dim": 64,
+  "moe_embed_dim": 64,
+  "dropout": 0.0,
+  "use_remix_linear": false,
+  "remix_context_dim": 64,
+  "remix_context_dim_ratio": 6,
+  "remix_basis_size": 64,
+  "remix_output_gate_rank": 16,
+  "remixed_linear_kwargs": {
+    "use_basis_gate": true,
+    "use_output_gate": true,
+    "use_context": true,
+    "basis_gate_mode": "mlp",
+    "sparse_gate_k": 0,
+    "gate_temperature": 1.0,
+    "basis_scale_factor": 4,
+    "n_templates": 1,
+    "template_routing_learned": false,
+    "template_topk": 0,
+    "tiny_expert": false,
+    "tiny_expert_topk": 16,
+    "lokr_expert": false,
+    "lokr_n_experts": 64,
+    "lokr_topk": 16,
+    "lokr_rank": 4,
+    "lokr_learned": false,
+    "basis_gate_rank": 8,
+    "disable_ln_basis": false,
+    "chunk_route_impl": "compose",
+    "top1_gate": "ones",
+    "template_delta_rank": 0,
+    "route_side": "output",
+    "drop_basis_proj": false,
+    "basis_side_templates": 0,
+    "grad_equalize": false,
+    "output_gate_rank": 16,
+    "operator_modulation": "none",
+    "lie_generators": 4,
+    "poly_order": 2,
+    "grassmann_bank_size": 4
+  },
+  "use_pos_embed": false,
+  "moe_use_abs_pos_embed": false,
+  "use_layer_context": true,
+  "scale_basis_size": true,
+  "remix_use_dual_gate": false,
+  "remix_use_fused": false,
+  "p26_output_gated_linear": 0,
+  "p28_shared_basis": 0,
+  "p28_chunk_routing_size": 0,
+  "p28_global_template_bank": "none",
+  "p28_attn_proj_templates": 0,
+  "p28_attn_qk_templates": 0,
+  "p29_template_block_diag": 0,
+  "p29_template_lr_scale": 1.0,
+  "p29_grad_equalize": 0,
+  "p34_ffn_mult": 4.0,
+  "p34_ffn_single": 0,
+  "p34_dense_attn": 0,
+  "legacy_init_fallback": 0,
+  "p35_template_diversity_lambda": 0.0,
+  "p22_route_affine": 0,
+  "p34_ffn_schedule": "",
+  "p34_ffn_no_ffn_replacement": "none",
+  "p34_ffn_last_depth": 1,
+  "p36_swiglu_ffn": 0,
+  "p36_swiglu_mult": 2.6666666666666665,
+  "cond_sites": "both",
+  "cond_rank": 256,
+  "cond_mult_steps": 0,
+  "cond_gate_source": "router",
+  "cond_coeff_act": "centered",
+  "cond_router_rank": 0,
+  "cond_live_init": 0.0,
+  "cond_router_act": "none",
+  "cond_chunk_size": 0,
+  "cond_mult_scale": -1.0,
+  "cond_mult_impl": "wy",
+  "cond_attn_projs": "qkvo",
+  "cond_layer_frac": 1.0,
+  "perm_expert_mode": "low_rank",
+  "perm_rank": 16,
+  "router_context_window": -1,
+  "router_causal": true,
+  "router_num_heads": 4,
+  "router_num_queries": 16,
+  "router_n_layers": 2,
+  "router_use_vocab_prior": false,
+  "window_pattern": "SSSL",
+  "cclblock_modulation": "weight",
+  "cclblock_orth_lambda": 0.0,
+  "cclblock_context_stream": "local",
+  "cclblock_ema_factor": 0.99,
+  "cclblock_stale_ctx_lag": 0,
+  "cclblock_sparse_gate_k": 0,
+  "cclblock_gate_temperature": 1.0,
+  "cclblock_context_bank_size": 0,
+  "cclblock_per_head_ctx": false,
+  "cclblock_context_source": "norm_x",
+  "cclblock_chunk_size": 0,
+  "cclblock_aux_objective": "none",
+  "cclblock_aux_lambda": 0.1,
+  "cclblock_boundary_token_id": 198,
+  "use_ral": false,
+  "ral_rank": 32,
+  "cclblock_film_gate": false,
+  "cclblock_attn_shadow_dim": 0,
+  "cclblock_dynamic_ratio": 0.25,
+  "cclblock_gate_rank": 8,
+  "cclblock_num_regimes": 8,
+  "cclblock_regime_temperature": 1.0,
+  "cclblock_poly_order": 2,
+  "cclblock_lie_generators": 4,
+  "cclblock_grassmann_bank_size": 4,
+  "cclblock_tucker_rank": 32,
+  "cclblock_tucker_modes": 8,
+  "cclblock_svs_rank": 64,
+  "cclblock_svs_eps": 0.1,
+  "cclblock_vq_codes": 8,
+  "cclblock_vq_temperature": 1.0,
+  "cclblock_dcu_warmup_steps": 0,
+  "cclblock_fsi_rotations": 8,
+  "cclblock_fsi_selector_dim": 64,
+  "cclblock_aesp_strata": 4,
+  "cclblock_aesp_delta_rank": 4,
+  "cclblock_ckr_branches": 4,
+  "cclblock_ckr_kernel_size": 64,
+  "cclblock_ckr_pos_channels": 1,
+  "cclblock_ckr_dual_optim": 0,
+  "cclblock_ckr_content_bias": 0.0,
+  "cclblock_giad_rank": 32,
+  "cclblock_psg_kernel_size": 64,
+  "cclblock_ss_dynamic_ratio": 0.25,
+  "cclblock_ss_branches": 2,
+  "cclblock_ss_kernel_size": 64,
+  "cclblock_lokr_branches": 8,
+  "cclblock_lokr_rank": 16,
+  "cclblock_ckr_temp_start": 2.0,
+  "cclblock_ckr_temp_end": 0.3,
+  "cclblock_com_kernel_size": 32,
+  "cclblock_ckr_ortho_init": 0,
+  "cclblock_ckr_branch_dropout": 0.0,
+  "cclblock_ckr_diversity_lambda": 0.0,
+  "cclblock_ckr_layer_selective": 0,
+  "cclblock_pgr_kernel_size": 64,
+  "cclblock_cil_kernel_size": 64,
+  "cclblock_prb_kernel_size": 64,
+  "p18_layer_drop": 0.0,
+  "p18_dynamic_activation": 0,
+  "p18_mixture_norm": 0,
+  "p18_causal_attn_bias": 0,
+  "p18_aux_sim_lambda": 0.0,
+  "p18_gradient_penalty": 0.0,
+  "p18_per_channel_scale": 0,
+  "p19_residual_gate": 0,
+  "p19_head_importance": 0,
+  "p19_residual_mix_groups": 0,
+  "p19_attn_logit_bias": 0,
+  "p19_residual_decay": 0,
+  "p19_grad_equilibrium": 0.0,
+  "p19_spectral_reparam": 0,
+  "p19_weight_anticollapse": 0.0,
+  "p19_ve_bias": 0,
+  "p19_weight_noise": 0.0,
+  "p20_hrcs_scale": 0,
+  "p20_lswr_scale": 0,
+  "p20_lswr_planes": 8,
+  "p20_lrcfb_branches": 0,
+  "p20_lrcfb_narrow": 0,
+  "p20_lrcfb_learned": 0,
+  "p20_lrcfb_topk": 0,
+  "p20_dgcr_branches": 0,
+  "p20_dgcr_aux_weight": 0.01,
+  "p20_mone_experts": 0,
+  "p20_mone_topk": 0,
+  "p20_mone_narrow": 1,
+  "p20_mone_frozen": 0,
+  "p20_ncea_branches": 0,
+  "p20_ncea_eps": 0.1,
+  "p20_adwi": 0,
+  "p20_pwu_branches": 0,
+  "p20_pwu_phase": 1,
+  "p20_fsvd_gate": 0,
+  "p20_wbfc_clusters": 0,
+  "p20_wbfc_active": 0,
+  "p21_per_experts": 0,
+  "p21_per_topk": 0,
+  "p21_per_learned": 0,
+  "p21_per_attn": 0,
+  "p22_attn_moe_route": "none",
+  "p23_tiny_expert": 0,
+  "p23_n_experts": 64,
+  "p23_topk": 16,
+  "p23_learned_route": 0,
+  "p23_std_moe_experts": 0,
+  "p23_std_moe_topk": -1,
+  "p23_std_moe_aux_weight": 0.01,
+  "p23_lokr": 0,
+  "p23_lokr_rank": 4,
+  "p23_use_shared_block_router": 0,
+  "p23_linear_moe_experts": 0,
+  "p23_linear_moe_topk": 0,
+  "p23_quantile_route": 0,
+  "remix_shared_context_gates": 0,
+  "p24_use_sliced_weight": 0,
+  "p24_sliced_weight_reduction_scale": 8,
+  "p24_sliced_weight_min_select": 128,
+  "p24_sliced_weight_scope": "per_token",
+  "p24_sliced_weight_balance_coeff": 0.01,
+  "p24_quantile_route": 0,
+  "p24_use_folded_mod": 0,
+  "p24_folded_mod_reduction_scale": 8,
+  "p24_folded_mod_min_dim": 128,
+  "p24_folded_mod_scope": "per_layer",
+  "p24_folded_mod_gate_act": "tanh_centered",
+  "p24_use_sequence_gated_linear": 0,
+  "p24_sequence_gated_scope": "per_layer",
+  "p24_sequence_gated_act": "tanh_centered",
+  "remix_disable_ln_basis": 0,
+  "dense_intermediate_ln": 0,
+  "use_mol": false,
+  "mol_n_blocks": 5,
+  "mol_n_shared": 1,
+  "mol_topk": 3,
+  "mol_thin_dim": 256,
+  "mol_head_dim": 64,
+  "mol_ffn_mult": 4.0,
+  "mol_router_aux": 0.05,
+  "mol_routed_attn": "softmax",
+  "mol_dispatch": 1,
+  "mol_capacity_factor": 1.0,
+  "mol_block_lr_scale": 1.0,
+  "mol_per_block_ve": 0,
+  "use_binary": false,
+  "binary_acts": true,
+  "binary_weight_scale": "row",
+  "binary_act_scale": "token",
+  "binary_clip": 1.0,
+  "binary_linear": true,
+  "binary_embeddings": true,
+  "binary_skip": "",
+  "binary_native": false,
+  "binary_tau": 1.0,
+  "binary_hard": false,
+  "binary_resid_width": 0,
+  "binary_attn_chunk": 256,
+  "use_mst": false,
+  "mst_n_subs": 8,
+  "mst_sub_dim": 64,
+  "mst_head_dim": 0,
+  "mst_input_mode": "fixed_slice",
+  "mst_rotated_slice_learned": false,
+  "mst_routing_mode": "soft_weighted",
+  "mst_routing_topk": 4,
+  "mst_routing_aux_weight": 0.01,
+  "mst_diversity_weight": 0.0,
+  "mst_ffn_mode": "standard",
+  "mst_ffn_every": 1,
+  "mst_transition_mode": "parallel",
+  "mst_final_mode": "aggregate_proj",
+  "mst_final_topk": -1,
+  "mst_ffn_shared_up": 0,
+  "mst_ffn_inner_dim": 0,
+  "mst_sub_dropout": 0.0,
+  "mst_transition_every": 1,
+  "mst_ffa_temperature": 1.0,
+  "mst_global_residual": 0,
+  "mst_hybrid_dense": 0,
+  "mst_cross_sub_kv": 0,
+  "mst_sub_aux_weight": 0.0,
+  "mst_progressive_merge": 0,
+  "mst_multi_scale_windows": 0,
+  "mst_delta_residual": 0,
+  "mst_sub_layers": 1,
+  "mst_grad_equalize": 0,
+  "mst_block_diagonal_muon": 0,
+  "mst_transition_width_mult": 1.0,
+  "mst_sub_lr_scale": 1.0,
+  "mst_shared_expert": 0,
+  "mst_router_entropy_weight": 0.0,
+  "mst_shared_kv_attn": 0,
+  "mst_contrastive_diversity_weight": 0.0,
+  "mst_transition_nonlinear": 0,
+  "mst_transition_gated": 0,
+  "mst_transition_mlp": 0,
+  "mst_cross_sub_gate": 0,
+  "mst_hyper_connect": 0,
+  "mst_cross_kv_inject": 0,
+  "mst_slice_transition": 0,
+  "mst_lookback_layers": 0,
+  "mst_bilinear_transition": 0,
+  "mst_cross_sub_qmod": 0,
+  "mst_feature_cycle": 0,
+  "mst_mean_transition": 0,
+  "mst_sub_head_dim": 0,
+  "mst_final_norm": 0,
+  "mst_per_stream_ve": 0,
+  "mst_ve_map": 0,
+  "mst_ve_map_rank": 0,
+  "mst_lm_head_dim": 0,
+  "mst_compose_windows": 0,
+  "mst_channel_mix": "none",
+  "mst_channel_mix_site": "layer",
+  "mst_distribute_block_muon": 0,
+  "mst_trans_spectral_lr": 0,
+  "mst_talking_heads": 0,
+  "mst_wo_mode": "block",
+  "mst_stream_topk": 0,
+  "mst_stream_shared": 0,
+  "mst_stream_router_aux": 0.01,
+  "mst_stream_router_noise": 0.0,
+  "mst_stream_dispatch": 0,
+  "mst_stream_capacity_factor": 1.0,
+  "mst_stream_gate_attn": 0,
+  "mst_ffn_monarch": "none",
+  "mst_shampoo": 0,
+  "mst_precond_every": 10,
+  "mst_shampoo_beta": 0.95,
+  "use_eet": false,
+  "eet_frozen_kv": true,
+  "eet_reenter_final": false,
+  "eet_router_type": "mlp2",
+  "eet_router_hidden": 0,
+  "eet_freq_prior_alpha": 0.0,
+  "eet_pos_prior_beta": 0.0,
+  "eet_domain_prior": false,
+  "eet_warmup_frac": 0.02,
+  "eet_explore_frac": 0.15,
+  "eet_reconstruct_lambda": 1.0,
+  "eet_efficiency_lambda_start": 0.01,
+  "eet_efficiency_lambda_end": 0.1,
+  "eet_translator_rank": 0,
+  "eet_max_frozen_kv_frac": 0.75,
+  "eet_exit_threshold": 0.5,
+  "eet_min_exit_layer": 1,
+  "eet_loss_variant": "reconstruct",
+  "eet_topk_vocab": 512,
+  "eet_entropy_lambda": 0.3,
+  "eet_surprise_lambda": 0.1,
+  "eet_adv_lambda": 1.0,
+  "eet_adv_entropy_lambda": 0.2,
+  "eet_quality_lambda": 1.0,
+  "eet_quality_entropy_bonus": 0.1,
+  "eet_gumbel_temp_start": 0.0,
+  "eet_gumbel_temp_end": 0.1,
+  "eet_gumbel_hard": true,
+  "eet_commitment_beta": 0.1,
+  "eet_global_router": false,
+  "eet_freq_efficiency_alpha": 0.0,
+  "eet_diversity_lambda": 0.0,
+  "eet_ce_guided_lambda": 1.0,
+  "eet_router_lr_mult": 5.0,
+  "eet_model_lr_mult": 1.0,
+  "eet_depth_weight_type": "none",
+  "eet_depth_weight_max": 2.5,
+  "eet_use_override": 0,
+  "eet_override_prob_start": 0.5,
+  "eet_override_prob_end": 0.1,
+  "eet_compute_skip": false,
+  "eet_target_active_frac": 0.125,
+  "eet_capacity_schedule": "bell",
+  "eet_exit_fracs": null,
+  "eet_capacity_alignment_lambda": 0.0,
+  "eet_kv_mode": "none",
+  "eet_route_noise": 0.0,
+  "eet_route_noise_end": -1.0,
+  "eet_coverage_diag": false,
+  "deep_supervision_lambda": 0.0,
+  "deep_supervision_frac": 0.125,
+  "eet_width_power": 0.0,
+  "eet_width_cap": 16.0,
+  "eet_kv_eager": false,
+  "eet_router_task_grad": true,
+  "eet_reinforce_interval": 0,
+  "eet_reinforce_lambda": 0.1,
+  "eet_exit_adapter_rank": 0,
+  "eet_router_after_block": 0,
+  "eet_ffn_skip": false,
+  "eet_ffn_target_frac": 0.5,
+  "eet_ffn_full_attn": true,
+  "eet_depth_affine": false,
+  "eet_capacity_anneal_frac": 0.0,
+  "eet_learned_schedule": false,
+  "eet_departure_summary": false,
+  "eet_route_consistency_lambda": 0.0,
+  "eet_dense_distill_interval": 0,
+  "eet_dense_distill_lambda": 0.5,
+  "eet_depth_lr_scale": false,
+  "eet_depth_grad_scale": false,
+  "eet_detach_aux_from_backbone": false,
+  "eet_detach_exit_from_backbone": false,
+  "use_code_head": false,
+  "sch_head_type": "code",
+  "sch_bits": 0,
+  "sch_order": 2,
+  "sch_max_m": 0,
+  "sch_phi_mode": "monomial",
+  "sch_code_mode": "binary",
+  "sch_code_path": "",
+  "sch_code_ecc_bits": 0,
+  "sch_code_seed": 1234,
+  "sch_phi_density": 0.0,
+  "sch_phi_dtype": "bf16",
+  "sch_phi_normalize": 1,
+  "sch_phi_center": 0,
+  "sch_g_type": "linear",
+  "sch_g_hidden": 0,
+  "sch_g_layers": 2,
+  "sch_g_out_std": 0.001,
+  "sch_mixture": 1,
+  "sch_residual_rank": 0,
+  "sch_logit_act": "none",
+  "sch_bias": 0,
+  "sch_input_mode": "table",
+  "sch_input_hidden": 0,
+  "sch_product_groups": 8,
+  "sch_product_codebook": 256,
+  "sch_product_source": "hash",
+  "sch_product_impl": "dense",
+  "sch_phi_whiten": 0,
+  "sch_mixture_per_phi": 0,
+  "sch_mixture_topk": 0,
+  "sch_mixture_aux": 0.01,
+  "sch_monarch_m1": 0,
+  "sch_monarch_perm": "none",
+  "sch_monarch_perm_path": "",
+  "sch_tier_bounds": "",
+  "sch_tier_caps": "",
+  "sch_tier_order": "freq",
+  "sch_tier_perm_path": "",
+  "sch_proposal_rank": 32,
+  "sch_proposal_topk": 16384,
+  "sch_proposal_samples": 4096,
+  "sch_proposal_warmup": 0,
+  "sch_proposal_chunk": 2048,
+  "sch_proposal_aux": 1.0,
+  "sch_nfh_mode": "cp",
+  "sch_nfh_rank": 32,
+  "sch_nfh_dims": "",
+  "sch_nfh_groups": 3,
+  "sch_nfh_views": 1,
+  "sch_nfh_perm": "none",
+  "sch_nfh_perm_path": "",
+  "sch_nfh_g_type": "linear",
+  "sch_nfh_g_hidden": 0,
+  "sch_rerank_mode": "topk",
+  "sch_rerank_k": 64,
+  "sch_rerank_rank": 32,
+  "sch_nfh_smooth": 0,
+  "sch_nfh_chunk": 256,
+  "sap_block_T": 2048,
+  "sap_block_mode": "local_jacobi",
+  "sap_block_frac": 0.00048828125,
+  "sap_lambda": 1.0,
+  "sap_head_layers": 2,
+  "sap_head_heads": 0,
+  "sap_head_mlp_mult": 2,
+  "sap_enc_layers": 1,
+  "sap_ctx_window": 16,
+  "sap_latent_groups": 4,
+  "sap_latent_codes": 64,
+  "sap_latent_dim": 64,
+  "sap_free_bits": 0.25,
+  "sap_kl_anneal_steps": 2000,
+  "sap_gumbel_tau": 1.0,
+  "sap_cp_components": 8,
+  "sap_wta_k": 4,
+  "sap_u_freqs": 24,
+  "sap_u_interior": 0.8,
+  "sap_logit_chunk": 8192,
+  "sap_jacobi_sweeps": 2
+}
+Seeded weight init with --seed 1
+Checkpoints directory: /__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/out/s00_sap/d8/SAP_local_jacobi_TL_s1
+✓ Wrapping model with DistributedDataParallel (rank 0, find_unused_parameters=False, broadcast_buffers=True)
+Parameter counts:
+wte                     : 16,777,216
+wpe                     : 0
+value_embeds            : 67,108,864
+lm_head                 : 16,777,216
+transformer_matrices    : 25,166,336
+research                : 5,775,360
+scalars                 : 16
+total                   : 131,605,008
+Estimated FLOPs per token (total):  4.375058e+08
+COST_AXES precision=W16A16E16H16 bops_arith=5.6001e+10 energy_pj_per_token=3.4869e+08 inference_MiB=251.02 training_state_MiB=867.58
+Estimated FLOPs per token (active): 4.375058e+08
+Estimated active params:            131,605,008
+[SAP] block head: mode=local_jacobi T=2048 frac=0.00048828125 window=16 layers=2 params=12,201,984
+Auto-computed optimal batch size: 262,144 tokens
+Scaling LRs by 0.7071 for batch size 262,144 (reference: 524,288)
+Scaling weight decay from 0.200000 to 0.371230 for depth 8
+Scaling the LR for the AdamW parameters ∝1/√(512/768) = 1.224745
+Calculated number of iterations from target FLOPs: 1,099
+Total number of training tokens: 288,096,256
+Tokens : Scaling params ratio: 6.87
+Total training FLOPs estimate: 1.260438e+17
+Total training FLOPs (active):  1.260438e+17
+Total active training FLOPs estimate: 1.260438e+17
+Using base scheduler: linear warmup/flat/linear warmdown
+Tokens / micro-batch / rank: 128 x 2048 = 262,144
+Tokens / micro-batch: 262,144
+Total batch size 262,144 => gradient accumulation steps: 1
+Running pre-compilation warmup (1 dummy forward+backward to init lazy allocations)...
+[rank0]:W1002 13:35:42.031000 50571 site-packages/torch/_logging/_internal.py:1199] [0/0] Profiler function <class 'torch.autograd.profiler.record_function'> will be ignored
+Warmup complete. Steady-state VRAM: 5.9 GB allocated
+step 00000/01099 (0.00%) | loss: 20.796650 | lrm: 0.20 | lr(adamw:6.989e-02, muon:2.828e-03) | dt: 506.18ms | tok/sec: 517,890 | bf16_mfu: 22.91 | epoch: 1 pq: 0 rg: 1 | total time: 0.00m
+step 00100/01099 (9.10%) | loss: 10.662579 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 413.71ms | tok/sec: 633,644 | bf16_mfu: 28.03 | epoch: 1 pq: 0 rg: 52 | total time: 0.62m | eta: 6.9m
+step 00200/01099 (18.20%) | loss: 9.420689 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 411.87ms | tok/sec: 636,478 | bf16_mfu: 28.16 | epoch: 1 pq: 1 rg: 17 | total time: 1.31m | eta: 6.2m
+step 00300/01099 (27.30%) | loss: 8.800820 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 415.56ms | tok/sec: 630,818 | bf16_mfu: 27.91 | epoch: 1 pq: 1 rg: 65 | total time: 2.00m | eta: 5.5m
+step 00400/01099 (36.40%) | loss: 8.337725 | lrm: 0.98 | lr(adamw:3.425e-01, muon:1.386e-02) | dt: 414.75ms | tok/sec: 632,052 | bf16_mfu: 27.96 | epoch: 1 pq: 2 rg: 30 | total time: 2.70m | eta: 4.8m
+step 00500/01099 (45.50%) | loss: 7.952854 | lrm: 0.85 | lr(adamw:2.960e-01, muon:1.198e-02) | dt: 410.54ms | tok/sec: 638,534 | bf16_mfu: 28.25 | epoch: 1 pq: 2 rg: 78 | total time: 3.40m | eta: 4.2m
+step 00600/01099 (54.60%) | loss: 7.719600 | lrm: 0.71 | lr(adamw:2.495e-01, muon:1.010e-02) | dt: 414.87ms | tok/sec: 631,875 | bf16_mfu: 27.95 | epoch: 1 pq: 3 rg: 43 | total time: 4.09m | eta: 3.5m
+step 00700/01099 (63.69%) | loss: 7.537651 | lrm: 0.58 | lr(adamw:2.030e-01, muon:8.215e-03) | dt: 415.54ms | tok/sec: 630,856 | bf16_mfu: 27.91 | epoch: 1 pq: 4 rg: 10 | total time: 4.78m | eta: 2.8m
+step 00800/01099 (72.79%) | loss: 7.410549 | lrm: 0.45 | lr(adamw:1.565e-01, muon:6.333e-03) | dt: 415.09ms | tok/sec: 631,533 | bf16_mfu: 27.94 | epoch: 1 pq: 4 rg: 58 | total time: 5.48m | eta: 2.1m
+step 00900/01099 (81.89%) | loss: 7.291156 | lrm: 0.31 | lr(adamw:1.100e-01, muon:4.452e-03) | dt: 416.34ms | tok/sec: 629,640 | bf16_mfu: 27.85 | epoch: 1 pq: 5 rg: 24 | total time: 6.17m | eta: 1.4m
+step 01000/01099 (90.99%) | loss: 7.208348 | lrm: 0.18 | lr(adamw:6.350e-02, muon:2.570e-03) | dt: 415.67ms | tok/sec: 630,651 | bf16_mfu: 27.90 | epoch: 1 pq: 5 rg: 73 | total time: 6.87m | eta: 0.7m
+step 01098/01099 (99.91%) | loss: 7.136187 | lrm: 0.05 | lr(adamw:1.794e-02, muon:7.259e-04) | dt: 415.13ms | tok/sec: 631,481 | bf16_mfu: 27.93 | epoch: 1 pq: 6 rg: 37 | total time: 7.55m | eta: 0.0m
+/usr/local/lib/python3.12/site-packages/torch/_dynamo/variables/functions.py:1598: UserWarning: Dynamo does not know how to trace the builtin `torch._C._distributed_c10d.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1._broadcast_coalesced.` This function is either a Python builtin (e.g. _warnings.warn) or a third-party C/C++ Python extension (perhaps created with pybind).
+If it is a Python builtin, please file an issue on GitHub so the PyTorch team can add support for it and see the next case for a workaround.
+If it is a third-party C/C++ Python extension, please either wrap it into a PyTorch-understood custom operator (see https://pytorch.org/tutorials/advanced/custom_ops_landing_page.html for more details) or, if it is traceable, use `torch.compiler.allow_in_graph`.
+  torch._dynamo.utils.warn_once(explanation + "\n" + "\n".join(hints))
+Step 01099 | Validation bpb: 0.995216 | val_loss: 3.265455
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank0]:   File "<frozen runpy>", line 88, in _run_code
+[rank0]:   File "/__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/scripts/base_train.py", line 2401, in <module>
+[rank0]:     _sap_eval = evaluate_block_bpb(orig_model, build_val_loader(), args.sap_eval_steps, token_bytes)
+[rank0]:                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/usr/local/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+[rank0]:     return func(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/nanochat/block_head.py", line 827, in evaluate_block_bpb
+[rank0]:     block_nats += -(lp[keep]).double().sum()
+[rank0]:                     ~~^^^^^^
+[rank0]: TypeError: 'NoneType' object is not subscriptable
+[rank0]:[W1002 13:45:30.741872894 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+E1002 13:45:32.636000 50565 site-packages/torch/distributed/elastic/multiprocessing/api.py:882] failed (exitcode: 1) local_rank: 0 (pid: 50571) of binary: /usr/local/bin/python
+Traceback (most recent call last):
+  File "/usr/local/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/torch/distributed/run.py", line 936, in main
+    run(args)
+  File "/usr/local/lib/python3.12/site-packages/torch/distributed/run.py", line 927, in run
+    elastic_launch(
+  File "/usr/local/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 156, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 293, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+scripts.base_train FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-10-02_13:45:32
+  host      : localhost
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 50571)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================
+2026-10-02 13:48:32,041 - httpx - [32m[1mINFO[0m - HTTP Request: HEAD https://huggingface.co/varunneal/flash-attention-3/resolve/main/kernel-status.toml "HTTP/1.1 404 Not Found"
+2026-10-02 13:48:32,114 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/tree/main/build?recursive=false&expand=false "HTTP/1.1 200 OK"
+2026-10-02 13:48:32,187 - httpx - [32m[1mINFO[0m - HTTP Request: GET https://huggingface.co/api/models/varunneal/flash-attention-3/revision/main "HTTP/1.1 200 OK"
+
+                                                       █████                █████
+                                                      ░░███                ░░███
+     ████████    ██████   ████████    ██████   ██████  ░███████    ██████  ███████
+    ░░███░░███  ░░░░░███ ░░███░░███  ███░░███ ███░░███ ░███░░███  ░░░░░███░░░███░
+     ░███ ░███   ███████  ░███ ░███ ░███ ░███░███ ░░░  ░███ ░███   ███████  ░███
+     ░███ ░███  ███░░███  ░███ ░███ ░███ ░███░███  ███ ░███ ░███  ███░░███  ░███ ███
+     ████ █████░░████████ ████ █████░░██████ ░░██████  ████ █████░░███████  ░░█████
+    ░░░░ ░░░░░  ░░░░░░░░ ░░░░ ░░░░░  ░░░░░░   ░░░░░░  ░░░░ ░░░░░  ░░░░░░░░   ░░░░░
+    
+Autodetected device type: cuda
+2026-10-02 13:48:33,492 - nanochat.common - [32m[1mINFO[0m - Distributed world size: 1
+Device: cuda (ddp=True, world_size=1)
+GPU: NVIDIA H200 | Peak FLOPS (BF16): 9.89e+14
+COMPUTE_DTYPE: torch.bfloat16 (auto-detected: CUDA SM 90 (bf16 supported))
+✓ Using Flash Attention 3 (Hopper GPU detected) — efficient and fast.
+Vocab size: 32,768
+[SAP] block head: mode=p2_gauss T=2048 frac=0.00048828125 window=16 layers=2 params=10,133,504
+Model config:
+{
+  "sequence_len": 2048,
+  "vocab_size": 32768,
+  "n_layer": 8,
+  "n_head": 4,
+  "n_kv_head": 4,
+  "n_embd": 512,
+  "use_moe": false,
+  "use_perm": false,
+  "moe_num_experts": 8,
+  "moe_router_dim": 64,
+  "moe_embed_dim": 64,
+  "dropout": 0.0,
+  "use_remix_linear": false,
+  "remix_context_dim": 64,
+  "remix_context_dim_ratio": 6,
+  "remix_basis_size": 64,
+  "remix_output_gate_rank": 16,
+  "remixed_linear_kwargs": {
+    "use_basis_gate": true,
+    "use_output_gate": true,
+    "use_context": true,
+    "basis_gate_mode": "mlp",
+    "sparse_gate_k": 0,
+    "gate_temperature": 1.0,
+    "basis_scale_factor": 4,
+    "n_templates": 1,
+    "template_routing_learned": false,
+    "template_topk": 0,
+    "tiny_expert": false,
+    "tiny_expert_topk": 16,
+    "lokr_expert": false,
+    "lokr_n_experts": 64,
+    "lokr_topk": 16,
+    "lokr_rank": 4,
+    "lokr_learned": false,
+    "basis_gate_rank": 8,
+    "disable_ln_basis": false,
+    "chunk_route_impl": "compose",
+    "top1_gate": "ones",
+    "template_delta_rank": 0,
+    "route_side": "output",
+    "drop_basis_proj": false,
+    "basis_side_templates": 0,
+    "grad_equalize": false,
+    "output_gate_rank": 16,
+    "operator_modulation": "none",
+    "lie_generators": 4,
+    "poly_order": 2,
+    "grassmann_bank_size": 4
+  },
+  "use_pos_embed": false,
+  "moe_use_abs_pos_embed": false,
+  "use_layer_context": true,
+  "scale_basis_size": true,
+  "remix_use_dual_gate": false,
+  "remix_use_fused": false,
+  "p26_output_gated_linear": 0,
+  "p28_shared_basis": 0,
+  "p28_chunk_routing_size": 0,
+  "p28_global_template_bank": "none",
+  "p28_attn_proj_templates": 0,
+  "p28_attn_qk_templates": 0,
+  "p29_template_block_diag": 0,
+  "p29_template_lr_scale": 1.0,
+  "p29_grad_equalize": 0,
+  "p34_ffn_mult": 4.0,
+  "p34_ffn_single": 0,
+  "p34_dense_attn": 0,
+  "legacy_init_fallback": 0,
+  "p35_template_diversity_lambda": 0.0,
+  "p22_route_affine": 0,
+  "p34_ffn_schedule": "",
+  "p34_ffn_no_ffn_replacement": "none",
+  "p34_ffn_last_depth": 1,
+  "p36_swiglu_ffn": 0,
+  "p36_swiglu_mult": 2.6666666666666665,
+  "cond_sites": "both",
+  "cond_rank": 256,
+  "cond_mult_steps": 0,
+  "cond_gate_source": "router",
+  "cond_coeff_act": "centered",
+  "cond_router_rank": 0,
+  "cond_live_init": 0.0,
+  "cond_router_act": "none",
+  "cond_chunk_size": 0,
+  "cond_mult_scale": -1.0,
+  "cond_mult_impl": "wy",
+  "cond_attn_projs": "qkvo",
+  "cond_layer_frac": 1.0,
+  "perm_expert_mode": "low_rank",
+  "perm_rank": 16,
+  "router_context_window": -1,
+  "router_causal": true,
+  "router_num_heads": 4,
+  "router_num_queries": 16,
+  "router_n_layers": 2,
+  "router_use_vocab_prior": false,
+  "window_pattern": "SSSL",
+  "cclblock_modulation": "weight",
+  "cclblock_orth_lambda": 0.0,
+  "cclblock_context_stream": "local",
+  "cclblock_ema_factor": 0.99,
+  "cclblock_stale_ctx_lag": 0,
+  "cclblock_sparse_gate_k": 0,
+  "cclblock_gate_temperature": 1.0,
+  "cclblock_context_bank_size": 0,
+  "cclblock_per_head_ctx": false,
+  "cclblock_context_source": "norm_x",
+  "cclblock_chunk_size": 0,
+  "cclblock_aux_objective": "none",
+  "cclblock_aux_lambda": 0.1,
+  "cclblock_boundary_token_id": 198,
+  "use_ral": false,
+  "ral_rank": 32,
+  "cclblock_film_gate": false,
+  "cclblock_attn_shadow_dim": 0,
+  "cclblock_dynamic_ratio": 0.25,
+  "cclblock_gate_rank": 8,
+  "cclblock_num_regimes": 8,
+  "cclblock_regime_temperature": 1.0,
+  "cclblock_poly_order": 2,
+  "cclblock_lie_generators": 4,
+  "cclblock_grassmann_bank_size": 4,
+  "cclblock_tucker_rank": 32,
+  "cclblock_tucker_modes": 8,
+  "cclblock_svs_rank": 64,
+  "cclblock_svs_eps": 0.1,
+  "cclblock_vq_codes": 8,
+  "cclblock_vq_temperature": 1.0,
+  "cclblock_dcu_warmup_steps": 0,
+  "cclblock_fsi_rotations": 8,
+  "cclblock_fsi_selector_dim": 64,
+  "cclblock_aesp_strata": 4,
+  "cclblock_aesp_delta_rank": 4,
+  "cclblock_ckr_branches": 4,
+  "cclblock_ckr_kernel_size": 64,
+  "cclblock_ckr_pos_channels": 1,
+  "cclblock_ckr_dual_optim": 0,
+  "cclblock_ckr_content_bias": 0.0,
+  "cclblock_giad_rank": 32,
+  "cclblock_psg_kernel_size": 64,
+  "cclblock_ss_dynamic_ratio": 0.25,
+  "cclblock_ss_branches": 2,
+  "cclblock_ss_kernel_size": 64,
+  "cclblock_lokr_branches": 8,
+  "cclblock_lokr_rank": 16,
+  "cclblock_ckr_temp_start": 2.0,
+  "cclblock_ckr_temp_end": 0.3,
+  "cclblock_com_kernel_size": 32,
+  "cclblock_ckr_ortho_init": 0,
+  "cclblock_ckr_branch_dropout": 0.0,
+  "cclblock_ckr_diversity_lambda": 0.0,
+  "cclblock_ckr_layer_selective": 0,
+  "cclblock_pgr_kernel_size": 64,
+  "cclblock_cil_kernel_size": 64,
+  "cclblock_prb_kernel_size": 64,
+  "p18_layer_drop": 0.0,
+  "p18_dynamic_activation": 0,
+  "p18_mixture_norm": 0,
+  "p18_causal_attn_bias": 0,
+  "p18_aux_sim_lambda": 0.0,
+  "p18_gradient_penalty": 0.0,
+  "p18_per_channel_scale": 0,
+  "p19_residual_gate": 0,
+  "p19_head_importance": 0,
+  "p19_residual_mix_groups": 0,
+  "p19_attn_logit_bias": 0,
+  "p19_residual_decay": 0,
+  "p19_grad_equilibrium": 0.0,
+  "p19_spectral_reparam": 0,
+  "p19_weight_anticollapse": 0.0,
+  "p19_ve_bias": 0,
+  "p19_weight_noise": 0.0,
+  "p20_hrcs_scale": 0,
+  "p20_lswr_scale": 0,
+  "p20_lswr_planes": 8,
+  "p20_lrcfb_branches": 0,
+  "p20_lrcfb_narrow": 0,
+  "p20_lrcfb_learned": 0,
+  "p20_lrcfb_topk": 0,
+  "p20_dgcr_branches": 0,
+  "p20_dgcr_aux_weight": 0.01,
+  "p20_mone_experts": 0,
+  "p20_mone_topk": 0,
+  "p20_mone_narrow": 1,
+  "p20_mone_frozen": 0,
+  "p20_ncea_branches": 0,
+  "p20_ncea_eps": 0.1,
+  "p20_adwi": 0,
+  "p20_pwu_branches": 0,
+  "p20_pwu_phase": 1,
+  "p20_fsvd_gate": 0,
+  "p20_wbfc_clusters": 0,
+  "p20_wbfc_active": 0,
+  "p21_per_experts": 0,
+  "p21_per_topk": 0,
+  "p21_per_learned": 0,
+  "p21_per_attn": 0,
+  "p22_attn_moe_route": "none",
+  "p23_tiny_expert": 0,
+  "p23_n_experts": 64,
+  "p23_topk": 16,
+  "p23_learned_route": 0,
+  "p23_std_moe_experts": 0,
+  "p23_std_moe_topk": -1,
+  "p23_std_moe_aux_weight": 0.01,
+  "p23_lokr": 0,
+  "p23_lokr_rank": 4,
+  "p23_use_shared_block_router": 0,
+  "p23_linear_moe_experts": 0,
+  "p23_linear_moe_topk": 0,
+  "p23_quantile_route": 0,
+  "remix_shared_context_gates": 0,
+  "p24_use_sliced_weight": 0,
+  "p24_sliced_weight_reduction_scale": 8,
+  "p24_sliced_weight_min_select": 128,
+  "p24_sliced_weight_scope": "per_token",
+  "p24_sliced_weight_balance_coeff": 0.01,
+  "p24_quantile_route": 0,
+  "p24_use_folded_mod": 0,
+  "p24_folded_mod_reduction_scale": 8,
+  "p24_folded_mod_min_dim": 128,
+  "p24_folded_mod_scope": "per_layer",
+  "p24_folded_mod_gate_act": "tanh_centered",
+  "p24_use_sequence_gated_linear": 0,
+  "p24_sequence_gated_scope": "per_layer",
+  "p24_sequence_gated_act": "tanh_centered",
+  "remix_disable_ln_basis": 0,
+  "dense_intermediate_ln": 0,
+  "use_mol": false,
+  "mol_n_blocks": 5,
+  "mol_n_shared": 1,
+  "mol_topk": 3,
+  "mol_thin_dim": 256,
+  "mol_head_dim": 64,
+  "mol_ffn_mult": 4.0,
+  "mol_router_aux": 0.05,
+  "mol_routed_attn": "softmax",
+  "mol_dispatch": 1,
+  "mol_capacity_factor": 1.0,
+  "mol_block_lr_scale": 1.0,
+  "mol_per_block_ve": 0,
+  "use_binary": false,
+  "binary_acts": true,
+  "binary_weight_scale": "row",
+  "binary_act_scale": "token",
+  "binary_clip": 1.0,
+  "binary_linear": true,
+  "binary_embeddings": true,
+  "binary_skip": "",
+  "binary_native": false,
+  "binary_tau": 1.0,
+  "binary_hard": false,
+  "binary_resid_width": 0,
+  "binary_attn_chunk": 256,
+  "use_mst": false,
+  "mst_n_subs": 8,
+  "mst_sub_dim": 64,
+  "mst_head_dim": 0,
+  "mst_input_mode": "fixed_slice",
+  "mst_rotated_slice_learned": false,
+  "mst_routing_mode": "soft_weighted",
+  "mst_routing_topk": 4,
+  "mst_routing_aux_weight": 0.01,
+  "mst_diversity_weight": 0.0,
+  "mst_ffn_mode": "standard",
+  "mst_ffn_every": 1,
+  "mst_transition_mode": "parallel",
+  "mst_final_mode": "aggregate_proj",
+  "mst_final_topk": -1,
+  "mst_ffn_shared_up": 0,
+  "mst_ffn_inner_dim": 0,
+  "mst_sub_dropout": 0.0,
+  "mst_transition_every": 1,
+  "mst_ffa_temperature": 1.0,
+  "mst_global_residual": 0,
+  "mst_hybrid_dense": 0,
+  "mst_cross_sub_kv": 0,
+  "mst_sub_aux_weight": 0.0,
+  "mst_progressive_merge": 0,
+  "mst_multi_scale_windows": 0,
+  "mst_delta_residual": 0,
+  "mst_sub_layers": 1,
+  "mst_grad_equalize": 0,
+  "mst_block_diagonal_muon": 0,
+  "mst_transition_width_mult": 1.0,
+  "mst_sub_lr_scale": 1.0,
+  "mst_shared_expert": 0,
+  "mst_router_entropy_weight": 0.0,
+  "mst_shared_kv_attn": 0,
+  "mst_contrastive_diversity_weight": 0.0,
+  "mst_transition_nonlinear": 0,
+  "mst_transition_gated": 0,
+  "mst_transition_mlp": 0,
+  "mst_cross_sub_gate": 0,
+  "mst_hyper_connect": 0,
+  "mst_cross_kv_inject": 0,
+  "mst_slice_transition": 0,
+  "mst_lookback_layers": 0,
+  "mst_bilinear_transition": 0,
+  "mst_cross_sub_qmod": 0,
+  "mst_feature_cycle": 0,
+  "mst_mean_transition": 0,
+  "mst_sub_head_dim": 0,
+  "mst_final_norm": 0,
+  "mst_per_stream_ve": 0,
+  "mst_ve_map": 0,
+  "mst_ve_map_rank": 0,
+  "mst_lm_head_dim": 0,
+  "mst_compose_windows": 0,
+  "mst_channel_mix": "none",
+  "mst_channel_mix_site": "layer",
+  "mst_distribute_block_muon": 0,
+  "mst_trans_spectral_lr": 0,
+  "mst_talking_heads": 0,
+  "mst_wo_mode": "block",
+  "mst_stream_topk": 0,
+  "mst_stream_shared": 0,
+  "mst_stream_router_aux": 0.01,
+  "mst_stream_router_noise": 0.0,
+  "mst_stream_dispatch": 0,
+  "mst_stream_capacity_factor": 1.0,
+  "mst_stream_gate_attn": 0,
+  "mst_ffn_monarch": "none",
+  "mst_shampoo": 0,
+  "mst_precond_every": 10,
+  "mst_shampoo_beta": 0.95,
+  "use_eet": false,
+  "eet_frozen_kv": true,
+  "eet_reenter_final": false,
+  "eet_router_type": "mlp2",
+  "eet_router_hidden": 0,
+  "eet_freq_prior_alpha": 0.0,
+  "eet_pos_prior_beta": 0.0,
+  "eet_domain_prior": false,
+  "eet_warmup_frac": 0.02,
+  "eet_explore_frac": 0.15,
+  "eet_reconstruct_lambda": 1.0,
+  "eet_efficiency_lambda_start": 0.01,
+  "eet_efficiency_lambda_end": 0.1,
+  "eet_translator_rank": 0,
+  "eet_max_frozen_kv_frac": 0.75,
+  "eet_exit_threshold": 0.5,
+  "eet_min_exit_layer": 1,
+  "eet_loss_variant": "reconstruct",
+  "eet_topk_vocab": 512,
+  "eet_entropy_lambda": 0.3,
+  "eet_surprise_lambda": 0.1,
+  "eet_adv_lambda": 1.0,
+  "eet_adv_entropy_lambda": 0.2,
+  "eet_quality_lambda": 1.0,
+  "eet_quality_entropy_bonus": 0.1,
+  "eet_gumbel_temp_start": 0.0,
+  "eet_gumbel_temp_end": 0.1,
+  "eet_gumbel_hard": true,
+  "eet_commitment_beta": 0.1,
+  "eet_global_router": false,
+  "eet_freq_efficiency_alpha": 0.0,
+  "eet_diversity_lambda": 0.0,
+  "eet_ce_guided_lambda": 1.0,
+  "eet_router_lr_mult": 5.0,
+  "eet_model_lr_mult": 1.0,
+  "eet_depth_weight_type": "none",
+  "eet_depth_weight_max": 2.5,
+  "eet_use_override": 0,
+  "eet_override_prob_start": 0.5,
+  "eet_override_prob_end": 0.1,
+  "eet_compute_skip": false,
+  "eet_target_active_frac": 0.125,
+  "eet_capacity_schedule": "bell",
+  "eet_exit_fracs": null,
+  "eet_capacity_alignment_lambda": 0.0,
+  "eet_kv_mode": "none",
+  "eet_route_noise": 0.0,
+  "eet_route_noise_end": -1.0,
+  "eet_coverage_diag": false,
+  "deep_supervision_lambda": 0.0,
+  "deep_supervision_frac": 0.125,
+  "eet_width_power": 0.0,
+  "eet_width_cap": 16.0,
+  "eet_kv_eager": false,
+  "eet_router_task_grad": true,
+  "eet_reinforce_interval": 0,
+  "eet_reinforce_lambda": 0.1,
+  "eet_exit_adapter_rank": 0,
+  "eet_router_after_block": 0,
+  "eet_ffn_skip": false,
+  "eet_ffn_target_frac": 0.5,
+  "eet_ffn_full_attn": true,
+  "eet_depth_affine": false,
+  "eet_capacity_anneal_frac": 0.0,
+  "eet_learned_schedule": false,
+  "eet_departure_summary": false,
+  "eet_route_consistency_lambda": 0.0,
+  "eet_dense_distill_interval": 0,
+  "eet_dense_distill_lambda": 0.5,
+  "eet_depth_lr_scale": false,
+  "eet_depth_grad_scale": false,
+  "eet_detach_aux_from_backbone": false,
+  "eet_detach_exit_from_backbone": false,
+  "use_code_head": false,
+  "sch_head_type": "code",
+  "sch_bits": 0,
+  "sch_order": 2,
+  "sch_max_m": 0,
+  "sch_phi_mode": "monomial",
+  "sch_code_mode": "binary",
+  "sch_code_path": "",
+  "sch_code_ecc_bits": 0,
+  "sch_code_seed": 1234,
+  "sch_phi_density": 0.0,
+  "sch_phi_dtype": "bf16",
+  "sch_phi_normalize": 1,
+  "sch_phi_center": 0,
+  "sch_g_type": "linear",
+  "sch_g_hidden": 0,
+  "sch_g_layers": 2,
+  "sch_g_out_std": 0.001,
+  "sch_mixture": 1,
+  "sch_residual_rank": 0,
+  "sch_logit_act": "none",
+  "sch_bias": 0,
+  "sch_input_mode": "table",
+  "sch_input_hidden": 0,
+  "sch_product_groups": 8,
+  "sch_product_codebook": 256,
+  "sch_product_source": "hash",
+  "sch_product_impl": "dense",
+  "sch_phi_whiten": 0,
+  "sch_mixture_per_phi": 0,
+  "sch_mixture_topk": 0,
+  "sch_mixture_aux": 0.01,
+  "sch_monarch_m1": 0,
+  "sch_monarch_perm": "none",
+  "sch_monarch_perm_path": "",
+  "sch_tier_bounds": "",
+  "sch_tier_caps": "",
+  "sch_tier_order": "freq",
+  "sch_tier_perm_path": "",
+  "sch_proposal_rank": 32,
+  "sch_proposal_topk": 16384,
+  "sch_proposal_samples": 4096,
+  "sch_proposal_warmup": 0,
+  "sch_proposal_chunk": 2048,
+  "sch_proposal_aux": 1.0,
+  "sch_nfh_mode": "cp",
+  "sch_nfh_rank": 32,
+  "sch_nfh_dims": "",
+  "sch_nfh_groups": 3,
+  "sch_nfh_views": 1,
+  "sch_nfh_perm": "none",
+  "sch_nfh_perm_path": "",
+  "sch_nfh_g_type": "linear",
+  "sch_nfh_g_hidden": 0,
+  "sch_rerank_mode": "topk",
+  "sch_rerank_k": 64,
+  "sch_rerank_rank": 32,
+  "sch_nfh_smooth": 0,
+  "sch_nfh_chunk": 256,
+  "sap_block_T": 2048,
+  "sap_block_mode": "p2_gauss",
+  "sap_block_frac": 0.00048828125,
+  "sap_lambda": 1.0,
+  "sap_head_layers": 2,
+  "sap_head_heads": 0,
+  "sap_head_mlp_mult": 2,
+  "sap_enc_layers": 1,
+  "sap_ctx_window": 16,
+  "sap_latent_groups": 4,
+  "sap_latent_codes": 64,
+  "sap_latent_dim": 64,
+  "sap_free_bits": 0.25,
+  "sap_kl_anneal_steps": 2000,
+  "sap_gumbel_tau": 1.0,
+  "sap_cp_components": 8,
+  "sap_wta_k": 4,
+  "sap_u_freqs": 24,
+  "sap_u_interior": 0.8,
+  "sap_logit_chunk": 8192,
+  "sap_jacobi_sweeps": 2
+}
+Seeded weight init with --seed 1
+Checkpoints directory: /__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/out/s00_sap/d8/SAP_p2_gauss_TL_s1
+✓ Wrapping model with DistributedDataParallel (rank 0, find_unused_parameters=False, broadcast_buffers=True)
+Parameter counts:
+wte                     : 16,777,216
+wpe                     : 0
+value_embeds            : 67,108,864
+lm_head                 : 16,777,216
+transformer_matrices    : 25,166,336
+research                : 10,133,504
+scalars                 : 16
+total                   : 135,963,152
+Estimated FLOPs per token (total):  4.626944e+08
+COST_AXES precision=W16A16E16H16 bops_arith=5.9225e+10 energy_pj_per_token=3.6827e+08 inference_MiB=259.33 training_state_MiB=896.31
+Estimated FLOPs per token (active): 4.626944e+08
+Estimated active params:            135,963,152
+[SAP] block head: mode=p2_gauss T=2048 frac=0.00048828125 window=16 layers=2 params=21,098,496
+Auto-computed optimal batch size: 262,144 tokens
+Scaling LRs by 0.7071 for batch size 262,144 (reference: 524,288)
+Scaling weight decay from 0.200000 to 0.371230 for depth 8
+Scaling the LR for the AdamW parameters ∝1/√(512/768) = 1.224745
+Calculated number of iterations from target FLOPs: 1,039
+Total number of training tokens: 272,367,616
+Tokens : Scaling params ratio: 6.49
+Total training FLOPs estimate: 1.260230e+17
+Total training FLOPs (active):  1.260230e+17
+Total active training FLOPs estimate: 1.260230e+17
+Using base scheduler: linear warmup/flat/linear warmdown
+Tokens / micro-batch / rank: 128 x 2048 = 262,144
+Tokens / micro-batch: 262,144
+Total batch size 262,144 => gradient accumulation steps: 1
+Running pre-compilation warmup (1 dummy forward+backward to init lazy allocations)...
+[rank0]:W1002 13:48:34.253000 6247 site-packages/torch/_logging/_internal.py:1199] [0/0] Profiler function <class 'torch.autograd.profiler.record_function'> will be ignored
+Warmup complete. Steady-state VRAM: 5.9 GB allocated
+step 00000/01039 (0.00%) | loss: 20.797874 | lrm: 0.20 | lr(adamw:6.989e-02, muon:2.828e-03) | dt: 564.33ms | tok/sec: 464,523 | bf16_mfu: 21.73 | epoch: 1 pq: 0 rg: 1 | total time: 0.00m
+step 00100/01039 (9.62%) | loss: 12.417104 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 462.70ms | tok/sec: 566,551 | bf16_mfu: 26.51 | epoch: 1 pq: 0 rg: 52 | total time: 0.70m | eta: 7.3m
+step 00200/01039 (19.25%) | loss: 11.590926 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 464.92ms | tok/sec: 563,851 | bf16_mfu: 26.38 | epoch: 1 pq: 1 rg: 17 | total time: 1.47m | eta: 6.5m
+step 00300/01039 (28.87%) | loss: 11.313164 | lrm: 1.00 | lr(adamw:3.494e-01, muon:1.414e-02) | dt: 467.14ms | tok/sec: 561,166 | bf16_mfu: 26.25 | epoch: 1 pq: 1 rg: 65 | total time: 2.24m | eta: 5.7m
+step 00400/01039 (38.50%) | loss: 11.125487 | lrm: 0.95 | lr(adamw:3.317e-01, muon:1.343e-02) | dt: 464.90ms | tok/sec: 563,877 | bf16_mfu: 26.38 | epoch: 1 pq: 2 rg: 30 | total time: 3.02m | eta: 4.9m
+step 00500/01039 (48.12%) | loss: 10.990452 | lrm: 0.81 | lr(adamw:2.825e-01, muon:1.144e-02) | dt: 464.27ms | tok/sec: 564,636 | bf16_mfu: 26.42 | epoch: 1 pq: 2 rg: 78 | total time: 3.79m | eta: 4.2m
+step 00600/01039 (57.75%) | loss: 10.871998 | lrm: 0.67 | lr(adamw:2.334e-01, muon:9.445e-03) | dt: 466.98ms | tok/sec: 561,363 | bf16_mfu: 26.26 | epoch: 1 pq: 3 rg: 43 | total time: 4.57m | eta: 3.4m
+step 00700/01039 (67.37%) | loss: 10.781884 | lrm: 0.53 | lr(adamw:1.842e-01, muon:7.454e-03) | dt: 463.25ms | tok/sec: 565,881 | bf16_mfu: 26.47 | epoch: 1 pq: 4 rg: 10 | total time: 5.34m | eta: 2.6m
+step 00800/01039 (77.00%) | loss: 10.705156 | lrm: 0.39 | lr(adamw:1.350e-01, muon:5.464e-03) | dt: 464.43ms | tok/sec: 564,439 | bf16_mfu: 26.41 | epoch: 1 pq: 4 rg: 58 | total time: 6.12m | eta: 1.9m
+step 00900/01039 (86.62%) | loss: 10.640261 | lrm: 0.25 | lr(adamw:8.583e-02, muon:3.474e-03) | dt: 465.32ms | tok/sec: 563,357 | bf16_mfu: 26.36 | epoch: 1 pq: 5 rg: 24 | total time: 6.90m | eta: 1.1m
+step 01000/01039 (96.25%) | loss: 10.593513 | lrm: 0.10 | lr(adamw:3.665e-02, muon:1.483e-03) | dt: 463.44ms | tok/sec: 565,642 | bf16_mfu: 26.46 | epoch: 1 pq: 5 rg: 73 | total time: 7.67m | eta: 0.3m
+step 01038/01039 (99.90%) | loss: 10.571318 | lrm: 0.05 | lr(adamw:1.796e-02, muon:7.270e-04) | dt: 464.48ms | tok/sec: 564,385 | bf16_mfu: 26.40 | epoch: 1 pq: 6 rg: 8 | total time: 7.97m | eta: 0.0m
+/usr/local/lib/python3.12/site-packages/torch/_dynamo/variables/functions.py:1598: UserWarning: Dynamo does not know how to trace the builtin `torch._C._distributed_c10d.pybind11_detail_function_record_v1_system_libstdcpp_gxx_abi_1xxx_use_cxx11_abi_1._broadcast_coalesced.` This function is either a Python builtin (e.g. _warnings.warn) or a third-party C/C++ Python extension (perhaps created with pybind).
+If it is a Python builtin, please file an issue on GitHub so the PyTorch team can add support for it and see the next case for a workaround.
+If it is a third-party C/C++ Python extension, please either wrap it into a PyTorch-understood custom operator (see https://pytorch.org/tutorials/advanced/custom_ops_landing_page.html for more details) or, if it is traceable, use `torch.compiler.allow_in_graph`.
+  torch._dynamo.utils.warn_once(explanation + "\n" + "\n".join(hints))
+Step 01039 | Validation bpb: 0.993614 | val_loss: 3.260198
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "<frozen runpy>", line 198, in _run_module_as_main
+[rank0]:   File "<frozen runpy>", line 88, in _run_code
+[rank0]:   File "/__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/scripts/base_train.py", line 2401, in <module>
+[rank0]:     _sap_eval = evaluate_block_bpb(orig_model, build_val_loader(), args.sap_eval_steps, token_bytes)
+[rank0]:                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/usr/local/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+[rank0]:     return func(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/nanochat/block_head.py", line 829, in evaluate_block_bpb
+[rank0]:     s = head.latent_sensitivity(hid[b, t], ctx, cv, model._sap_readout)
+[rank0]:         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/usr/local/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 120, in decorate_context
+[rank0]:     return func(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/nanochat/block_head.py", line 697, in latent_sensitivity
+[rank0]:     probs.append(torch.softmax(readout(s.reshape(-1, self.d)), -1).view(N, self.T, -1))
+[rank0]:                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/__modal/volumes/vo-uHTxH7v5fvuJZqZRrI3V1j/nanochat/gpt.py", line 11944, in _sap_readout
+[rank0]:     return 20.0 * torch.tanh(logits / 20.0)
+[rank0]:                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]: torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 32.00 GiB. GPU 0 has a total capacity of 139.80 GiB of which 3.48 GiB is free. Process 1 has 136.28 GiB memory in use. Of the allocated memory 102.87 GiB is allocated by PyTorch, and 32.13 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+[rank0]:[W1002 13:58:59.646705905 ProcessGroupNCCL.cpp:1524] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+E1002 13:59:02.892000 6241 site-packages/torch/distributed/elastic/multiprocessing/api.py:882] failed (exitcode: 1) local_rank: 0 (pid: 6247) of binary: /usr/local/bin/python
+Traceback (most recent call last):
+  File "/usr/local/bin/torchrun", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 357, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/torch/distributed/run.py", line 936, in main
+    run(args)
+  File "/usr/local/lib/python3.12/site-packages/torch/distributed/run.py", line 927, in run
+    elastic_launch(
+  File "/usr/local/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 156, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 293, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+scripts.base_train FAILED
+------------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-10-02_13:59:02
+  host      : localhost
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 6247)
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

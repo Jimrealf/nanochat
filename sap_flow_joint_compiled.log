@@ -1,0 +1,1492 @@
+SAP Flow–Joint toy gate: T=4, oracle context; NOT d4 real-text BPB or L=2048 speed.
+No teacher/distillation/verifier. IWAE KL is an upper bound in expectation only.
+Costs match counted forward/backward matrix FLOPs, not exact wall time.
+
+chain_only   seed=0 updates=15572 KL=4.002160 ± 0.254177 invalid=57.068% ± 2.231% train_s=178.5 budget_ratio=1.000001
+flow_only    seed=0 updates=10576 KL bound=1.244749 ± 0.087923 invalid=31.580% ± 1.476% train_s=274.0 budget_ratio=0.999974
+hybrid       seed=0 updates=8000 KL bound=1.400434 ± 0.090638 invalid=35.254% ± 1.475% train_s=227.3 budget_ratio=1.000000
+chain_only   seed=1 updates=15572 KL=3.974875 ± 0.249137 invalid=58.801% ± 2.271% train_s=191.0 budget_ratio=1.000001
+flow_only    seed=1 updates=10576 KL bound=1.236410 ± 0.083518 invalid=30.627% ± 1.443% train_s=286.8 budget_ratio=0.999974
+hybrid       seed=1 updates=8000 KL bound=1.441475 ± 0.091304 invalid=35.754% ± 1.545% train_s=236.2 budget_ratio=1.000000
+
+Full configurations, hashes, learning curves, and diagnostics:
+[
+  {
+    "config": {
+      "arm": "hybrid",
+      "seed": 0,
+      "hmm_seed": 0,
+      "T": 4,
+      "vocab": 512,
+      "width": 128,
+      "states": 64,
+      "latent": 8,
+      "context": 64,
+      "hybrid_steps": 8000,
+      "batch": 128,
+      "pool": 4096,
+      "lr": 0.0003,
+      "eval_contexts": 1024,
+      "eval_k": 64,
+      "final_k": 256,
+      "samples_per_ctx": 8,
+      "device": "cuda",
+      "out": "/vol/out/sap_flow_joint/fj_20261003_b/hybrid_s0"
+    },
+    "source_sha256": {
+      "nanochat/flow_joint.py": "188f449cebe0afe472a196cc86fbf5de0226704ccfd3ee2a3efb63d48e304eb1",
+      "scripts/sap_flow_joint_gate.py": "8195d06b4b50b4fa8d71442a3b96d99ac1048ccc81abb73bf658ddfb21bdc282",
+      "scripts/sap_synthetic.py": "f1d9f6485d2d3c6be32ed70aee8d53442da64c1d62ff454b691c7414add37097",
+      "scripts/sap_s06_screen.py": "ee2c35cda72d5936d5c390686c0e51c7d7251822a834b67ee6ff806da84c05bb"
+    },
+    "parameters": 2210144,
+    "training_steps": 8000,
+    "matrix_flops_per_update": 5398069248,
+    "reference_matrix_flops_per_update": 5398069248,
+    "total_matrix_flops": 43184553984000,
+    "matrix_budget_ratio": 1.0,
+    "torch": "2.9.1+cu128",
+    "oracle_context": true,
+    "gpu": "NVIDIA L4",
+    "neural_inference_blocks": 4,
+    "recognition_blocks_training_only": 2,
+    "inference_token_conditioned_neural_calls": 0,
+    "curve": [
+      {
+        "step": 0,
+        "arm": "hybrid",
+        "seed": 0,
+        "elapsed_seconds": 0.2841123069999991,
+        "training_seconds": 0.0,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 14.243360128253698,
+          "se": 0.3881555845642594,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 26.293452445417643,
+          "se": 0.4285161795129977,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 25.61335638165474,
+          "se": 0.023463270228105616,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 0.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.9638671875,
+          "se": 0.005003861077184707,
+          "n_contexts": 256
+        },
+        "unique_fraction": 1.0,
+        "posterior_invalid": {
+          "mean": 0.962890625,
+          "se": 0.004574765171133613,
+          "n_contexts": 256
+        },
+        "zero_latent_invalid": {
+          "mean": 0.9560546875,
+          "se": 0.005231856537645063,
+          "n_contexts": 256
+        }
+      },
+      {
+        "step": 2000,
+        "arm": "hybrid",
+        "seed": 0,
+        "elapsed_seconds": 58.85696321799999,
+        "training_seconds": 57.20205221499997,
+        "loss": 14.703359603881836,
+        "beta": 1.0,
+        "lr": 0.0002604594154601839,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 3.725202060304582,
+          "se": 0.19193581725290046,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 27.27364542707801,
+          "se": 0.8110442936095487,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 12.728183376137167,
+          "se": 0.37047958427439276,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 2.4624753555981442,
+          "se": 0.1310721432636931,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.71875,
+          "se": 0.01357579598106895,
+          "n_contexts": 256
+        },
+        "unique_fraction": 0.99169921875,
+        "posterior_invalid": {
+          "mean": 0.6845703125,
+          "se": 0.01621038380521455,
+          "n_contexts": 256
+        },
+        "zero_latent_invalid": {
+          "mean": 0.55810546875,
+          "se": 0.018832053365242577,
+          "n_contexts": 256
+        }
+      },
+      {
+        "step": 4000,
+        "arm": "hybrid",
+        "seed": 0,
+        "elapsed_seconds": 125.94485503699998,
+        "training_seconds": 115.52750520599942,
+        "loss": 12.2393798828125,
+        "beta": 1.0,
+        "lr": 0.000165,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 1.7463627581018955,
+          "se": 0.11207238254121069,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 33.17126159276813,
+          "se": 0.9770380568800183,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 10.592425270646345,
+          "se": 0.3956810426673349,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 2.4964643821585923,
+          "se": 0.15936070209077455,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.4482421875,
+          "se": 0.016256460341180425,
+          "n_contexts": 256
+        },
+        "unique_fraction": 0.94970703125,
+        "posterior_invalid": {
+          "mean": 0.37890625,
+          "se": 0.01995556251617603,
+          "n_contexts": 256
+        },
+        "zero_latent_invalid": {
+          "mean": 0.2294921875,
+          "se": 0.017025960563033727,
+          "n_contexts": 256
+        }
+      },
+      {
+        "step": 8000,
+        "arm": "hybrid",
+        "seed": 0,
+        "elapsed_seconds": 255.54339522600003,
+        "training_seconds": 227.26573765999956,
+        "loss": 12.17302131652832,
+        "beta": 1.0,
+        "lr": 2.9999999999999997e-05,
+        "true_entropy": {
+          "mean": 9.859165879038756,
+          "se": 0.1780751178081638,
+          "n_contexts": 1024
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 1.4155996580666397,
+          "se": 0.046395932328435016,
+          "n_contexts": 1024
+        },
+        "ess_k64": {
+          "mean": 39.337518840213306,
+          "se": 0.5183293840516431,
+          "n_contexts": 1024
+        },
+        "posterior_conditional_nll": {
+          "mean": 9.02954787519775,
+          "se": 0.19160612489343448,
+          "n_contexts": 1024
+        },
+        "latent_kl": {
+          "mean": 2.5979984000659897,
+          "se": 0.08211743810821456,
+          "n_contexts": 1024
+        },
+        "kl_k256": {
+          "mean": 1.4004343979322584,
+          "se": 0.046243974193177585,
+          "n_contexts": 1024
+        },
+        "ess_k256": {
+          "mean": 146.89380007516593,
+          "se": 2.2229467305433235,
+          "n_contexts": 1024
+        },
+        "prior_invalid": {
+          "mean": 0.3525390625,
+          "se": 0.007523579799463582,
+          "n_contexts": 1024
+        },
+        "unique_fraction": 0.9390869140625,
+        "posterior_invalid": {
+          "mean": 0.28564453125,
+          "se": 0.008933649588673655,
+          "n_contexts": 1024
+        },
+        "zero_latent_invalid": {
+          "mean": 0.153564453125,
+          "se": 0.007340536277776413,
+          "n_contexts": 1024
+        },
+        "independent_oracle": {
+          "true_entropy": 9.859166145324707,
+          "ideal_indep_tc": 4.633974075317383,
+          "ideal_indep_invalid": 0.6201171875
+        }
+      }
+    ]
+  },
+  {
+    "config": {
+      "arm": "hybrid",
+      "seed": 1,
+      "hmm_seed": 0,
+      "T": 4,
+      "vocab": 512,
+      "width": 128,
+      "states": 64,
+      "latent": 8,
+      "context": 64,
+      "hybrid_steps": 8000,
+      "batch": 128,
+      "pool": 4096,
+      "lr": 0.0003,
+      "eval_contexts": 1024,
+      "eval_k": 64,
+      "final_k": 256,
+      "samples_per_ctx": 8,
+      "device": "cuda",
+      "out": "/vol/out/sap_flow_joint/fj_20261003_b/hybrid_s1"
+    },
+    "source_sha256": {
+      "nanochat/flow_joint.py": "188f449cebe0afe472a196cc86fbf5de0226704ccfd3ee2a3efb63d48e304eb1",
+      "scripts/sap_flow_joint_gate.py": "8195d06b4b50b4fa8d71442a3b96d99ac1048ccc81abb73bf658ddfb21bdc282",
+      "scripts/sap_synthetic.py": "f1d9f6485d2d3c6be32ed70aee8d53442da64c1d62ff454b691c7414add37097",
+      "scripts/sap_s06_screen.py": "ee2c35cda72d5936d5c390686c0e51c7d7251822a834b67ee6ff806da84c05bb"
+    },
+    "parameters": 2210144,
+    "training_steps": 8000,
+    "matrix_flops_per_update": 5398069248,
+    "reference_matrix_flops_per_update": 5398069248,
+    "total_matrix_flops": 43184553984000,
+    "matrix_budget_ratio": 1.0,
+    "torch": "2.9.1+cu128",
+    "oracle_context": true,
+    "gpu": "NVIDIA L4",
+    "neural_inference_blocks": 4,
+    "recognition_blocks_training_only": 2,
+    "inference_token_conditioned_neural_calls": 0,
+    "curve": [
+      {
+        "step": 0,
+        "arm": "hybrid",
+        "seed": 1,
+        "elapsed_seconds": 0.2853714260000011,
+        "training_seconds": 0.0,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 14.266268070787191,
+          "se": 0.38122587139501113,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 26.20695852395147,
+          "se": 0.45970672073621505,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 25.627101860940456,
+          "se": 0.021975450119685214,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 0.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.96435546875,
+          "se": 0.005135448836071959,
+          "n_contexts": 256
+        },
+        "unique_fraction": 1.0,
+        "posterior_invalid": {
+          "mean": 0.9658203125,
+          "se": 0.00417602087431975,
+          "n_contexts": 256
+        },
+        "zero_latent_invalid": {
+          "mean": 0.9580078125,
+          "se": 0.005015805265032214,
+          "n_contexts": 256
+        }
+      },
+      {
+        "step": 2000,
+        "arm": "hybrid",
+        "seed": 1,
+        "elapsed_seconds": 59.793560154999994,
+        "training_seconds": 57.84567638199983,
+        "loss": 14.58343505859375,
+        "beta": 1.0,
+        "lr": 0.0002604594154601839,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 3.583684377837926,
+          "se": 0.18552527196734764,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 28.641900131478906,
+          "se": 0.7622553322400315,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 12.463385777082294,
+          "se": 0.3658982962631913,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 2.5195701927877963,
+          "se": 0.13663870009087037,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.712890625,
+          "se": 0.013482361240016946,
+          "n_contexts": 256
+        },
+        "unique_fraction": 0.98486328125,
+        "posterior_invalid": {
+          "mean": 0.67822265625,
+          "se": 0.01672441724480148,
+          "n_contexts": 256
+        },
+        "zero_latent_invalid": {
+          "mean": 0.53173828125,
+          "se": 0.019127231169050518,
+          "n_contexts": 256
+        }
+      },
+      {
+        "step": 4000,
+        "arm": "hybrid",
+        "seed": 1,
+        "elapsed_seconds": 142.03415147700002,
+        "training_seconds": 114.8897924569999,
+        "loss": 11.927179336547852,
+        "beta": 1.0,
+        "lr": 0.000165,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 1.867204243550077,
+          "se": 0.11737181394645872,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 32.86992637999356,
+          "se": 0.9830548770269326,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 10.58412073762156,
+          "se": 0.3996272699556792,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 2.595279045868665,
+          "se": 0.16279086567072998,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.42626953125,
+          "se": 0.015563094229512566,
+          "n_contexts": 256
+        },
+        "unique_fraction": 0.94384765625,
+        "posterior_invalid": {
+          "mean": 0.369140625,
+          "se": 0.019158124003711988,
+          "n_contexts": 256
+        },
+        "zero_latent_invalid": {
+          "mean": 0.2294921875,
+          "se": 0.015996722427957456,
+          "n_contexts": 256
+        }
+      },
+      {
+        "step": 8000,
+        "arm": "hybrid",
+        "seed": 1,
+        "elapsed_seconds": 279.10397136800003,
+        "training_seconds": 236.17984524300044,
+        "loss": 11.888080596923828,
+        "beta": 1.0,
+        "lr": 2.9999999999999997e-05,
+        "true_entropy": {
+          "mean": 9.859165879038756,
+          "se": 0.1780751178081638,
+          "n_contexts": 1024
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 1.4531886837903585,
+          "se": 0.046858969587168404,
+          "n_contexts": 1024
+        },
+        "ess_k64": {
+          "mean": 38.24539262522012,
+          "se": 0.49806064116121107,
+          "n_contexts": 1024
+        },
+        "posterior_conditional_nll": {
+          "mean": 9.01919156920485,
+          "se": 0.1926346353206699,
+          "n_contexts": 1024
+        },
+        "latent_kl": {
+          "mean": 2.690576910150412,
+          "se": 0.08249111997868196,
+          "n_contexts": 1024
+        },
+        "kl_k256": {
+          "mean": 1.4414754637109581,
+          "se": 0.04658383660353645,
+          "n_contexts": 1024
+        },
+        "ess_k256": {
+          "mean": 142.18662574328482,
+          "se": 2.114700586175018,
+          "n_contexts": 1024
+        },
+        "prior_invalid": {
+          "mean": 0.3575439453125,
+          "se": 0.00788379904299798,
+          "n_contexts": 1024
+        },
+        "unique_fraction": 0.9364013671875,
+        "posterior_invalid": {
+          "mean": 0.2861328125,
+          "se": 0.008829276112868076,
+          "n_contexts": 1024
+        },
+        "zero_latent_invalid": {
+          "mean": 0.1470947265625,
+          "se": 0.007261349605138215,
+          "n_contexts": 1024
+        },
+        "independent_oracle": {
+          "true_entropy": 9.859166145324707,
+          "ideal_indep_tc": 4.633974075317383,
+          "ideal_indep_invalid": 0.6201171875
+        }
+      }
+    ]
+  },
+  {
+    "config": {
+      "arm": "flow_only",
+      "seed": 0,
+      "hmm_seed": 0,
+      "T": 4,
+      "vocab": 512,
+      "width": 128,
+      "states": 64,
+      "latent": 8,
+      "context": 64,
+      "hybrid_steps": 8000,
+      "batch": 128,
+      "pool": 4096,
+      "lr": 0.0003,
+      "eval_contexts": 1024,
+      "eval_k": 64,
+      "final_k": 256,
+      "samples_per_ctx": 8,
+      "device": "cuda",
+      "out": "/vol/out/sap_flow_joint/fj_20261003_b/flow_only_s0"
+    },
+    "source_sha256": {
+      "nanochat/flow_joint.py": "188f449cebe0afe472a196cc86fbf5de0226704ccfd3ee2a3efb63d48e304eb1",
+      "scripts/sap_flow_joint_gate.py": "8195d06b4b50b4fa8d71442a3b96d99ac1048ccc81abb73bf658ddfb21bdc282",
+      "scripts/sap_synthetic.py": "f1d9f6485d2d3c6be32ed70aee8d53442da64c1d62ff454b691c7414add37097",
+      "scripts/sap_s06_screen.py": "ee2c35cda72d5936d5c390686c0e51c7d7251822a834b67ee6ff806da84c05bb"
+    },
+    "parameters": 1640736,
+    "training_steps": 10576,
+    "matrix_flops_per_update": 4083154944,
+    "reference_matrix_flops_per_update": 5398069248,
+    "total_matrix_flops": 43183446687744,
+    "matrix_budget_ratio": 0.9999743589743589,
+    "torch": "2.9.1+cu128",
+    "oracle_context": true,
+    "gpu": "NVIDIA L4",
+    "neural_inference_blocks": 4,
+    "recognition_blocks_training_only": 2,
+    "inference_token_conditioned_neural_calls": 0,
+    "curve": [
+      {
+        "step": 0,
+        "arm": "flow_only",
+        "seed": 0,
+        "elapsed_seconds": 0.2819690950000009,
+        "training_seconds": 0.0,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 14.24684738740325,
+          "se": 0.38838439872743963,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 26.30009314790368,
+          "se": 0.4277732500740476,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 25.616583846509457,
+          "se": 0.023193974353639707,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 0.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.9609375,
+          "se": 0.004965220645039007,
+          "n_contexts": 256
+        },
+        "unique_fraction": 1.0,
+        "posterior_invalid": {
+          "mean": 0.9658203125,
+          "se": 0.00428912165349044,
+          "n_contexts": 256
+        },
+        "zero_latent_invalid": {
+          "mean": 0.95556640625,
+          "se": 0.00528404703327317,
+          "n_contexts": 256
+        }
+      },
+      {
+        "step": 2644,
+        "arm": "flow_only",
+        "seed": 0,
+        "elapsed_seconds": 71.967601431,
+        "training_seconds": 69.86090095900008,
+        "loss": 13.59022331237793,
+        "beta": 1.0,
+        "lr": 0.0002604594154601839,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 2.57731225900352,
+          "se": 0.15902341152903127,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 28.039774307981133,
+          "se": 0.8432001391527467,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 11.096281463862397,
+          "se": 0.3833904360495027,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 2.9379714116221294,
+          "se": 0.17935603583461024,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.54296875,
+          "se": 0.01529797167427152,
+          "n_contexts": 256
+        },
+        "unique_fraction": 0.9736328125,
+        "posterior_invalid": {
+          "mean": 0.478515625,
+          "se": 0.019742651872637434,
+          "n_contexts": 256
+        },
+        "zero_latent_invalid": {
+          "mean": 0.28076171875,
+          "se": 0.018932274348918806,
+          "n_contexts": 256
+        }
+      },
+      {
+        "step": 5288,
+        "arm": "flow_only",
+        "seed": 0,
+        "elapsed_seconds": 155.23136959500002,
+        "training_seconds": 138.23029211499951,
+        "loss": 11.293506622314453,
+        "beta": 1.0,
+        "lr": 0.000165,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 1.589253525948152,
+          "se": 0.1128232671315436,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 35.25927409855649,
+          "se": 1.063782058329436,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 10.389130115872831,
+          "se": 0.41134215037641814,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 2.5283982984256,
+          "se": 0.16343597587320702,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.35302734375,
+          "se": 0.015816003549218728,
+          "n_contexts": 256
+        },
+        "unique_fraction": 0.93896484375,
+        "posterior_invalid": {
+          "mean": 0.28515625,
+          "se": 0.0185894242372986,
+          "n_contexts": 256
+        },
+        "zero_latent_invalid": {
+          "mean": 0.1494140625,
+          "se": 0.014564454925046464,
+          "n_contexts": 256
+        }
+      },
+      {
+        "step": 10576,
+        "arm": "flow_only",
+        "seed": 0,
+        "elapsed_seconds": 301.204715352,
+        "training_seconds": 273.9930603869989,
+        "loss": 12.297416687011719,
+        "beta": 1.0,
+        "lr": 2.9999999999999997e-05,
+        "true_entropy": {
+          "mean": 9.859165879038756,
+          "se": 0.1780751178081638,
+          "n_contexts": 1024
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 1.2532686502381694,
+          "se": 0.04509932192440755,
+          "n_contexts": 1024
+        },
+        "ess_k64": {
+          "mean": 39.22602329670917,
+          "se": 0.5322466063668319,
+          "n_contexts": 1024
+        },
+        "posterior_conditional_nll": {
+          "mean": 8.82410731116579,
+          "se": 0.19472541524470952,
+          "n_contexts": 1024
+        },
+        "latent_kl": {
+          "mean": 2.666032546607312,
+          "se": 0.08358633942598606,
+          "n_contexts": 1024
+        },
+        "kl_k256": {
+          "mean": 1.2447494789594202,
+          "se": 0.044858523032231895,
+          "n_contexts": 1024
+        },
+        "ess_k256": {
+          "mean": 143.79758401261643,
+          "se": 2.2549483451668935,
+          "n_contexts": 1024
+        },
+        "prior_invalid": {
+          "mean": 0.3157958984375,
+          "se": 0.00753185289698477,
+          "n_contexts": 1024
+        },
+        "unique_fraction": 0.9315185546875,
+        "posterior_invalid": {
+          "mean": 0.2271728515625,
+          "se": 0.008029848108444941,
+          "n_contexts": 1024
+        },
+        "zero_latent_invalid": {
+          "mean": 0.10498046875,
+          "se": 0.006630807054200452,
+          "n_contexts": 1024
+        },
+        "independent_oracle": {
+          "true_entropy": 9.859166145324707,
+          "ideal_indep_tc": 4.633974075317383,
+          "ideal_indep_invalid": 0.6201171875
+        }
+      }
+    ]
+  },
+  {
+    "config": {
+      "arm": "flow_only",
+      "seed": 1,
+      "hmm_seed": 0,
+      "T": 4,
+      "vocab": 512,
+      "width": 128,
+      "states": 64,
+      "latent": 8,
+      "context": 64,
+      "hybrid_steps": 8000,
+      "batch": 128,
+      "pool": 4096,
+      "lr": 0.0003,
+      "eval_contexts": 1024,
+      "eval_k": 64,
+      "final_k": 256,
+      "samples_per_ctx": 8,
+      "device": "cuda",
+      "out": "/vol/out/sap_flow_joint/fj_20261003_b/flow_only_s1"
+    },
+    "source_sha256": {
+      "nanochat/flow_joint.py": "188f449cebe0afe472a196cc86fbf5de0226704ccfd3ee2a3efb63d48e304eb1",
+      "scripts/sap_flow_joint_gate.py": "8195d06b4b50b4fa8d71442a3b96d99ac1048ccc81abb73bf658ddfb21bdc282",
+      "scripts/sap_synthetic.py": "f1d9f6485d2d3c6be32ed70aee8d53442da64c1d62ff454b691c7414add37097",
+      "scripts/sap_s06_screen.py": "ee2c35cda72d5936d5c390686c0e51c7d7251822a834b67ee6ff806da84c05bb"
+    },
+    "parameters": 1640736,
+    "training_steps": 10576,
+    "matrix_flops_per_update": 4083154944,
+    "reference_matrix_flops_per_update": 5398069248,
+    "total_matrix_flops": 43183446687744,
+    "matrix_budget_ratio": 0.9999743589743589,
+    "torch": "2.9.1+cu128",
+    "oracle_context": true,
+    "gpu": "NVIDIA L4",
+    "neural_inference_blocks": 4,
+    "recognition_blocks_training_only": 2,
+    "inference_token_conditioned_neural_calls": 0,
+    "curve": [
+      {
+        "step": 0,
+        "arm": "flow_only",
+        "seed": 1,
+        "elapsed_seconds": 0.2818951399999996,
+        "training_seconds": 0.0,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 14.262645926326513,
+          "se": 0.3814106802017793,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 26.214515138417482,
+          "se": 0.45891800625335594,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 25.623502746224403,
+          "se": 0.021902410418179464,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 0.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.96484375,
+          "se": 0.004886257975555166,
+          "n_contexts": 256
+        },
+        "unique_fraction": 1.0,
+        "posterior_invalid": {
+          "mean": 0.97021484375,
+          "se": 0.0039280897971610985,
+          "n_contexts": 256
+        },
+        "zero_latent_invalid": {
+          "mean": 0.9560546875,
+          "se": 0.005092759714238438,
+          "n_contexts": 256
+        }
+      },
+      {
+        "step": 2644,
+        "arm": "flow_only",
+        "seed": 1,
+        "elapsed_seconds": 73.025109921,
+        "training_seconds": 71.36401015299997,
+        "loss": 13.712059020996094,
+        "beta": 1.0,
+        "lr": 0.0002604594154601839,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 2.5478300901595503,
+          "se": 0.14362807873729264,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 27.92637245543301,
+          "se": 0.892075967992803,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 11.29170786892064,
+          "se": 0.3748522256276912,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 2.809392079943791,
+          "se": 0.17107037147377144,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.5791015625,
+          "se": 0.015605720144098318,
+          "n_contexts": 256
+        },
+        "unique_fraction": 0.9697265625,
+        "posterior_invalid": {
+          "mean": 0.505859375,
+          "se": 0.018432238339239935,
+          "n_contexts": 256
+        },
+        "zero_latent_invalid": {
+          "mean": 0.32080078125,
+          "se": 0.018788710383239548,
+          "n_contexts": 256
+        }
+      },
+      {
+        "step": 5288,
+        "arm": "flow_only",
+        "seed": 1,
+        "elapsed_seconds": 152.43446747000002,
+        "training_seconds": 142.21378759699923,
+        "loss": 12.327659606933594,
+        "beta": 1.0,
+        "lr": 0.000165,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 1.5150663314852864,
+          "se": 0.10370047359927664,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 32.77433178387582,
+          "se": 0.9480195845442075,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 10.227431038438226,
+          "se": 0.40256162782938015,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 2.656115888617933,
+          "se": 0.17480329750276855,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.34423828125,
+          "se": 0.015528933337520655,
+          "n_contexts": 256
+        },
+        "unique_fraction": 0.93798828125,
+        "posterior_invalid": {
+          "mean": 0.283203125,
+          "se": 0.018265921673147143,
+          "n_contexts": 256
+        },
+        "zero_latent_invalid": {
+          "mean": 0.150390625,
+          "se": 0.014491990338426823,
+          "n_contexts": 256
+        }
+      },
+      {
+        "step": 10576,
+        "arm": "flow_only",
+        "seed": 1,
+        "elapsed_seconds": 309.808133155,
+        "training_seconds": 286.75006696700245,
+        "loss": 11.395769119262695,
+        "beta": 1.0,
+        "lr": 2.9999999999999997e-05,
+        "true_entropy": {
+          "mean": 9.859165879038756,
+          "se": 0.1780751178081638,
+          "n_contexts": 1024
+        },
+        "likelihood_is_bound": true,
+        "kl_k64": {
+          "mean": 1.2417532994149951,
+          "se": 0.043166521114389955,
+          "n_contexts": 1024
+        },
+        "ess_k64": {
+          "mean": 37.540495286812074,
+          "se": 0.522779064081695,
+          "n_contexts": 1024
+        },
+        "posterior_conditional_nll": {
+          "mean": 8.828375077438977,
+          "se": 0.1957248292776039,
+          "n_contexts": 1024
+        },
+        "latent_kl": {
+          "mean": 2.696259301606915,
+          "se": 0.08449486114350808,
+          "n_contexts": 1024
+        },
+        "kl_k256": {
+          "mean": 1.2364103587970021,
+          "se": 0.042611055676646525,
+          "n_contexts": 1024
+        },
+        "ess_k256": {
+          "mean": 140.30954007687978,
+          "se": 2.2129322366574016,
+          "n_contexts": 1024
+        },
+        "prior_invalid": {
+          "mean": 0.3062744140625,
+          "se": 0.007361772752245455,
+          "n_contexts": 1024
+        },
+        "unique_fraction": 0.93017578125,
+        "posterior_invalid": {
+          "mean": 0.225341796875,
+          "se": 0.007666174927112937,
+          "n_contexts": 1024
+        },
+        "zero_latent_invalid": {
+          "mean": 0.125244140625,
+          "se": 0.006981728916419678,
+          "n_contexts": 1024
+        },
+        "independent_oracle": {
+          "true_entropy": 9.859166145324707,
+          "ideal_indep_tc": 4.633974075317383,
+          "ideal_indep_invalid": 0.6201171875
+        }
+      }
+    ]
+  },
+  {
+    "config": {
+      "arm": "chain_only",
+      "seed": 0,
+      "hmm_seed": 0,
+      "T": 4,
+      "vocab": 512,
+      "width": 128,
+      "states": 64,
+      "latent": 8,
+      "context": 64,
+      "hybrid_steps": 8000,
+      "batch": 128,
+      "pool": 4096,
+      "lr": 0.0003,
+      "eval_contexts": 1024,
+      "eval_k": 64,
+      "final_k": 256,
+      "samples_per_ctx": 8,
+      "device": "cuda",
+      "out": "/vol/out/sap_flow_joint/fj_20261003_b/chain_only_s0"
+    },
+    "source_sha256": {
+      "nanochat/flow_joint.py": "188f449cebe0afe472a196cc86fbf5de0226704ccfd3ee2a3efb63d48e304eb1",
+      "scripts/sap_flow_joint_gate.py": "8195d06b4b50b4fa8d71442a3b96d99ac1048ccc81abb73bf658ddfb21bdc282",
+      "scripts/sap_synthetic.py": "f1d9f6485d2d3c6be32ed70aee8d53442da64c1d62ff454b691c7414add37097",
+      "scripts/sap_s06_screen.py": "ee2c35cda72d5936d5c390686c0e51c7d7251822a834b67ee6ff806da84c05bb"
+    },
+    "parameters": 1106240,
+    "training_steps": 15572,
+    "matrix_flops_per_update": 2773221376,
+    "reference_matrix_flops_per_update": 5398069248,
+    "total_matrix_flops": 43184603267072,
+    "matrix_budget_ratio": 1.0000011412198913,
+    "torch": "2.9.1+cu128",
+    "oracle_context": true,
+    "gpu": "NVIDIA L4",
+    "neural_inference_blocks": 2,
+    "recognition_blocks_training_only": 0,
+    "inference_token_conditioned_neural_calls": 0,
+    "curve": [
+      {
+        "step": 0,
+        "arm": "chain_only",
+        "seed": 0,
+        "elapsed_seconds": 0.1393369350000011,
+        "training_seconds": 0.0,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": false,
+        "kl_k64": {
+          "mean": 14.818063244223595,
+          "se": 0.38734481365132867,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 1.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 25.619992896914482,
+          "se": 0.0743993338192167,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 0.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.96337890625,
+          "se": 0.004917443824775071,
+          "n_contexts": 256
+        },
+        "unique_fraction": 1.0
+      },
+      {
+        "step": 3893,
+        "arm": "chain_only",
+        "seed": 0,
+        "elapsed_seconds": 46.959786854,
+        "training_seconds": 45.70081881700022,
+        "loss": 14.058252334594727,
+        "beta": 1.0,
+        "lr": 0.0002604594154601839,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": false,
+        "kl_k64": {
+          "mean": 4.437787221715553,
+          "se": 0.27227690073022165,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 1.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 15.239716811309336,
+          "se": 0.457172112510572,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 0.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.63134765625,
+          "se": 0.023342022867241623,
+          "n_contexts": 256
+        },
+        "unique_fraction": 0.9375
+      },
+      {
+        "step": 7786,
+        "arm": "chain_only",
+        "seed": 0,
+        "elapsed_seconds": 99.75228986799999,
+        "training_seconds": 90.04178929900033,
+        "loss": 14.850322723388672,
+        "beta": 1.0,
+        "lr": 0.000165,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": false,
+        "kl_k64": {
+          "mean": 4.070359657351219,
+          "se": 0.2691781417889797,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 1.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 14.87228924275405,
+          "se": 0.4640470644366072,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 0.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.61767578125,
+          "se": 0.02340234850590789,
+          "n_contexts": 256
+        },
+        "unique_fraction": 0.93505859375
+      },
+      {
+        "step": 15572,
+        "arm": "chain_only",
+        "seed": 0,
+        "elapsed_seconds": 203.25144059299998,
+        "training_seconds": 178.4955802260002,
+        "loss": 13.783584594726562,
+        "beta": 1.0,
+        "lr": 2.9999999999999997e-05,
+        "true_entropy": {
+          "mean": 9.859165879038756,
+          "se": 0.1780751178081638,
+          "n_contexts": 1024
+        },
+        "likelihood_is_bound": false,
+        "kl_k64": {
+          "mean": 4.002159537883472,
+          "se": 0.12968223956074107,
+          "n_contexts": 1024
+        },
+        "ess_k64": {
+          "mean": 1.0,
+          "se": 0.0,
+          "n_contexts": 1024
+        },
+        "posterior_conditional_nll": {
+          "mean": 13.861325416176896,
+          "se": 0.21702998499940396,
+          "n_contexts": 1024
+        },
+        "latent_kl": {
+          "mean": 0.0,
+          "se": 0.0,
+          "n_contexts": 1024
+        },
+        "prior_invalid": {
+          "mean": 0.5706787109375,
+          "se": 0.01138472424074927,
+          "n_contexts": 1024
+        },
+        "unique_fraction": 0.9283447265625,
+        "independent_oracle": {
+          "true_entropy": 9.859166145324707,
+          "ideal_indep_tc": 4.633974075317383,
+          "ideal_indep_invalid": 0.61328125
+        }
+      }
+    ]
+  },
+  {
+    "config": {
+      "arm": "chain_only",
+      "seed": 1,
+      "hmm_seed": 0,
+      "T": 4,
+      "vocab": 512,
+      "width": 128,
+      "states": 64,
+      "latent": 8,
+      "context": 64,
+      "hybrid_steps": 8000,
+      "batch": 128,
+      "pool": 4096,
+      "lr": 0.0003,
+      "eval_contexts": 1024,
+      "eval_k": 64,
+      "final_k": 256,
+      "samples_per_ctx": 8,
+      "device": "cuda",
+      "out": "/vol/out/sap_flow_joint/fj_20261003_b/chain_only_s1"
+    },
+    "source_sha256": {
+      "nanochat/flow_joint.py": "188f449cebe0afe472a196cc86fbf5de0226704ccfd3ee2a3efb63d48e304eb1",
+      "scripts/sap_flow_joint_gate.py": "8195d06b4b50b4fa8d71442a3b96d99ac1048ccc81abb73bf658ddfb21bdc282",
+      "scripts/sap_synthetic.py": "f1d9f6485d2d3c6be32ed70aee8d53442da64c1d62ff454b691c7414add37097",
+      "scripts/sap_s06_screen.py": "ee2c35cda72d5936d5c390686c0e51c7d7251822a834b67ee6ff806da84c05bb"
+    },
+    "parameters": 1106240,
+    "training_steps": 15572,
+    "matrix_flops_per_update": 2773221376,
+    "reference_matrix_flops_per_update": 5398069248,
+    "total_matrix_flops": 43184603267072,
+    "matrix_budget_ratio": 1.0000011412198913,
+    "torch": "2.9.1+cu128",
+    "oracle_context": true,
+    "gpu": "NVIDIA L4",
+    "neural_inference_blocks": 2,
+    "recognition_blocks_training_only": 0,
+    "inference_token_conditioned_neural_calls": 0,
+    "curve": [
+      {
+        "step": 0,
+        "arm": "chain_only",
+        "seed": 1,
+        "elapsed_seconds": 0.1459309770000008,
+        "training_seconds": 0.0,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": false,
+        "kl_k64": {
+          "mean": 14.681270334869623,
+          "se": 0.3847917521940508,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 1.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 25.483199939131737,
+          "se": 0.07029492759843702,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 0.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.96728515625,
+          "se": 0.004879268781468799,
+          "n_contexts": 256
+        },
+        "unique_fraction": 1.0
+      },
+      {
+        "step": 3893,
+        "arm": "chain_only",
+        "seed": 1,
+        "elapsed_seconds": 49.759728996999996,
+        "training_seconds": 48.41338604899985,
+        "loss": 15.987475395202637,
+        "beta": 1.0,
+        "lr": 0.0002604594154601839,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": false,
+        "kl_k64": {
+          "mean": 4.478446239285404,
+          "se": 0.28380059663419804,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 1.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 15.280375824222574,
+          "se": 0.4717323151361056,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 0.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.62646484375,
+          "se": 0.02353922391573374,
+          "n_contexts": 256
+        },
+        "unique_fraction": 0.9326171875
+      },
+      {
+        "step": 7786,
+        "arm": "chain_only",
+        "seed": 1,
+        "elapsed_seconds": 107.43892724,
+        "training_seconds": 97.18270504599987,
+        "loss": 15.256172180175781,
+        "beta": 1.0,
+        "lr": 0.000165,
+        "true_entropy": {
+          "mean": 10.801929588888015,
+          "se": 0.3817751223728323,
+          "n_contexts": 256
+        },
+        "likelihood_is_bound": false,
+        "kl_k64": {
+          "mean": 4.071660230401903,
+          "se": 0.2626071818010695,
+          "n_contexts": 256
+        },
+        "ess_k64": {
+          "mean": 1.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "posterior_conditional_nll": {
+          "mean": 14.873589818365872,
+          "se": 0.4600373352389479,
+          "n_contexts": 256
+        },
+        "latent_kl": {
+          "mean": 0.0,
+          "se": 0.0,
+          "n_contexts": 256
+        },
+        "prior_invalid": {
+          "mean": 0.6044921875,
+          "se": 0.023529788556541437,
+          "n_contexts": 256
+        },
+        "unique_fraction": 0.9287109375
+      },
+      {
+        "step": 15572,
+        "arm": "chain_only",
+        "seed": 1,
+        "elapsed_seconds": 211.339754455,
+        "training_seconds": 190.9652899319994,
+        "loss": 13.552404403686523,
+        "beta": 1.0,
+        "lr": 2.9999999999999997e-05,
+        "true_entropy": {
+          "mean": 9.859165879038756,
+          "se": 0.1780751178081638,
+          "n_contexts": 1024
+        },
+        "likelihood_is_bound": false,
+        "kl_k64": {
+          "mean": 3.974875286601673,
+          "se": 0.12711059938256217,
+          "n_contexts": 1024
+        },
+        "ess_k64": {
+          "mean": 1.0,
+          "se": 0.0,
+          "n_contexts": 1024
+        },
+        "posterior_conditional_nll": {
+          "mean": 13.834041163690927,
+          "se": 0.21877000982008718,
+          "n_contexts": 1024
+        },
+        "latent_kl": {
+          "mean": 0.0,
+          "se": 0.0,
+          "n_contexts": 1024
+        },
+        "prior_invalid": {
+          "mean": 0.5880126953125,
+          "se": 0.011588416885042207,
+          "n_contexts": 1024
+        },
+        "unique_fraction": 0.9249267578125,
+        "independent_oracle": {
+          "true_entropy": 9.859166145324707,
+          "ideal_indep_tc": 4.633974075317383,
+          "ideal_indep_invalid": 0.61328125
+        }
+      }
+    ]
+  }
+]

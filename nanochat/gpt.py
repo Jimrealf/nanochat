@@ -25,6 +25,7 @@ from nanochat.optim import MuonAdamW, DistMuonAdamW
 
 # Our custom Flash Attention module that automatically uses FA3 on Hopper+ and SDPA fallback elsewhere
 from nanochat.flash_attention import flash_attn
+from nanochat.block_head import DEPTH_MODES
 
 @dataclass
 class GPTConfig:
@@ -753,7 +754,7 @@ class GPTConfig:
     # One head emits the next T tokens per trunk pass. A plan latent drawn once per block is
     # what makes the T tokens agree; the trunk keeps its ordinary next-token loss.
     sap_block_T: int = 0                            # tokens per block; 0 disables the head entirely
-    sap_block_mode: str = 'indep'                   # indep | p1_discrete | p2_gauss | p3_energy | cp | local | local_jacobi | inv_head | plain_noise | wta
+    sap_block_mode: str = 'indep'                   # see nanochat.block_head.SAP_MODES
     sap_block_frac: float = 0.125                   # fraction of positions carrying a block in training; the head's cost scales with it
     sap_lambda: float = 1.0                         # weight of the block loss next to the next-token loss
     sap_head_layers: int = 2                        # attention layers in the slot decoder
@@ -768,11 +769,47 @@ class GPTConfig:
     sap_kl_anneal_steps: int = 2000                 # micro-steps to ramp the KL weight from 0 to 1
     sap_gumbel_tau: float = 1.0                     # straight-through Gumbel temperature (p1)
     sap_cp_components: int = 8                      # R for the cp mixture baseline
+    sap_field_rank: int = 8                         # positional basis rank of the exact one-shot field_cp mixture
+    sap_field_samples: int = 4                      # training-only prior draws for field_energy (inference is always one)
+    sap_field_energy_weight: float = 0.25           # realised hard-block energy-score weight
+    sap_field_topk: int = 16                        # sparse soft-gradient candidates; hard draw still uses full V
     sap_wta_k: int = 4                              # noise draws for the winner-take-all control
     sap_u_freqs: int = 24                           # sinusoidal frequencies resolving u (inv_head)
     sap_u_interior: float = 0.8                     # central fraction of a CDF bin u is drawn from (inv_head)
     sap_logit_chunk: int = 8192                     # slot rows per checkpointed readout chunk
     sap_jacobi_sweeps: int = 2                      # parallel refinement sweeps for local_jacobi (or local)
+    # --- S01 Sample-Inject-Reference heads ---------------------------------
+    sap_sir_topk: int = 16                          # retained draft candidates per slot (bounds B*T*V memory)
+    sap_sir_rank: int = 32                          # low-rank compatibility/lattice width
+    sap_sir_anchor_stride: int = 16                 # coarse sampled anchor spacing
+    sap_sir_fine_stride: int = 4                    # second pyramid spacing
+    sap_sir_refine_frac: float = 0.25               # fixed fraction resampled by confidence refinement
+    sap_sir_tree_levels: int = 0                    # 0=full balanced tree; >0=anchor rounds before parallel fill
+    sap_sir_train_samples: int = 4                  # realised drafts in the training marginal-likelihood estimate
+    sap_sir_policy_weight: float = 1.0              # score-function credit from post-sampling reference weights
+    sap_sir_posterior_mix: float = 0.5              # probability a training draft slot comes from the observed block
+    sap_sir_draft_weight: float = 1.0               # draft CE weight; objectives are renormalised by total weight
+    sap_sir_context_weight: float = 0.25             # contextual plausible-error auxiliary
+    sap_sir_energy_weight: float = 0.25              # structured-negative energy auxiliary
+    # --- SAP v4: exact sampling cuts (sap_research_plan.md v4) -------------
+    sap_trunk_grad: float = 1.0                     # gradient the block loss sends into the trunk, lm_head and wte: 0 = detached (trunk exactly dense), 1 = co-trained
+    sap_lattice_k: int = 64                         # candidates per slot on the lattice; the rest share one escape state
+    sap_pair_rank: int = 32                         # rank of the CRF pair terms / TT and CP candidate features / class pairs
+    sap_tt_rank: int = 32                           # latent states R of the tensor-train (HMM) heads
+    sap_cp_codes: int = 256                         # global codes Z of lat_cp
+    sap_nce_props: int = 0                          # >0: self-contrastive resampling over this many proposals at decode
+    sap_nce_neg: int = 4                            # head-sampled negatives per block for the InfoNCE scorer
+    sap_nce_weight: float = 1.0                     # weight of the InfoNCE scorer loss
+    sap_table_path: str = ''                        # corpus tables (scripts/sap_corpus_tables.py) for pmi_chain, corpus_code, supp, soft
+    sap_supp_min_count: int = 0                     # >0: CRF pairs seen fewer times in the corpus get -sap_supp_penalty
+    sap_supp_penalty: float = 20.0
+    sap_soft_eps: float = 0.0                       # weight of the n-gram soft-target auxiliary on slot readouts (C-soft)
+    sap_code_classes: int = 128                     # corpus token classes for corpus_code
+    sap_cut_pre_layers: int = 1                     # cut heads: ordinary slot layers before the stochastic cut (the rest fill)
+    sap_depth_layers: int = 2                       # depth_local: top trunk layers the block's tokens pass through
+    sap_depth_share: int = 0                        # depth_local: 1 = the trunk's own blocks, 0 = trainable copies (synced from the trunk)
+    sap_depth_bottom: int = 0                       # depth slots: of the m layers, how many are the bottom ones (skip the middle)
+    splice_k: int = 0                               # S13 SV-A splice codes: number of word classes (0 = off; nanochat/splice.py)
 
 
 # Used by notebooks to validate kwargs passed to GPTConfig.
@@ -883,8 +920,18 @@ RESEARCH_ALLOWED_KEYS = {
     "sap_block_T", "sap_block_mode", "sap_block_frac", "sap_lambda", "sap_head_layers",
     "sap_head_heads", "sap_head_mlp_mult", "sap_enc_layers", "sap_ctx_window",
     "sap_latent_groups", "sap_latent_codes", "sap_latent_dim", "sap_free_bits",
-    "sap_kl_anneal_steps", "sap_gumbel_tau", "sap_cp_components", "sap_wta_k",
+    "sap_kl_anneal_steps", "sap_gumbel_tau", "sap_cp_components", "sap_field_rank",
+    "sap_field_samples", "sap_field_energy_weight", "sap_field_topk", "sap_wta_k",
     "sap_u_freqs", "sap_u_interior", "sap_logit_chunk", "sap_jacobi_sweeps",
+    "sap_sir_topk", "sap_sir_rank", "sap_sir_anchor_stride", "sap_sir_fine_stride",
+    "sap_sir_refine_frac", "sap_sir_tree_levels", "sap_sir_train_samples", "sap_sir_policy_weight", "sap_sir_posterior_mix",
+    "sap_sir_draft_weight", "sap_sir_context_weight",
+    "sap_sir_energy_weight",
+    "sap_trunk_grad", "sap_lattice_k", "sap_pair_rank", "sap_tt_rank", "sap_cp_codes",
+    "sap_nce_props", "sap_nce_neg", "sap_nce_weight", "sap_table_path", "sap_supp_min_count",
+    "sap_supp_penalty", "sap_soft_eps", "sap_code_classes", "sap_cut_pre_layers",
+    "sap_depth_layers", "sap_depth_share", "sap_depth_bottom",
+    "splice_k",
     "use_mol", "mol_n_blocks", "mol_n_shared", "mol_topk", "mol_thin_dim",
     "mol_head_dim", "mol_ffn_mult", "mol_router_aux", "mol_routed_attn",
     "mol_dispatch", "mol_capacity_factor", "mol_block_lr_scale", "mol_per_block_ve",
@@ -8115,7 +8162,8 @@ class CausalSelfAttention(nn.Module):
             logits = logits.masked_fill(mask == 0, float('-inf'))
         return F.softmax(logits, dim=-1).to(x.dtype)
 
-    def forward(self, x, ve, cos_sin, window_size, kv_cache, token_active=None, eet_frozen_kv=False, frozen_k=None, frozen_v=None):
+    def forward(self, x, ve, cos_sin, window_size, kv_cache, token_active=None, eet_frozen_kv=False, frozen_k=None, frozen_v=None,
+                attn_mask=None):
         B, T, C = x.size()
 
         # Project the input to get queries, keys, and values
@@ -8164,7 +8212,14 @@ class CausalSelfAttention(nn.Module):
 
         # Flash Attention (FA3 on Hopper+, PyTorch SDPA fallback elsewhere)
         # window_size is (left, right) tuple: (N, 0) for causal, (-1, 0) for full context
-        if kv_cache is None:
+        if kv_cache is None and attn_mask is not None:
+            # Lanes: an explicit (1 or B, 1, T, T) visibility mask over the row (True = attend),
+            # built by lane_mask(); it replaces the causal mask, so no sliding window applies.
+            dt = torch.bfloat16 if q.is_cuda else q.dtype
+            y = F.scaled_dot_product_attention(
+                q.transpose(1, 2).to(dt), k.transpose(1, 2).to(dt), v.transpose(1, 2).to(dt),
+                attn_mask=attn_mask, enable_gqa=self.n_kv_head != self.n_head).transpose(1, 2)
+        elif kv_cache is None:
             # Training: causal attention with optional sliding window
             if token_active is not None:
                 # Build custom attention mask
@@ -9928,7 +9983,8 @@ class Block(nn.Module):
         # 19J: Training-time weight noise epsilon
         self._weight_noise_eps = float(getattr(config, 'p19_weight_noise', 0.0))
 
-    def forward(self, x, ve, cos_sin, window_size, kv_cache, token_active=None, eet_frozen_kv=False, frozen_k=None, frozen_v=None):
+    def forward(self, x, ve, cos_sin, window_size, kv_cache, token_active=None, eet_frozen_kv=False, frozen_k=None, frozen_v=None,
+                attn_mask=None):
         norm_fn_attn = self.norm_attn if self.norm_attn is not None else norm
         norm_fn_mlp = self.norm_mlp if self.norm_mlp is not None else norm
         # 19J: Weight noise — add isotropic noise to key weights during training
@@ -9937,9 +9993,10 @@ class Block(nn.Module):
             for p in (self.mlp.parameters() if self.mlp is not None else ()):
                 if p.ndim == 2:  # only perturb weight matrices, not biases
                     p.data.add_(eps * torch.randn_like(p))
+        attn_kw = {} if attn_mask is None else {"attn_mask": attn_mask}
         attn_out = self.attn(norm_fn_attn(x), ve, cos_sin, window_size, kv_cache,
                              token_active=token_active, eet_frozen_kv=eet_frozen_kv,
-                             frozen_k=frozen_k, frozen_v=frozen_v)
+                             frozen_k=frozen_k, frozen_v=frozen_v, **attn_kw)
         # 20I: If ADWI, extract per-head norms from attention output for FFN routing
         if isinstance(self.mlp, AttnDerivedMLP):
             _B, _T, _ = attn_out.shape
@@ -10217,9 +10274,24 @@ class GPT(nn.Module):
                 "the SAP block head reads out through the dense lm_head; do not combine it with use_code_head"
             from nanochat.block_head import BlockHead
             self.sap_head = BlockHead(config, config.vocab_size)
+            if self.sap_head.mode in DEPTH_MODES and not self.sap_head.depth_share:
+                # Trainable copies of the top trunk layers for the slot path (synced from the
+                # trunk in init_weights and after --sap-init-trunk). They live under sap_head so
+                # the head's optimizer groups and --sap-freeze-trunk treat them as head weights.
+                self.sap_head.depth_blocks = nn.ModuleList(
+                    [block_cls(config, i) for i in self.sap_head.depth_layer_ids])
             print0(f"[SAP] block head: mode={self.sap_head.mode} T={self.sap_head.T} "
                    f"frac={self.sap_head.frac} window={self.sap_head.W} "
                    f"layers={len(self.sap_head.dec)} params={sum(p.numel() for p in self.sap_head.parameters()):,}")
+        # S13 SV-A splice codes (nanochat/splice.py): a code embedding, a code head, and the token
+        # class map, which is a persistent buffer so checkpoints carry it.
+        self.splice = None
+        if int(getattr(config, 'splice_k', 0)) > 0:
+            from nanochat.splice import Splice
+            self.splice = Splice(int(config.splice_k), config.n_embd)
+            self.register_buffer("class_of_token", torch.zeros(config.vocab_size, dtype=torch.long))
+            print0(f"[S13] splice codes: K={config.splice_k} "
+                   f"params={sum(p.numel() for p in self.splice.parameters()):,}")
         # Design 10 (auxiliary objective): lightweight head predicts boundary or entropy from
         # the mean context vector across all RemixedBlocks. Forces context to encode
         # non-trivial information and prevents gradient-collapse to identity.
@@ -10784,6 +10856,11 @@ class GPT(nn.Module):
         # SAP block head: last, so no generic research-module pass can overwrite it.
         if getattr(self, 'sap_head', None) is not None:
             self.sap_head.init_weights()
+            self.sap_sync_depth_copies()
+        if getattr(self, 'splice', None) is not None:
+            torch.nn.init.normal_(self.splice.emb.weight, mean=0.0, std=1.0)
+            torch.nn.init.normal_(self.splice.head.weight, mean=0.0, std=0.001)
+            self.class_of_token.zero_()                 # base_train loads the class map after init
 
         # Cast embeddings to COMPUTE_DTYPE: optimizer can tolerate reduced-precision
         # embeddings and it saves memory. Exception: fp16 requires fp32 embeddings
@@ -11119,6 +11196,8 @@ class GPT(nn.Module):
             research += sum(p.numel() for p in self.aux_head.parameters())
         if getattr(self, 'sap_head', None) is not None:
             research += sum(p.numel() for p in self.sap_head.parameters())
+        if getattr(self, 'splice', None) is not None:     # S13 splice code table and head
+            research += sum(p.numel() for p in self.splice.parameters())
         # AG-CCL: ctx_from_attn and ctx_ema_gate live inside transformer.h (RemixedBlock)
         # and are already counted in transformer_matrices above.
         scalars = self.resid_lambdas.numel() + self.x0_lambdas.numel()
@@ -11392,6 +11471,10 @@ class GPT(nn.Module):
                 else:
                     (struct_matrix_params if p.ndim == 2 else struct_adamw_params).append(p)
 
+        # S13 splice codes: the code table trains like an embedding, the code head like lm_head.
+        if getattr(self, 'splice', None) is not None:
+            sap_embedding_params.append(self.splice.emb.weight)
+
         research_adamw_params = gate_adamw_params + struct_adamw_params
 
         value_embeds_params = list(self.value_embeds.parameters())
@@ -11399,6 +11482,8 @@ class GPT(nn.Module):
         if "wpe" in self.transformer:
             embedding_params += list(self.transformer.wpe.parameters())
         lm_head_params = list(self.lm_head.parameters())
+        if getattr(self, 'splice', None) is not None:
+            lm_head_params.append(self.splice.head.weight)
         resid_params = [self.resid_lambdas]
         x0_params = [self.x0_lambdas]
         # Phase 19: Collect GPT-level P19 params
@@ -11647,14 +11732,28 @@ class GPT(nn.Module):
         return optimizer
 
     def forward(self, idx, targets=None, kv_cache=None, loss_reduction='mean',
-                skip_logits=False, return_hidden=False):
+                skip_logits=False, return_hidden=False, sap_capture=False, lane_mask=None, pos_ids=None,
+                head_from=0, extra_embed=None, splice=None):
         """skip_logits returns the final normalised hidden states (B, T, d) without the
         lm_head, which is all block decoding needs from a trunk pass. return_hidden makes
-        the inference path return (logits, hidden)."""
+        the inference path return (logits, hidden). pos_ids (T,) gives each input its rotary
+        position explicitly (S11 two-stream window bisection, where both streams reuse 0..N-1);
+        it needs an explicit lane_mask and no kv_cache. head_from > 0 runs the lm_head only on
+        positions head_from.. (the query stream), and targets then cover only those positions.
+        splice=(P, L, lane_token) scores ordinary rows as S13 splice-code lanes (nanochat/splice.py);
+        extra_embed (B, T, d) is added to the token embeddings."""
+        if splice is not None:
+            from nanochat.splice import splice_loss
+            assert targets is not None, "splice=... is a scoring path; it needs targets"
+            return splice_loss(self, idx, targets, *splice, loss_reduction=loss_reduction)
         B, T = idx.size()
 
         # Grab the rotary embeddings for the current sequence length (they are of shape (1, seq_len, 1, head_dim/2))
-        if kv_cache is not None and getattr(kv_cache, 'graph_safe', False):
+        if pos_ids is not None:
+            assert kv_cache is None and "wpe" not in self.transformer
+            cos_sin = self.cos.index_select(1, pos_ids), self.sin.index_select(1, pos_ids)
+            T0, T_total = None, None
+        elif kv_cache is not None and getattr(kv_cache, 'graph_safe', False):
             # CUDA-graph decode: positions come from the cache on the device, with no host
             # sync, so the step can be captured once and replayed. The rotary cache must
             # already cover the whole generation (sequence_len * 10 by construction).
@@ -11683,6 +11782,8 @@ class GPT(nn.Module):
             x = self.transformer.wte(idx) # embed current token
         else:
             x, _ = self.embedding_model(idx)
+        if extra_embed is not None:                     # S13 splice: code embeddings on lane-first inputs
+            x = x + extra_embed.to(x.dtype)
         if "wpe" in self.transformer:
             if T_total is None:  # graph-safe decode: positions already on the device
                 positions = pos
@@ -11693,6 +11794,7 @@ class GPT(nn.Module):
         x = x.to(COMPUTE_DTYPE) # ensure activations are in compute dtype (no-op usually, but active for fp16 code path)
         x = norm(x)
         x0 = x  # save initial normalized embedding for x0 residual
+        _sap_states = {}  # depth_local: residual entering each top trunk layer (filled below)
         p24_global_signal = None
         if self.use_remix_linear:
             use_global = (
@@ -11734,15 +11836,24 @@ class GPT(nn.Module):
                 decay_base = torch.sigmoid(self.depth_decay_raw)  # scalar in (0, 1)
             else:
                 decay_base = None
+            # depth_local reads the residual stream entering each of the top trunk layers.
+            _sap_depth = (self.sap_head is not None and self.sap_head.mode in DEPTH_MODES
+                          and (sap_capture or (kv_cache is None and self.training and targets is not None)))
+            _sap_ids = set(self.sap_head.depth_capture_ids) if _sap_depth else set()
+            _sap_states = {}
             for i, block in enumerate(self.transformer.h):
                 # 19E: Apply depth-dependent x0 decay
                 x0_w = self.x0_lambdas[i]
                 if decay_base is not None:
                     x0_w = x0_w * (decay_base ** i)
+                if i in _sap_ids:
+                    _sap_states[i] = x      # pre-mix residual entering block i, every position
                 x = self.resid_lambdas[i] * x + x0_w * x0
                 ve = self.value_embeds[str(i)](idx).to(x.dtype) if str(i) in self.value_embeds else None
                 if self.use_remix_linear:
                     x, prev_ctx = block(x, ve, cos_sin, self.window_sizes[i], kv_cache, prev_ctx, p24_global_signal=p24_global_signal)
+                elif lane_mask is not None:
+                    x = block(x, ve, cos_sin, self.window_sizes[i], kv_cache, attn_mask=lane_mask)
                 else:
                     x = block(x, ve, cos_sin, self.window_sizes[i], kv_cache)
                 # Tier 0 test 2: make this layer prediction-readable through the shared head.
@@ -11763,7 +11874,13 @@ class GPT(nn.Module):
                 if collect_sim:
                     self._layer_outputs.append(x.detach())
         x = norm(x)
+        if head_from:
+            x = x[:, head_from:]
+        if self.sap_head is not None and self.sap_head.mode == "depth_roll":
+            _sap_states["top"] = x       # depth_roll: slot 1's feedback is the trunk's final state at t
         if skip_logits:
+            if sap_capture:
+                return x, (_sap_states if self.sap_head is not None and self.sap_head.mode in DEPTH_MODES else {})
             return x
 
         # Forward the lm_head (compute logits)
@@ -11825,7 +11942,10 @@ class GPT(nn.Module):
             # bpb evaluation (loss_reduction='none') still measures the trunk's next-token
             # quality and the block head is evaluated separately (sap_block_eval).
             if self.sap_head is not None and self.training and loss_reduction == 'mean':
-                _sap_loss, _sap_stats = self._sap_block_loss(x, targets, logits)
+                if self.sap_head.mode in DEPTH_MODES:
+                    _sap_loss, _sap_stats = self._sap_depth_loss(idx, x, targets, logits, _sap_states)
+                else:
+                    _sap_loss, _sap_stats = self._sap_block_loss(x, targets, logits)
                 loss = loss + float(self.config.sap_lambda) * _sap_loss
                 if not torch.compiler.is_compiling():
                     self._sap_stats = _sap_stats
@@ -11970,8 +12090,30 @@ class GPT(nn.Module):
         b, t = flat // n_start, flat % n_start
         ks = torch.arange(Tb, device=x.device)
         y = targets[b[:, None], t[:, None] + ks[None, :]]                  # (N, Tb)
-        h = x[b, t]                                                         # (N, d)
+        # sap_trunk_grad scales the gradient the block loss sends into everything the dense
+        # model owns: the trunk states, and the shared lm_head and wte the head reads through.
+        # 0 leaves the trunk exactly the dense model's (the head trains on what it is given).
+        g = float(getattr(self.config, 'sap_trunk_grad', 1.0))
+
+        def _gs(v):
+            if v is None or g == 1.0:
+                return v
+            return v.detach() if g == 0.0 else v.detach() + g * (v - v.detach())
+
+        h = _gs(x[b, t])                                                    # (N, d)
         ctx, ctx_valid = self._sap_window(x, b, t)
+        ctx = _gs(ctx)
+        h_future = x[b, (t + Tb - 1).clamp(max=Tq - 1)].detach()           # only p1_selfpost reads it
+        readout, embed, embed_weight = self._sap_readout, self.transformer.wte, None
+        if g != 1.0:
+            W_out, V = _gs(self.lm_head.weight), self.config.vocab_size
+            embed_weight = _gs(self.transformer.wte.weight)
+
+            def readout(s):
+                logits = F.linear(norm(s), W_out.to(dtype=s.dtype))[..., :V].float()
+                return 20.0 * torch.tanh(logits / 20.0)
+
+            embed = partial(F.embedding, weight=embed_weight)
         u_bins = None
         if head.mode == 'inv_head':
             from nanochat.block_head import target_bins
@@ -11986,8 +12128,544 @@ class GPT(nn.Module):
                     width.append(w_i)
                 u_bins = (torch.cat(lo).view(N, Tb - 1), torch.cat(width).view(N, Tb - 1)) \
                     if lo else (x.new_zeros(N, 0, dtype=torch.float32),) * 2
-        return head.loss(h, ctx, ctx_valid, y, self._sap_readout,
-                         embed=self.transformer.wte, u_bins=u_bins)
+        # The lattice and cut heads read slot 0 out of the trunk state, which is exactly the
+        # next-token logit row the trunk just computed: reuse it (same gradient scaling).
+        slot0 = None if logits is None else _gs(logits[b, t])
+        return head.loss(h, ctx, ctx_valid, y, readout, embed=embed, u_bins=u_bins,
+                         h_future=h_future, embed_weight=embed_weight, slot0_logits=slot0)
+
+    # ------------------------------------------------------------------ SAP depth slots
+    @torch.no_grad()
+    def sap_sync_depth_copies(self):
+        """Copy the trunk's top layers into depth_local's trainable copies (a no-op otherwise)."""
+        head = getattr(self, 'sap_head', None)
+        if head is None or not hasattr(head, 'depth_blocks'):
+            return
+        for blk, i in zip(head.depth_blocks, head.depth_layer_ids):
+            blk.load_state_dict(self.transformer.h[i].state_dict())
+
+    def _sap_depth_tools(self):
+        """(gs, lin, blocks): gs scales a trunk-owned tensor's gradient by sap_trunk_grad in
+        training; lin applies a block linear (gradient-scaled when the slots share the trunk's
+        blocks); blocks are the m layers the slots run through (copies or the trunk's own)."""
+        head = self.sap_head
+        g = float(getattr(self.config, 'sap_trunk_grad', 1.0)) if torch.is_grad_enabled() else 1.0
+
+        def gs(v):
+            if g == 1.0:
+                return v
+            return v.detach() if g == 0.0 else v.detach() + g * (v - v.detach())
+
+        shared = not hasattr(head, 'depth_blocks')
+
+        def lin(mod, x):
+            w = gs(mod.weight) if shared else mod.weight
+            return F.linear(x, w.to(dtype=x.dtype))
+
+        blocks = [self.transformer.h[i] for i in head.depth_layer_ids] if shared else list(head.depth_blocks)
+        return gs, lin, blocks
+
+    def _sap_depth_layers(self, xs, x0s, slot_ids, slot_is_tok, pos, prefix_kv, pre_mask, slot_vis,
+                          gs, lin, blocks, pre_pos=None, kv_out=None, mid=None, layer_ids=None):
+        """Run Q slots through the top m layers, each layer reproducing a trunk block.
+
+        xs, x0s (B, Q, d): entry state and the slot's x0 stream; slot_ids (B, Q) token ids for
+        the value embeddings, zeroed where slot_is_tok (B, Q) is False (mask slots); pos (B, Q)
+        absolute positions (RoPE); prefix_kv(j, i, kv_of, rl, xl) -> (kp, vp) the prefix's keys
+        and values at layer i, (B, Tp, Hkv, hd); pre_mask (B, Q, Tp) which prefix keys a slot may
+        read (the layer's sliding window is applied here); slot_vis (1 or B, Q, Q) which slots a
+        slot may read. pre_pos (B, Tp): the prefix keys' positions for the window, default
+        0..Tp-1. kv_out: a list that receives each layer's slot (keys, values). mid (j, delta):
+        added to the residual before the j-th of the m layers (skip-middle slots: the block
+        start's middle-layer delta). layer_ids: the trunk layer index of each block (default:
+        the block head's depth layers; lane decoding passes every layer). Returns xs after the m
+        layers.
+        """
+        B, Q, d = xs.shape
+        cos_s, sin_s = self.cos[0][pos], self.sin[0][pos]                  # (B, Q, 1, hd/2)
+        Tp = pre_mask.size(-1)
+        kpos = torch.arange(Tp, device=xs.device)[None] if pre_pos is None else pre_pos   # (1 or B, Tp)
+        on = slot_is_tok[..., None, None]
+        ids = self.sap_head.depth_layer_ids if layer_ids is None else layer_ids
+        for j, (blk_mod, i) in enumerate(zip(blocks, ids)):
+            if mid is not None and j == mid[0]:
+                xs = xs + mid[1]
+            rl, xl = gs(self.resid_lambdas[i]), gs(self.x0_lambdas[i])
+            xs = rl * xs + xl * x0s
+            attn = blk_mod.attn
+            assert attn._attn_moe_k == 0 and attn.head_importance is None and attn.attn_logit_scale is None, \
+                "depth slots reproduce the plain trunk block only"
+            H, Hkv, hd = attn.n_head, attn.n_kv_head, attn.head_dim
+            has_v = str(i) in self.value_embeds and attn.ve_gate is not None
+            ve_w = gs(self.value_embeds[str(i)].weight) if has_v else None
+
+            def kv_of(xn, ids, cos, sin, Tn, mask_on=None):
+                kx = lin(attn.c_k, xn).view(B, Tn, Hkv, hd)
+                vx = lin(attn.c_v, xn).view(B, Tn, Hkv, hd)
+                if has_v:
+                    ve = F.embedding(ids, ve_w).to(xn.dtype).view(B, Tn, Hkv, hd)
+                    if mask_on is not None:
+                        ve = ve * mask_on.to(ve.dtype)
+                    vx = vx + 2 * torch.sigmoid(lin(attn.ve_gate, xn[..., :attn.ve_gate_channels])).unsqueeze(-1) * ve
+                return norm(apply_rotary_emb(kx, cos, sin)), vx
+
+            hn = norm(xs)
+            q = norm(apply_rotary_emb(lin(attn.c_q, hn).view(B, Q, H, hd), cos_s, sin_s))
+            ks, vs = kv_of(hn, slot_ids, cos_s, sin_s, Q, on)
+            if kv_out is not None:
+                kv_out.append((ks, vs))
+            kp, vp = prefix_kv(j, i, kv_of, rl, xl)
+            pre = pre_mask
+            left = self.window_sizes[i][0]
+            if left is not None and left >= 0:
+                pre = pre & (kpos[:, None, :] > pos[..., None] - left)
+            mask = torch.cat([pre, slot_vis.expand(B, Q, Q)], dim=-1)
+            kall = torch.cat([kp.to(ks.dtype), ks], dim=1).to(q.dtype)
+            vall = torch.cat([vp.to(vs.dtype), vs], dim=1).to(q.dtype)
+            if Hkv != H:
+                kall = kall.repeat_interleave(H // Hkv, dim=2)
+                vall = vall.repeat_interleave(H // Hkv, dim=2)
+            att = F.scaled_dot_product_attention(q.transpose(1, 2), kall.transpose(1, 2), vall.transpose(1, 2),
+                                                 attn_mask=mask[:, None])
+            xs = xs + lin(attn.c_proj, att.transpose(1, 2).reshape(B, Q, d))
+            mlp = blk_mod.mlp
+            if mlp is not None:
+                assert type(mlp).__name__ == "MLP" and mlp.dynamic_act is None and mlp.srp_proj is None \
+                    and mlp.ln_intermediate is None, "depth slots reproduce the plain MLP only"
+                xs = xs + lin(mlp.c_proj, F.relu(lin(mlp.c_fc, norm(xs))).square())
+        return xs
+
+    def _sap_depth_base(self, st):
+        """The per-position state a slot's entry is built from, from trunk states st {i: (..., d)}:
+        the state entering the first slot layer (late entry), or, with skip-middle slots, the
+        middle layers' delta at the block start, state(L-b) - state(a)."""
+        head = self.sap_head
+        a = head.depth_bottom
+        if a > 0:
+            return st[head.depth_layer_ids[a]] - st[a]
+        return st[head.depth_layer_ids[0]]
+
+    def sap_depth_state(self, states):
+        """Decode-time entry base (B, d) at the last position of a trunk pass's captured states."""
+        return self._sap_depth_base({i: v[:, -1] for i, v in states.items() if isinstance(i, int)})
+
+    def _sap_depth_entry(self, gs, states_first, t_q, toks, is_tok, offs):
+        """Entry of slots: (xs, x0s, mid). Late entry: the trunk's state at the block start t (or
+        the slot's own embedding when m = L) plus the token's embedding and its offset. Skip-middle
+        (depth_bottom = a > 0): the slot starts exactly as the trunk would (its embedding), runs
+        the bottom a layers, and mid = (a, delta) adds the block start's middle-layer delta (plus
+        the same learned entry terms) before the top layers. states_first is _sap_depth_base."""
+        head = self.sap_head
+        first = head.depth_layer_ids[0]
+        dt = states_first.dtype
+        B, Q = toks.shape
+        d = self.config.n_embd
+        emb = F.embedding(toks, gs(self.transformer.wte.weight)).to(dt)
+        if hasattr(head, "depth_mask"):
+            emb = torch.where(is_tok[..., None], emb, head.depth_mask.to(dt)[None, None].expand(B, Q, d))
+        x0s = norm(emb)
+        if states_first.dim() == 3:                                       # training: (B, Tq, d)
+            base = states_first.gather(1, t_q[..., None].expand(B, Q, d))
+        else:                                                             # decode: (B, d) at t
+            base = states_first[:, None].expand(B, Q, d)
+        learned = head.depth_in(x0s) + head.depth_slot[offs - 1].to(dt)
+        if head.depth_bottom > 0:
+            return x0s, x0s, (head.depth_bottom, base + learned)
+        xs = x0s if first == 0 else base
+        return xs + learned, x0s, None
+
+    def _sap_depth_readout(self, gs):
+        V, W_out = self.config.vocab_size, gs(self.lm_head.weight)
+
+        def readout(z):
+            logits = F.linear(norm(z), W_out.to(dtype=z.dtype))[..., :V].float()
+            return 20.0 * torch.tanh(logits / 20.0)
+        return readout
+
+    def _sap_depth_logprob(self, idx, states, slot0_logits, y, starts, valid, return_slot_logits=False):
+        """Exact log p(block) through the top m trunk layers; (B, n). See the two layouts below."""
+        if self.sap_head.mode == "depth_tree":
+            return self._sap_depth_tree_logprob(idx, states, slot0_logits, y, starts, valid, return_slot_logits)
+        if self.sap_head.mode == "depth_roll":
+            return self._sap_depth_roll_logprob(idx, states, slot0_logits, y, starts, valid, return_slot_logits)
+        return self._sap_depth_local_logprob(idx, states, slot0_logits, y, starts, valid, return_slot_logits)
+
+    def _sap_depth_prefix_train(self, idx, st, x0t):
+        """prefix_kv for training/eval: the trunk's keys/values at layer i over the whole row."""
+        Tq = idx.size(1)
+        cos_p, sin_p = self.cos[:, :Tq], self.sin[:, :Tq]
+
+        def prefix_kv(j, i, kv_of, rl, xl):
+            return kv_of(norm(rl * st[i] + xl * x0t), idx, cos_p, sin_p, Tq)
+        return prefix_kv
+
+    def _sap_depth_local_logprob(self, idx, states, slot0_logits, y, starts, valid, return_slot_logits=False):
+        """depth_local: exact autoregressive factorisation of the block through the top m layers.
+
+        idx (B, Tq) the input ids; states {i: (B, Tq, d)} the residual stream entering trunk
+        layer i (before its resid/x0 mixing), for the top m layers; slot0_logits (B, n, V) the
+        next-token logits at the starts; y (B, n, T) block targets; starts (B, n) block starts
+        (position t, whose next token is y[..., 0]); valid (B, n, T). Returns (B, n).
+
+        Slot 0 is the trunk's own next-token distribution. Slot k >= 1 is the block's token
+        y[..., k-1] placed at position t+k: it enters layer L-m from the trunk's state at t (or,
+        when m = L, from its own embedding, exactly as the trunk does), then each layer
+        reproduces a trunk block (resid/x0 scalars, value embedding, RoPE at its true position,
+        QK norm) and attends to the trunk's keys/values at positions <= t and to the block's
+        earlier slots. With m = L and the trunk's own weights it is the trunk's teacher-forced
+        likelihood. In training, every trunk-owned tensor on this path passes sap_trunk_grad of
+        its gradient.
+        """
+        head = self.sap_head
+        B, n, T = y.shape
+        d = self.config.n_embd
+        gs, lin, blocks = self._sap_depth_tools()
+        lp0 = torch.log_softmax(slot0_logits.float(), -1).gather(-1, y[..., :1].clamp_min(0)).squeeze(-1)
+        ll = lp0 * valid[..., 0]
+        if T == 1 and not return_slot_logits:
+            return ll
+        K = T - 1
+        Q = n * K
+        dev = idx.device
+        assert not (self._use_residual_decay and self.depth_decay_raw is not None), "x0 decay unsupported"
+        tok = y[..., :K].clamp_min(0).reshape(B, Q)                       # slot k's token: y[k-1]
+        kk = torch.arange(1, T, device=dev).repeat(n)                     # (Q,) slot offset
+        blk = torch.arange(n, device=dev).repeat_interleave(K)            # (Q,) block of each slot
+        t_q = starts.repeat_interleave(K, dim=1)                          # (B, Q) block start
+        pos = t_q + kk[None, :]
+        st = {i: gs(states[i]) for i in head.depth_capture_ids}
+        is_tok = torch.ones(B, Q, dtype=torch.bool, device=dev)
+        xs, x0s, mid = self._sap_depth_entry(gs, self._sap_depth_base(st), t_q, tok, is_tok, kk[None].expand(B, Q))
+        x0t = norm(F.embedding(idx, gs(self.transformer.wte.weight)).to(xs.dtype))
+        pre = torch.arange(idx.size(1), device=dev)[None, None, :] <= t_q[..., None]
+        vis = ((blk[:, None] == blk[None, :]) & (kk[None, :] <= kk[:, None]))[None]
+        xs = self._sap_depth_layers(xs, x0s, tok, is_tok, pos, self._sap_depth_prefix_train(idx, st, x0t),
+                                    pre, vis, gs, lin, blocks, mid=mid)
+        readout = self._sap_depth_readout(gs)
+        if return_slot_logits:                       # (B, n, K, V): slot k's next-token logits
+            return readout(norm(xs).reshape(B * Q, d)).view(B, n, K, -1)
+        from nanochat.block_head import _target_logprob
+        lp = _target_logprob(norm(xs).reshape(B * Q, d), y[..., 1:].clamp_min(0).reshape(B * Q),
+                             readout, head.chunk).view(B, n, K)
+        return ll + (lp * valid[..., 1:]).sum(-1)
+
+    def _sap_depth_roll_logprob(self, idx, states, slot0_logits, y, starts, valid, return_slot_logits=False):
+        """depth_roll: depth_local whose slot k also enters with the previous slot's top-layer
+        state (slot 1: the trunk's final state at t, states["top"]), through head.depth_fb.
+
+        That state is what produced y_k's distribution, so decoding gets it for free; in exchange
+        the block's newest token reaches the next prediction through 2m layers rather than m. Still
+        the exact chain rule; training runs the T-1 slots in sequence, each reading the prefix and
+        the earlier slots' keys/values at every layer. Returns (B, n), or with return_slot_logits
+        slot k's next-token logits, (B, n, T-1, V).
+        """
+        head = self.sap_head
+        B, n, T = y.shape
+        d = self.config.n_embd
+        dev = idx.device
+        gs, lin, blocks = self._sap_depth_tools()
+        lp0 = torch.log_softmax(slot0_logits.float(), -1).gather(-1, y[..., :1].clamp_min(0)).squeeze(-1)
+        ll = lp0 * valid[..., 0]
+        if T == 1 and not return_slot_logits:
+            return ll
+        assert not (self._use_residual_decay and self.depth_decay_raw is not None), "x0 decay unsupported"
+        first = head.depth_layer_ids[0]
+        st = {i: gs(states[i]) for i in head.depth_capture_ids}
+        base = self._sap_depth_base(st)
+        Tq = idx.size(1)
+        x0t = norm(F.embedding(idx, gs(self.transformer.wte.weight)).to(st[first].dtype))
+        cos_p, sin_p = self.cos[:, :Tq], self.sin[:, :Tq]
+        pre_kv, past = {}, [[] for _ in blocks]           # trunk prefix K/V; earlier slots' K/V per layer
+
+        def prefix_kv(j, i, kv_of, rl, xl):
+            if j not in pre_kv:
+                pre_kv[j] = kv_of(norm(rl * st[i] + xl * x0t), idx, cos_p, sin_p, Tq)
+            kp, vp = pre_kv[j]
+            return (torch.cat([kp] + [a for a, _ in past[j]], 1),
+                    torch.cat([vp] + [b for _, b in past[j]], 1))
+
+        prev = gs(states["top"]).gather(1, starts[..., None].expand(B, n, d))     # (B, n, d)
+        same = torch.eye(n, dtype=torch.bool, device=dev)[None].expand(B, n, n)   # a block's own slots
+        pre0 = torch.arange(Tq, device=dev)[None, None, :] <= starts[..., None]    # (B, n, Tq)
+        pos0 = torch.arange(Tq, device=dev)[None].expand(B, Tq)
+        is_tok = torch.ones(B, n, dtype=torch.bool, device=dev)
+        readout = self._sap_depth_readout(gs)
+        from nanochat.block_head import _target_logprob
+        slot_logits = []
+        for k in range(1, T):
+            tok = y[..., k - 1].clamp_min(0)                                      # (B, n): y_k
+            offs = torch.full((B, n), k, dtype=torch.long, device=dev)
+            xs, x0s, mid = self._sap_depth_entry(gs, base, starts, tok, is_tok, offs)
+            fb = head.depth_fb(norm(prev))
+            if mid is None:
+                xs = xs + fb
+            else:
+                mid = (mid[0], mid[1] + fb)
+            pre = torch.cat([pre0] + [same] * (k - 1), dim=-1)
+            kpos = torch.cat([pos0] + [starts + kk for kk in range(1, k)], dim=1)
+            cur = []
+            xs = self._sap_depth_layers(xs, x0s, tok, is_tok, starts + k, prefix_kv, pre, same,
+                                        gs, lin, blocks, pre_pos=kpos, kv_out=cur, mid=mid)
+            for j, kv in enumerate(cur):
+                past[j].append(kv)
+            if return_slot_logits:
+                slot_logits.append(readout(norm(xs).reshape(B * n, d)).view(B, n, -1))
+            else:
+                lp = _target_logprob(norm(xs).reshape(B * n, d), y[..., k].clamp_min(0).reshape(-1),
+                                     readout, head.chunk).view(B, n)
+                ll = ll + lp * valid[..., k]
+            prev = xs
+        if return_slot_logits:
+            return torch.stack(slot_logits, dim=2)
+        return ll
+
+    def _sap_depth_tree_logprob(self, idx, states, slot0_logits, y, starts, valid, return_slot_logits=False):
+        """depth_tree: exact likelihood of the bisection factorisation through the top m layers.
+
+        log p(y) = log p(y_1 | ctx) + sum over rounds of sum over that round's queried y_j of
+        log p(y_j | ctx, tokens committed in earlier rounds). Each round runs the committed
+        tokens' slots (and mask slots where a queried token's left neighbour is unknown) through
+        the top m layers with every slot of the round visible to every other; nothing a round
+        queries is an input to it. Returns (B, n), or with return_slot_logits the logits each
+        y_j (j = 2..T) is read from, (B, n, T-1, V).
+        """
+        head = self.sap_head
+        B, n, T = y.shape
+        d = self.config.n_embd
+        dev = idx.device
+        gs, lin, blocks = self._sap_depth_tools()
+        lp0 = torch.log_softmax(slot0_logits.float(), -1).gather(-1, y[..., :1].clamp_min(0)).squeeze(-1)
+        ll = lp0 * valid[..., 0]
+        first = head.depth_layer_ids[0]
+        st = {i: gs(states[i]) for i in head.depth_capture_ids}
+        base = self._sap_depth_base(st)
+        x0t = norm(F.embedding(idx, gs(self.transformer.wte.weight)).to(st[first].dtype))
+        prefix = self._sap_depth_prefix_train(idx, st, x0t)
+        readout = self._sap_depth_readout(gs)
+        y_safe = y.clamp_min(0)
+        from nanochat.block_head import _target_logprob, depth_tree_layout
+        per_j = {}
+        for slots, tokflag, read in depth_tree_layout(T):
+            S = len(slots)
+            offs = torch.tensor(slots, device=dev)
+            flag = torch.tensor(tokflag, device=dev)
+            Q = n * S
+            o_q = offs.repeat(n)                                          # (Q,)
+            t_q = starts.repeat_interleave(S, dim=1)                      # (B, Q)
+            pos = t_q + o_q[None, :]
+            tok = y_safe.index_select(2, offs - 1).reshape(B, Q)          # y_o (offset o -> y[o-1])
+            is_tok = flag.repeat(n)[None].expand(B, Q)
+            blk = torch.arange(n, device=dev).repeat_interleave(S)
+            xs, x0s, mid = self._sap_depth_entry(gs, base, t_q, tok, is_tok, o_q[None].expand(B, Q))
+            pre = torch.arange(idx.size(1), device=dev)[None, None, :] <= t_q[..., None]
+            vis = (blk[:, None] == blk[None, :])[None]
+            xs = self._sap_depth_layers(xs, x0s, tok, is_tok, pos, prefix, pre, vis, gs, lin, blocks, mid=mid)
+            xs = xs.view(B, n, S, d)
+            si = torch.tensor([a for a, _ in read], device=dev)
+            jj = torch.tensor([j for _, j in read], device=dev)
+            h = xs.index_select(2, si)                                    # (B, n, R, d)
+            if return_slot_logits:
+                lg = readout(norm(h).reshape(-1, d)).view(B, n, len(read), -1)
+                per_j.update({j: lg[:, :, r] for r, (_, j) in enumerate(read)})
+                continue
+            tgt = y_safe.index_select(2, jj - 1)                          # (B, n, R)
+            lp = _target_logprob(norm(h).reshape(-1, d), tgt.reshape(-1), readout, head.chunk).view(tgt.shape)
+            ll = ll + (lp * valid.index_select(2, jj - 1)).sum(-1)
+        if return_slot_logits:
+            return torch.stack([per_j[j] for j in range(2, T + 1)], dim=2)
+        return ll
+
+    def sap_depth_copy_cache(self, batch_size, seq_len, device, dtype):
+        """KV buffers for depth_local's trained copies, or None when the slots share the trunk's
+        layers (then the trunk's own KV cache is the right one). (m, B, Tmax, Hkv, hd) each."""
+        head = self.sap_head
+        if not hasattr(head, 'depth_blocks'):
+            return None
+        a = head.depth_blocks[0].attn
+        shape = (len(head.depth_blocks), batch_size, seq_len, a.n_kv_head, a.head_dim)
+        return torch.zeros(shape, device=device, dtype=dtype), torch.zeros(shape, device=device, dtype=dtype)
+
+    @torch.no_grad()
+    def sap_depth_extend_copy_cache(self, copy_kv, new_ids, states, kv_cache):
+        """Append the copies' own keys/values for the tokens the trunk just cached. Training
+        computes prefix keys with the copies' projections of the trunk's residual stream, so
+        decoding must too; the trunk's cache holds the original layers' keys. Graph-safe."""
+        if copy_kv is None:
+            return
+        head = self.sap_head
+        B, Tn = new_ids.shape
+        end = kv_cache.cache_seqlens.to(torch.long)                       # after this pass
+        pos = end[:, None] - Tn + torch.arange(Tn, device=new_ids.device)  # (B, Tn)
+        dt = states[head.depth_layer_ids[0]].dtype
+        x0n = norm(self.transformer.wte(new_ids).to(dt))
+        cos, sin = self.cos[0][pos], self.sin[0][pos]                      # (B, Tn, 1, hd/2)
+        for j, (blk_mod, i) in enumerate(zip(head.depth_blocks, head.depth_layer_ids)):
+            a = blk_mod.attn
+            xt = self.resid_lambdas[i] * states[i] + self.x0_lambdas[i] * x0n
+            has_v = str(i) in self.value_embeds and a.ve_gate is not None
+            ve = self.value_embeds[str(i)](new_ids).to(dt) if has_v else None
+            k, v = a._project_kv(norm(xt), ve, cos, sin)
+            idx = pos[..., None, None].expand(B, Tn, a.n_kv_head, a.head_dim)
+            copy_kv[0][j].scatter_(1, idx, k.to(copy_kv[0].dtype))
+            copy_kv[1][j].scatter_(1, idx, v.to(copy_kv[1].dtype))
+
+    @torch.no_grad()
+    def _sap_depth_sample(self, kv_cache, state_first, slot0_logits, temperature=1.0, generator=None,
+                          copy_kv=None, top_first=None):
+        """Decode one depth_local block: T tokens, the first from the trunk's next-token logits,
+        each later one from a single-token pass through the top m layers that reads the trunk's
+        KV cache (positions <= t) and the block's earlier slots. Graph-safe: positions and masks
+        come from the cache on the device. state_first (B, d): sap_depth_state of the last trunk
+        pass (the pre-mix residual entering layer L-m at the last cached position t, or with
+        skip-middle slots the middle layers' delta there). top_first (B, d): the trunk's final (normed)
+        state at t, depth_roll's feedback into slot 1. Returns (B, T) long."""
+        from nanochat.block_head import pick
+        head = self.sap_head
+        if head.mode == "depth_tree":
+            return self._sap_depth_tree_sample(kv_cache, state_first, slot0_logits, temperature, generator, copy_kv)
+        T, dev = head.T, slot0_logits.device
+        B, d = state_first.shape
+        first = head.depth_layer_ids[0]
+        blocks = head.depth_blocks if hasattr(head, 'depth_blocks') else [self.transformer.h[i] for i in head.depth_layer_ids]
+
+        def _choose(logits):
+            if temperature <= 0:
+                return logits.argmax(-1)
+            probs = torch.softmax(logits.float() / temperature, dim=-1)
+            return pick(probs, torch.rand(B, device=dev, generator=generator))
+
+        out = torch.zeros(B, T, dtype=torch.long, device=dev)
+        out[:, 0] = _choose(slot0_logits)
+        if T == 1:
+            return out
+        t = kv_cache.cache_seqlens.to(torch.long) - 1                     # (B,) last cached position
+        Tmax = kv_cache.k_cache.size(2)
+        kpos = torch.arange(Tmax, device=dev)
+        H0 = blocks[0].attn
+        kbuf = [torch.zeros(B, T - 1, H0.n_kv_head, H0.head_dim, device=dev, dtype=kv_cache.k_cache.dtype) for _ in blocks]
+        vbuf = [torch.zeros_like(kb) for kb in kbuf]
+        slot_idx = torch.arange(T - 1, device=dev)
+        dt = state_first.dtype
+        roll = head.mode == "depth_roll"
+        assert not roll or top_first is not None, "depth_roll decoding needs the trunk's final state"
+        a = head.depth_bottom
+        prev = top_first
+        for k in range(1, T):
+            tok = out[:, k - 1]
+            pos = t + k                                                   # (B,)
+            x0s = norm(self.transformer.wte(tok).to(dt))
+            learned = head.depth_in(x0s) + head.depth_slot[k - 1].to(dt)
+            if roll:
+                learned = learned + head.depth_fb(norm(prev).to(dt))
+            if a > 0:            # skip-middle: exact bottom layers, then the block start's middle delta
+                xs, delta = x0s, state_first + learned
+            else:
+                xs = (x0s if first == 0 else state_first) + learned
+            cos_s = self.cos[0][pos][:, None]                             # (B, 1, 1, hd/2)
+            sin_s = self.sin[0][pos][:, None]
+            for j, (blk_mod, i) in enumerate(zip(blocks, head.depth_layer_ids)):
+                if a > 0 and j == a:
+                    xs = xs + delta
+                xs = self.resid_lambdas[i] * xs + self.x0_lambdas[i] * x0s
+                attn = blk_mod.attn
+                H, Hkv, hd = attn.n_head, attn.n_kv_head, attn.head_dim
+                hn = norm(xs)[:, None]                                    # (B, 1, d)
+                q = norm(apply_rotary_emb(attn.c_q(hn).view(B, 1, H, hd), cos_s, sin_s))
+                kk_ = attn.c_k(hn).view(B, 1, Hkv, hd)
+                vv_ = attn.c_v(hn).view(B, 1, Hkv, hd)
+                if str(i) in self.value_embeds and attn.ve_gate is not None:
+                    ve = self.value_embeds[str(i)](tok).to(xs.dtype).view(B, 1, Hkv, hd)
+                    vv_ = vv_ + 2 * torch.sigmoid(attn.ve_gate(hn[..., :attn.ve_gate_channels])).unsqueeze(-1) * ve
+                kk_ = norm(apply_rotary_emb(kk_, cos_s, sin_s))
+                kbuf[j][:, k - 1] = kk_[:, 0].to(kbuf[j].dtype)
+                vbuf[j][:, k - 1] = vv_[:, 0].to(vbuf[j].dtype)
+                if copy_kv is not None:
+                    kc, vc = copy_kv[0][j], copy_kv[1][j]                  # the copies' own keys
+                else:
+                    kc, vc = kv_cache.get_layer_cache(i)                   # (B, Tmax, Hkv, hd)
+                pre = kpos[None, :] <= t[:, None]                          # (B, Tmax)
+                left = self.window_sizes[i][0]
+                if left is not None and left >= 0:
+                    pre = pre & (kpos[None, :] > pos[:, None] - left)
+                own = (slot_idx < k)[None].expand(B, T - 1)                # slots 1..k (self included)
+                mask = torch.cat([pre, own], dim=-1)[:, None, None, :]     # (B, 1, 1, Tmax+T-1)
+                kall = torch.cat([kc, kbuf[j]], dim=1).to(q.dtype)
+                vall = torch.cat([vc, vbuf[j]], dim=1).to(q.dtype)
+                if Hkv != H:
+                    kall = kall.repeat_interleave(H // Hkv, dim=2)
+                    vall = vall.repeat_interleave(H // Hkv, dim=2)
+                att = F.scaled_dot_product_attention(q.transpose(1, 2), kall.transpose(1, 2),
+                                                     vall.transpose(1, 2), attn_mask=mask)
+                xs = xs + attn.c_proj(att.transpose(1, 2).reshape(B, d))
+                if blk_mod.mlp is not None:
+                    xs = xs + blk_mod.mlp(norm(xs))
+            out[:, k] = _choose(self._sap_readout(norm(xs)))
+            prev = xs
+        return out
+
+    @torch.no_grad()
+    def _sap_depth_tree_sample(self, kv_cache, state_first, slot0_logits, temperature=1.0, generator=None,
+                               copy_kv=None):
+        """Decode one depth_tree block: y_1 from the trunk's next-token logits, then one pass of
+        each bisection round's slots through the top m layers (depth_tree_layout), reading the
+        KV cache at positions <= t (the copies' own cache when the slots use trained copies).
+        Graph-safe: indices are Python ints and fills, positions come from the cache. (B, T)."""
+        from nanochat.block_head import depth_tree_layout, pick
+        head = self.sap_head
+        T, dev = head.T, slot0_logits.device
+        B, d = state_first.shape
+        gs, lin, blocks = self._sap_depth_tools()
+
+        def _choose(logits):                                              # (B, R, V) -> (B, R)
+            if temperature <= 0:
+                return logits.argmax(-1)
+            probs = torch.softmax(logits.float() / temperature, dim=-1)
+            return pick(probs, torch.rand(logits.shape[:-1], device=dev, generator=generator))
+
+        out = torch.zeros(B, T, dtype=torch.long, device=dev)
+        out[:, 0] = _choose(slot0_logits[:, None])[:, 0]
+        if T == 1:
+            return out
+        t = kv_cache.cache_seqlens.to(torch.long) - 1                     # (B,) last cached position
+        pre = torch.arange(kv_cache.k_cache.size(2), device=dev)[None, :] <= t[:, None]
+
+        def prefix_kv(j, i, kv_of, rl, xl):
+            return (copy_kv[0][j], copy_kv[1][j]) if copy_kv is not None else kv_cache.get_layer_cache(i)
+
+        for slots, tokflag, read in depth_tree_layout(T):
+            S = len(slots)
+            tok = torch.stack([out[:, o - 1] for o in slots], dim=1)       # (B, S); masked where unknown
+            # torch.full, not t[a] = o: an int setitem copies from the host, which capture forbids.
+            is_tok = torch.cat([torch.full((B, 1), f, dtype=torch.bool, device=dev) for f in tokflag], dim=1)
+            offs = torch.cat([torch.full((1,), o, dtype=torch.long, device=dev) for o in slots])
+            xs, x0s, mid = self._sap_depth_entry(gs, state_first, None, tok, is_tok, offs[None].expand(B, S))
+            pos = t[:, None] + offs[None, :]
+            vis = torch.ones(1, S, S, dtype=torch.bool, device=dev)
+            xs = self._sap_depth_layers(xs, x0s, tok, is_tok, pos, prefix_kv, pre[:, None].expand(B, S, pre.size(-1)),
+                                        vis, gs, lin, blocks, mid=mid)
+            h = torch.stack([xs[:, a] for a, _ in read], dim=1)            # (B, R, d)
+            ys = _choose(self._sap_readout(norm(h)))
+            for r, (_, j) in enumerate(read):
+                out[:, j - 1] = ys[:, r]
+        return out
+
+    def _sap_depth_loss(self, idx, x, targets, logits, states):
+        """depth_local's training loss: the same number of block starts as _sap_block_loss, laid
+        out as a fixed count per row so each row's slots attend to that row's keys only."""
+        head = self.sap_head
+        B, Tq, _ = x.shape
+        T = head.T
+        nps = max(1, int(round(head.frac * Tq)))
+        starts = torch.randint(0, Tq - T + 1, (B, nps), device=x.device)
+        ks = torch.arange(T, device=x.device)
+        y = targets.gather(1, (starts[..., None] + ks).reshape(B, nps * T)).view(B, nps, T)
+        slot0 = logits.gather(1, starts[..., None].expand(B, nps, logits.size(-1)))
+        g = float(getattr(self.config, 'sap_trunk_grad', 1.0))
+        if g != 1.0:                                  # slot 0 is the trunk's own next-token row
+            slot0 = slot0.detach() if g == 0.0 else slot0.detach() + g * (slot0 - slot0.detach())
+        ll = self._sap_depth_logprob(idx, states, slot0, y, starts, y >= 0)
+        loss = -ll.sum() / (y >= 0).sum().clamp_min(1)
+        return loss, {"block_nll": loss.detach(), "block_loss": loss.detach()}
 
     def _sap_last(self, hist, h_last):
         """Head inputs for the next block from the most recent trunk states."""

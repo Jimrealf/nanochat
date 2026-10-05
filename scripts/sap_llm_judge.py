@@ -83,6 +83,26 @@ Instructions:
 """
 
 
+GLOBAL_PROMPT_TEMPLATE = """You are an expert evaluator comparing two machine-written continuations of the same prefix. Both come from small language models, so neither will be perfect. Judge the WHOLE continuation, from its first word to its last, not just its opening.
+
+[Prefix]:
+\"\"\"{prefix}\"\"\"
+
+[Continuation A]:
+\"\"\"{cont_a}\"\"\"
+
+[Continuation B]:
+\"\"\"{cont_b}\"\"\"
+
+Criteria, most important first:
+1. Global coherence: does the continuation read as one connected text that stays on a consistent topic and develops it, without abrupt unmotivated jumps between unrelated fragments in the middle of a sentence or paragraph? (A "<|bos|>" marker starts a new document; judge each document on its own coherence.)
+2. Fluency: grammatical, natural sentences, without degenerate loops or repeated phrases.
+3. Relevance to the prefix.
+
+Reply ONLY with a JSON object: {{"analysis": "<1-2 sentence rationale>", "verdict": "A" | "B" | "Tie"}}
+"""
+
+
 def _call_deepseek(prompt: str, model: str, api_key: str) -> str:
     url = "https://api.deepseek.com/chat/completions"
     headers = {
@@ -206,6 +226,9 @@ def main():
     parser.add_argument("--max-pairs", type=int, default=200, help="Max number of pairs to evaluate (default: 200)")
     parser.add_argument("--concurrency", type=int, default=8, help="Concurrent API request workers (default: 8)")
     parser.add_argument("--out", type=str, default="", help="Output judgments jsonl path")
+    parser.add_argument("--rubric", type=str, default="default", choices=["default", "global"],
+                        help="global: judge the whole continuation for coherence across its length (parallel orders' failure mode)")
+    parser.add_argument("--max-chars", type=int, default=0, help="truncate each continuation to this many characters (0: full)")
     args = parser.parse_args()
 
     api_key = ""
@@ -254,8 +277,11 @@ def main():
         cont_block = p.get("block", "")
         cont_ar = p.get("ar", "")
 
-        prompt_1 = JUDGE_PROMPT_TEMPLATE.format(prefix=prefix, cont_a=cont_block, cont_b=cont_ar)
-        prompt_2 = JUDGE_PROMPT_TEMPLATE.format(prefix=prefix, cont_a=cont_ar, cont_b=cont_block)
+        if args.max_chars > 0:
+            cont_block, cont_ar = cont_block[:args.max_chars], cont_ar[:args.max_chars]
+        template = GLOBAL_PROMPT_TEMPLATE if args.rubric == "global" else JUDGE_PROMPT_TEMPLATE
+        prompt_1 = template.format(prefix=prefix, cont_a=cont_block, cont_b=cont_ar)
+        prompt_2 = template.format(prefix=prefix, cont_a=cont_ar, cont_b=cont_block)
 
         try:
             if args.provider == "deepseek":

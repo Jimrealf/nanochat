@@ -1,0 +1,74 @@
+S04 exact one-shot positional plan field
+One categorical plan draw; one fixed-depth head; all token draws parallel.
+Pre-registered gate: T=4 block KL <= 0.10 and invalid rate <= 0.03.
+
+[
+  {
+    "T": 4,
+    "ar_block_kl": 0.01766909286379814,
+    "ar_invalid_rate": 0.0,
+    "argv": [
+      "--steps",
+      "8000",
+      "--T",
+      "4",
+      "--cp-components",
+      "16",
+      "--field-rank",
+      "8",
+      "--eval-milestones",
+      "8000",
+      "--log-every",
+      "2000"
+    ],
+    "block_kl": 1.7077909708023071,
+    "block_kl_nce_est": null,
+    "contexts": 512,
+    "final_train": {
+      "block_loss": 3.1392,
+      "loss": 5.7267,
+      "step": 7999
+    },
+    "head_flops_per_token": 28865280,
+    "invalid_rate": 0.33935546875,
+    "invalid_rate_oracle_anchors": null,
+    "invalid_rate_posterior": null,
+    "mode": "field_cp",
+    "ntp_ce": 2.5739145278930664,
+    "ntp_excess": 0.0010447502136230469,
+    "sample_nll": 10.815852165222168,
+    "seconds": 441.5,
+    "seed": 0,
+    "sensitivity": 3.2596116065979004,
+    "steps": 8000,
+    "tag": "s04_field_cp",
+    "tc": 4.270069122314453,
+    "training_milestones": [
+      {
+        "ar_block_kl": 0.01766909286379814,
+        "ar_invalid_rate": 0.0,
+        "block_kl": 1.7077909708023071,
+        "block_kl_nce_est": null,
+        "contexts": 512,
+        "head_flops_per_token": 28865280,
+        "head_only": false,
+        "invalid_rate": 0.33935546875,
+        "invalid_rate_oracle_anchors": null,
+        "invalid_rate_posterior": null,
+        "ntp_ce": 2.5739145278930664,
+        "ntp_excess": 0.0010447502136230469,
+        "sample_nll": 10.815852165222168,
+        "sensitivity": 3.2596116065979004,
+        "step": 8000,
+        "tc": 4.270069122314453,
+        "train": {
+          "block_loss": 3.1392,
+          "loss": 5.7267,
+          "step": 7999
+        },
+        "true_entropy": 2.5728697776794434
+      }
+    ],
+    "true_entropy": 2.5728697776794434
+  }
+]

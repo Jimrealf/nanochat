@@ -137,11 +137,19 @@ class KVCache:
 
 # -----------------------------------------------------------------------------
 @torch.inference_mode()
-def sample_next_token(logits, rng, temperature=1.0, top_k=None):
-    """Sample a single next token from given logits of shape (B, vocab_size). Returns (B, 1)."""
+def sample_next_token(logits, rng, temperature=1.0, top_k=None, top_p=None):
+    """Sample a single next token from given logits of shape (B, vocab_size). Returns (B, 1).
+    top_p < 1 samples from the smallest set of tokens whose probability reaches top_p (nucleus)."""
     assert temperature >= 0.0, "temperature must be non-negative"
     if temperature == 0.0:
         return torch.argmax(logits, dim=-1, keepdim=True)
+    if top_p is not None and top_p < 1.0:
+        probs = F.softmax(logits.float() / temperature, dim=-1)
+        sp, si = torch.sort(probs, dim=-1, descending=True)
+        keep = sp.cumsum(-1) - sp < top_p                          # tokens before the cut, the first always kept
+        sp = torch.where(keep, sp, torch.zeros_like(sp))
+        choice = torch.multinomial(sp / sp.sum(-1, keepdim=True), num_samples=1, generator=rng)
+        return si.gather(1, choice)
     if top_k is not None and top_k > 0:
         k = min(top_k, logits.size(-1))
         vals, idx = torch.topk(logits, k, dim=-1)
@@ -335,7 +343,8 @@ def _kv_cache_for(model, batch_size, seq_len, device, dtype):
 
 
 @torch.inference_mode()
-def generate_ar_kv(model, tokens, max_tokens, num_samples=1, temperature=1.0, seed=42):
+def generate_ar_kv(model, tokens, max_tokens, num_samples=1, temperature=1.0, seed=42, top_p=None,
+                   rep_penalty=None):
     """Next-token decoding with a KV cache: one trunk pass per token. Returns (B, max_tokens).
 
     tokens: one prompt (list of ids, repeated num_samples times) or a (B, L) tensor of
@@ -347,10 +356,19 @@ def generate_ar_kv(model, tokens, max_tokens, num_samples=1, temperature=1.0, se
     ids = _prompt_ids(tokens, num_samples, device)
     kv = _kv_cache_for(model, ids.size(0), ids.size(1) + max_tokens + 1, device, dtype)
     logits = model.forward(ids, kv_cache=kv)[:, -1, :]
+    seen = None
+    if rep_penalty is not None and rep_penalty != 1.0:          # CTRL repetition penalty over prompt + output
+        seen = torch.zeros(ids.size(0), logits.size(-1), dtype=torch.bool, device=device)
+        seen.scatter_(1, ids, True)
     out = []
     for _ in range(max_tokens):
-        nxt = sample_next_token(logits, rng, temperature)
+        if seen is not None:
+            lf = logits.float()
+            logits = torch.where(seen, torch.where(lf > 0, lf / rep_penalty, lf * rep_penalty), lf)
+        nxt = sample_next_token(logits, rng, temperature, top_p=top_p)
         out.append(nxt)
+        if seen is not None:
+            seen.scatter_(1, nxt, True)
         logits = model.forward(nxt, kv_cache=kv)[:, -1, :]
     return torch.cat(out, dim=1)
 
@@ -371,6 +389,28 @@ def generate_block_kv(model, tokens, max_tokens, num_samples=1, temperature=1.0,
     gen.manual_seed(seed)
     ids = _prompt_ids(tokens, num_samples, device)
     kv = _kv_cache_for(model, ids.size(0), ids.size(1) + max_tokens + head.T + 1, device, dtype)
+    from nanochat.block_head import DEPTH_MODES
+    if head.mode in DEPTH_MODES:
+        # The block's tokens come from passes through the top layers (one per token for
+        # depth_local, one per bisection round for depth_tree), reading the
+        # trunk's KV cache (or the trained copies' own cache); the next trunk pass then appends
+        # the whole block to the cache(s).
+        first = head.depth_layer_ids[0]
+        ckv = model.sap_depth_copy_cache(ids.size(0), kv.k_cache.size(2), device, kv.k_cache.dtype)
+        out, n = [], 0
+        x, st = model.forward(ids, kv_cache=kv, skip_logits=True, sap_capture=True)
+        model.sap_depth_extend_copy_cache(ckv, ids, st, kv)
+        while n < max_tokens:
+            blk = model._sap_depth_sample(kv, model.sap_depth_state(st), model._sap_readout(x[:, -1]),
+                                          temperature=temperature, generator=gen, copy_kv=ckv,
+                                          top_first=x[:, -1])
+            out.append(blk)
+            n += blk.size(1)
+            if n >= max_tokens:
+                break
+            x, st = model.forward(blk, kv_cache=kv, skip_logits=True, sap_capture=True)
+            model.sap_depth_extend_copy_cache(ckv, blk, st, kv)
+        return torch.cat(out, dim=1)[:, :max_tokens]
     x = model.forward(ids, kv_cache=kv, skip_logits=True)
     hist = x[:, -head.W:] if head.W > 0 else x[:, -1:]
     out, n = [], 0

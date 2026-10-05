@@ -1,0 +1,85 @@
+S05 strict one-round correlated noise field
+One shared Gaussian field draw; one fixed-depth head; all token draws parallel.
+Training: K=4 prior marginal likelihood + energy score on hard token samples.
+Pre-registered gate: T=4 block KL <= 0.10 and invalid rate <= 0.03.
+
+[
+  {
+    "T": 4,
+    "ar_block_kl": 0.01302366517484188,
+    "ar_invalid_rate": 0.00048828125,
+    "argv": [
+      "--steps",
+      "8000",
+      "--T",
+      "4",
+      "--field-rank",
+      "8",
+      "--field-samples",
+      "4",
+      "--field-energy-weight",
+      "0.25",
+      "--field-topk",
+      "16",
+      "--eval-milestones",
+      "8000",
+      "--log-every",
+      "2000"
+    ],
+    "block_kl": 3.35494327545166,
+    "block_kl_nce_est": null,
+    "contexts": 512,
+    "final_train": {
+      "block_loss": 4.9808,
+      "energy_score": 5.9237,
+      "loss": 7.5684,
+      "marginal_nll": 3.4998,
+      "sample_spread": 12.2183,
+      "step": 7999
+    },
+    "head_flops_per_token": 7435008,
+    "invalid_rate": 0.53857421875,
+    "invalid_rate_oracle_anchors": null,
+    "invalid_rate_posterior": null,
+    "mode": "field_energy",
+    "ntp_ce": 2.5738275051116943,
+    "ntp_excess": 0.0009577274322509766,
+    "sample_nll": 10.26308536529541,
+    "seconds": 437.3,
+    "seed": 0,
+    "sensitivity": 1.0662301778793335,
+    "steps": 8000,
+    "tag": "s05_field_energy",
+    "tc": 4.270069122314453,
+    "training_milestones": [
+      {
+        "ar_block_kl": 0.01302366517484188,
+        "ar_invalid_rate": 0.00048828125,
+        "block_kl": 3.35494327545166,
+        "block_kl_nce_est": null,
+        "contexts": 512,
+        "head_flops_per_token": 7435008,
+        "head_only": false,
+        "invalid_rate": 0.53857421875,
+        "invalid_rate_oracle_anchors": null,
+        "invalid_rate_posterior": null,
+        "ntp_ce": 2.5738275051116943,
+        "ntp_excess": 0.0009577274322509766,
+        "sample_nll": 10.26308536529541,
+        "sensitivity": 1.0662301778793335,
+        "step": 8000,
+        "tc": 4.270069122314453,
+        "train": {
+          "block_loss": 4.9808,
+          "energy_score": 5.9237,
+          "loss": 7.5684,
+          "marginal_nll": 3.4998,
+          "sample_spread": 12.2183,
+          "step": 7999
+        },
+        "true_entropy": 2.5728697776794434
+      }
+    ],
+    "true_entropy": 2.5728697776794434
+  }
+]

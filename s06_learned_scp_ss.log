@@ -1,0 +1,121 @@
+S06-L — learned two-spectrum semantic PSS
+=========================================
+Depth-4 oracle-context mechanism gate; no HMM emissions/transitions, teacher, or verifier.
+Exact likelihood; bijections learned by posterior-weighted Hungarian generalized EM.
+Gate: block KL <= 0.10 and invalid <= 3%.
+
+S=64 C=2 depth=4 width=128 steps=8000 params=1,537,088
+
+final KL=2.948502 invalid=0.486816 unique=0.929443 verdict=FAIL
+
+Full result
+-----------
+{
+  "T": 4,
+  "block_kl": 2.9485020637512207,
+  "curve": [
+    {
+      "block_kl": 3.8738131523132324,
+      "ideal_indep_invalid": 0.626953125,
+      "ideal_indep_tc": 4.401250839233398,
+      "invalid_rate": 0.564453125,
+      "loss": 14.333294868469238,
+      "nll": 14.337644577026367,
+      "sample_nll_valid": 11.518572807312012,
+      "sensitivity": 0.777413547039032,
+      "spectrum_js": 0.6339136362075806,
+      "state_balance_kl": 0.9948301911354065,
+      "step": 4000,
+      "true_entropy": 10.081787109375,
+      "unique_rate": 0.93408203125
+    },
+    {
+      "block_kl": 2.9485020637512207,
+      "ideal_indep_invalid": 0.607421875,
+      "ideal_indep_tc": 4.401250839233398,
+      "invalid_rate": 0.48681640625,
+      "loss": 12.57282543182373,
+      "nll": 12.577735900878906,
+      "sample_nll_valid": 11.955389976501465,
+      "sensitivity": 0.7755301594734192,
+      "spectrum_js": 0.6498838663101196,
+      "state_balance_kl": 0.7946431040763855,
+      "step": 8000,
+      "true_entropy": 10.081787109375,
+      "unique_rate": 0.929443359375
+    }
+  ],
+  "depth": 4,
+  "experiment": "S06-L learned spectrum-class semantic PSS",
+  "ideal_indep_invalid": 0.607421875,
+  "ideal_indep_tc": 4.401250839233398,
+  "invalid_rate": 0.48681640625,
+  "oracle_context": true,
+  "oracle_emissions_or_transitions": false,
+  "parameters": 1537088,
+  "permutation_learning": "posterior-weighted Hungarian generalized EM",
+  "permutation_updates": [
+    {
+      "active_states": 64,
+      "max_occupancy": 1960.2479248046875,
+      "min_occupancy": 0.913398265838623,
+      "permutation_change": 0.979949951171875,
+      "step": 1000
+    },
+    {
+      "active_states": 64,
+      "max_occupancy": 1995.9322509765625,
+      "min_occupancy": 2.726536512374878,
+      "permutation_change": 0.97216796875,
+      "step": 2000
+    },
+    {
+      "active_states": 64,
+      "max_occupancy": 1990.0072021484375,
+      "min_occupancy": 2.152679204940796,
+      "permutation_change": 0.970458984375,
+      "step": 3000
+    },
+    {
+      "active_states": 64,
+      "max_occupancy": 1952.8018798828125,
+      "min_occupancy": 3.2906529903411865,
+      "permutation_change": 0.96630859375,
+      "step": 4000
+    },
+    {
+      "active_states": 64,
+      "max_occupancy": 1932.3095703125,
+      "min_occupancy": 3.114302396774292,
+      "permutation_change": 0.96435546875,
+      "step": 5000
+    },
+    {
+      "active_states": 64,
+      "max_occupancy": 2018.81494140625,
+      "min_occupancy": 5.4468913078308105,
+      "permutation_change": 0.9617919921875,
+      "step": 6000
+    },
+    {
+      "active_states": 64,
+      "max_occupancy": 1894.437255859375,
+      "min_occupancy": 4.727507591247559,
+      "permutation_change": 0.95635986328125,
+      "step": 7000
+    }
+  ],
+  "sample_nll_valid": 11.955389976501465,
+  "seconds": 182.03,
+  "sensitivity": 0.7755301594734192,
+  "spectra": 2,
+  "spectrum_js": 0.6498838663101196,
+  "state_balance_kl": 0.7946431040763855,
+  "states": 64,
+  "steps": 8000,
+  "stochastic_rounds": 1,
+  "true_entropy": 10.081787109375,
+  "unique_rate": 0.929443359375,
+  "verdict": "FAIL",
+  "width": 128
+}

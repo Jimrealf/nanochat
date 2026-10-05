@@ -805,7 +805,8 @@ parser.add_argument("--sch-rank-probe", type=int, default=0, help="SCH: contexts
 parser.add_argument("--sch-eval-steps", type=int, default=100, help="SCH: validation batches used by the end-of-training diagnostics")
 # SAP: sampling-aware block head (nanochat/block_head.py, sap_research_plan.md)
 parser.add_argument("--sap-block-t", type=int, default=0, help="SAP: tokens emitted per block by the head (0 = off)")
-parser.add_argument("--sap-block-mode", type=str, default="indep", choices=["indep", "p1_discrete", "p2_gauss", "p3_energy", "cp", "local", "local_jacobi", "inv_head", "plain_noise", "wta"], help="SAP: indep (independent slots), p1_discrete / p2_gauss (plan-latent ELBO), p3_energy (energy score), cp / local / local_jacobi / inv_head (baselines), plain_noise / wta (controls)")
+from nanochat.block_head import SAP_MODES as _SAP_MODES
+parser.add_argument("--sap-block-mode", type=str, default="indep", choices=list(_SAP_MODES), help="SAP block-head mechanism; see nanochat.block_head.SAP_MODES")
 parser.add_argument("--sap-block-frac", type=float, default=0.125, help="SAP: fraction of positions carrying a block in training; the head's FLOPs scale with it")
 parser.add_argument("--sap-lambda", type=float, default=1.0, help="SAP: weight of the block loss next to the next-token loss")
 parser.add_argument("--sap-head-layers", type=int, default=2, help="SAP: attention layers in the slot decoder")
@@ -818,9 +819,80 @@ parser.add_argument("--sap-latent-dim", type=int, default=64, help="SAP: z dim (
 parser.add_argument("--sap-free-bits", type=float, default=0.25, help="SAP: unpenalised KL nats per group")
 parser.add_argument("--sap-kl-anneal-steps", type=int, default=2000, help="SAP: micro-steps over which the KL weight ramps to 1")
 parser.add_argument("--sap-cp-components", type=int, default=8, help="SAP: R for the cp mixture baseline")
+parser.add_argument("--sap-field-rank", type=int, default=8, help="SAP: positional basis rank for field_cp")
+parser.add_argument("--sap-field-samples", type=int, default=4, help="SAP: training prior draws for field_energy; inference always uses one")
+parser.add_argument("--sap-field-energy-weight", type=float, default=0.25, help="SAP: hard sampled-block energy-score weight for field_energy")
+parser.add_argument("--sap-field-topk", type=int, default=16, help="SAP: sparse soft-gradient width for field_energy hard token samples")
 parser.add_argument("--sap-wta-k", type=int, default=4, help="SAP: noise draws for the winner-take-all control")
 parser.add_argument("--sap-jacobi-sweeps", type=int, default=2, help="SAP: parallel refinement sweeps for local_jacobi (or local)")
+parser.add_argument("--sap-gumbel-tau", type=float, default=1.0, help="SAP: straight-through categorical temperature")
+parser.add_argument("--sap-sir-topk", type=int, default=16, help="S01: sparse draft candidates retained per slot")
+parser.add_argument("--sap-sir-rank", type=int, default=32, help="S01: compatibility/lattice rank")
+parser.add_argument("--sap-sir-anchor-stride", type=int, default=16, help="S01: coarse anchor spacing")
+parser.add_argument("--sap-sir-fine-stride", type=int, default=4, help="S01: fine pyramid spacing")
+parser.add_argument("--sap-sir-refine-frac", type=float, default=0.25, help="S01: fixed fraction of low-confidence draft positions resampled")
+parser.add_argument("--sap-sir-tree-levels", type=int, default=0, help="S02: correlated tree anchor rounds; 0 expands the full tree")
+parser.add_argument("--sap-sir-train-samples", type=int, default=4, help="S01: realised drafts in the training marginal-likelihood estimate")
+parser.add_argument("--sap-sir-policy-weight", type=float, default=1.0, help="S01: score-function credit weight for post-sampling reference weights")
+parser.add_argument("--sap-sir-posterior-mix", type=float, default=0.5, help="S01: probability a training draft slot comes from the observed block")
+parser.add_argument("--sap-sir-draft-weight", type=float, default=1.0, help="S01: draft CE weight")
+parser.add_argument("--sap-sir-context-weight", type=float, default=0.25, help="S01: contextual soft-error loss weight")
+parser.add_argument("--sap-sir-energy-weight", type=float, default=0.25, help="S01: structured-negative energy weight")
 parser.add_argument("--sap-eval-steps", type=int, default=20, help="SAP: validation batches for the block bpb at each eval (0 = skip)")
+# SAP v4: exact sampling cuts (sap_research_plan.md v4)
+parser.add_argument("--sap-trunk-grad", type=float, default=1.0, help="SAP v4: gradient the block loss sends into trunk, lm_head and wte (0 = detached, trunk exactly dense)")
+parser.add_argument("--sap-lattice-k", type=int, default=64, help="SAP v4: candidates per slot on the lattice (the rest share one escape state)")
+parser.add_argument("--sap-pair-rank", type=int, default=32, help="SAP v4: rank of CRF pair terms / TT, CP candidate features / class pairs")
+parser.add_argument("--sap-tt-rank", type=int, default=32, help="SAP v4: latent states of the tensor-train (HMM) heads")
+parser.add_argument("--sap-cp-codes", type=int, default=256, help="SAP v4: global codes of lat_cp")
+parser.add_argument("--sap-nce-props", type=int, default=0, help="SAP v4: >0 enables self-contrastive resampling over this many proposals")
+parser.add_argument("--sap-nce-neg", type=int, default=4, help="SAP v4: head-sampled negatives per block for the InfoNCE scorer")
+parser.add_argument("--sap-nce-weight", type=float, default=1.0, help="SAP v4: InfoNCE scorer loss weight")
+parser.add_argument("--sap-table-path", type=str, default="", help="SAP v4: corpus tables from scripts/sap_corpus_tables.py")
+parser.add_argument("--sap-supp-min-count", type=int, default=0, help="SAP v4: >0 penalises CRF pairs seen fewer times in the corpus")
+parser.add_argument("--sap-supp-penalty", type=float, default=20.0, help="SAP v4: size of that penalty")
+parser.add_argument("--sap-soft-eps", type=float, default=0.0, help="SAP v4: n-gram soft-target auxiliary weight on slot readouts")
+parser.add_argument("--sap-code-classes", type=int, default=128, help="SAP v4: corpus token classes for corpus_code")
+parser.add_argument("--sap-cut-pre-layers", type=int, default=1, help="SAP v4: cut heads' ordinary slot layers before the cut (the rest are fill layers)")
+parser.add_argument("--sap-depth-layers", type=int, default=2, help="SAP v4 depth_local: top trunk layers the block's tokens pass through")
+parser.add_argument("--sap-depth-share", type=int, default=0, choices=[0, 1], help="SAP v4 depth_local: 1 = the trunk's own blocks, 0 = trainable copies")
+parser.add_argument("--sap-depth-bottom", type=int, default=0, help="SAP depth slots: of the m slot layers, how many are the trunk's bottom layers (skip-middle; 0 = the top m)")
+# SAP v5 lanes (nanochat/lanes.py): one trunk pass emits L tokens S positions apart.
+parser.add_argument("--lanes", type=int, default=0, help="train and evaluate in lane order with this many lockstep lanes (0 = ordinary causal LM)")
+parser.add_argument("--lane-prefix-max", type=int, default=256, help="lanes: causal prefix length drawn uniformly from multiples of L up to this per step")
+parser.add_argument("--lane-eval-prefix", type=int, default=128, help="lanes: fixed causal prefix for the lane-order val bpb (rounded down to a multiple of L)")
+parser.add_argument("--class-map", type=str, default="",
+                    help="S13: Brown class map (.npy, one class id per token id, scripts/sap_brown_classes.py)")
+parser.add_argument("--splice", type=int, default=0,
+                    help="S13 SV-A with --lanes: splice codes, the class of every junction token decided in "
+                         "round 0 (nanochat/splice.py; needs --class-map)")
+parser.add_argument("--lane-align-window", type=int, default=0,
+                    help="S12 sentence-aligned lanes: cut each lane at the last sentence end (or before a document start) "
+                         "inside its final W slots and pad the rest (0 = plain lanes). Val bpb then omits the pad "
+                         "decisions; scripts/sap_aligned_lanes_eval.py counts them")
+# SAP S09: information oracle for suffix-state generators (prompt + last-k window attention).
+parser.add_argument("--prompt-window", type=int, default=0, help="if > 0: every position attends only to the first --prompt-len positions and its last K positions")
+parser.add_argument("--prompt-len", type=int, default=128, help="prompt length for --prompt-window")
+parser.add_argument("--sep-slots", type=int, default=0,
+                    help="S11 separator oracle: if > 0, positions from --sep-split + K on reach the first --sep-split "
+                         "positions only through K summary slots inserted at --sep-split")
+parser.add_argument("--sep-split", type=int, default=1024, help="where the separator slots sit")
+parser.add_argument("--sep-full", action="store_true",
+                    help="with --sep-slots: insert the slots but keep full causal attention (the control)")
+parser.add_argument("--wb-window", type=int, default=0,
+                    help="S11 window bisection: if > 0, train in the window-bisection order with n-token windows "
+                         "(two-stream, exact likelihood) after a left-to-right prefix of --wb-prefix tokens")
+parser.add_argument("--wb-prefix", type=int, default=128, help="left-to-right prefix length for --wb-window")
+parser.add_argument("--wb-lanes", type=int, default=0,
+                    help="with --wb-window: bridged lanes, i.e. L intervals whose last --wb-window tokens are placed "
+                         "coarse-to-fine, then all intervals filled left to right in lockstep (0 = window bisection)")
+parser.add_argument("--wb-order", type=str, default="bisect", choices=["bisect", "lanes", "seeded"],
+                    help="S11 two-stream order: bisect (window bisection, or bridged lanes with --wb-lanes), lanes "
+                         "(S08 plain lanes as a two-stream order, --wb-lanes lanes) or seeded (middle-out lanes, "
+                         "--wb-lanes intervals, --wb-window the seed window, default 1)")
+parser.add_argument("--sap-init-trunk", type=str, default="", help="SAP v4 Stage 2: load every non-head tensor from this dense checkpoint dir; the head starts fresh")
+parser.add_argument("--sap-init-step", type=int, default=-1, help="SAP v4 Stage 2: checkpoint step to load (-1 = last)")
+parser.add_argument("--sap-freeze-trunk", type=int, default=0, choices=[0, 1], help="SAP v4 Stage 2: train only the block head (trunk, lm_head, wte frozen and pruned from the optimizer)")
 parser.add_argument("--seed", type=int, default=-1, help="RNG seed for weight init and data-order-independent randomness (-1 = unseeded, the historical default). Needed for seed-variance runs; note the dataloader order is not seeded by this.")
 parser.add_argument("--early-stop-tokens", type=int, default=-1, help="terminate training after this many tokens without affecting the LR schedule (-1 = disabled)")
 parser.add_argument("--step-loss-file", type=str, default="", help="optional JSONL file to write per-step training loss for external sweep plotting")
@@ -909,12 +981,77 @@ else:
 # -----------------------------------------------------------------------------
 # Tokenizer will be useful for evaluation and also we need the vocab size to init the model
 tokenizer = get_tokenizer(tokenizer_dir=args.tokenizer_dir)
+if args.prompt_window > 0:
+    assert args.lanes == 0, "--prompt-window and --lanes are separate experiments"
+    from nanochat.lanes import prompt_window_mask
+    print0(f"[prompt-window] attention = first {args.prompt_len} positions + last {args.prompt_window}")
+two_stream = args.wb_window > 0 or args.wb_order != "bisect"
+if two_stream:
+    assert args.lanes == 0 and args.prompt_window == 0 and args.sep_slots == 0, "--wb-window is a separate experiment"
+    assert set(args.window_pattern) == {"L"}, "--wb-window replaces the causal mask: use --window-pattern L"
+    from nanochat.lanes import LANE_TOKEN
+    from nanochat.wbisect import (WBBatches, bridged_lanes_steps, lane_order_steps, pos_ids as wb_pos_ids,
+                                  seeded_lanes_steps, two_stream_mask, wb_forward, wb_steps)
+    wb_mask_id = tokenizer.encode_special(LANE_TOKEN)
+    if args.wb_order == "lanes":
+        _wb_steps = lane_order_steps(args.max_seq_len, args.wb_prefix, args.wb_lanes)
+        _wb_name = f"two-stream plain lanes L={args.wb_lanes}"
+    elif args.wb_order == "seeded":                    # --wb-window is the seed window here (default 1)
+        _wb_steps = seeded_lanes_steps(args.max_seq_len, args.wb_prefix, args.wb_lanes, max(1, args.wb_window))
+        _wb_name = f"seeded middle-out lanes K={args.wb_lanes}, seed window {max(1, args.wb_window)}"
+    elif args.wb_lanes > 0:
+        _wb_steps = bridged_lanes_steps(args.max_seq_len, args.wb_prefix, args.wb_lanes, args.wb_window)
+        _wb_name = f"bridged lanes L={args.wb_lanes}, n={args.wb_window}"
+    else:
+        _wb_steps = wb_steps(args.max_seq_len, args.wb_prefix, args.wb_window)
+        _wb_name = f"window bisection, n={args.wb_window}"
+    print0(f"[{_wb_name}] prefix {args.wb_prefix}, "
+           f"{int(_wb_steps.max()) + 1} parallel steps for the {args.max_seq_len - args.wb_prefix}-token block, "
+           f"mask token {wb_mask_id}")
+if args.sep_slots > 0:
+    assert args.lanes == 0 and args.prompt_window == 0, "--sep-slots is a separate experiment"
+    from nanochat.lanes import LANE_TOKEN, SeparatorBatches, separator_batch, separator_mask
+    sep_token_id = tokenizer.encode_special(LANE_TOKEN)
+    print0(f"[separator] {args.sep_slots} slots at {args.sep_split}"
+           f"{' (control: full attention)' if args.sep_full else ''}, slot token {sep_token_id}")
+if args.lanes > 0:
+    from nanochat.lanes import LANE_TOKEN, LaneBatches, lane_inputs, lane_mask, sample_prefix_len
+    lane_token_id = tokenizer.encode_special(LANE_TOKEN)
+    lane_eval_prefix = (args.lane_eval_prefix // args.lanes) * args.lanes
+    print0(f"[lanes] L={args.lanes}, lane-start token {LANE_TOKEN}={lane_token_id}, train prefix <= "
+           f"{args.lane_prefix_max}, eval prefix {lane_eval_prefix}")
+    if args.lane_align_window > 0:
+        from nanochat.lanes import PAD_TOKEN, aligned_lanes_rows, sentence_end_table
+        lane_pad_id = tokenizer.encode_special(PAD_TOKEN)
+        lane_ends = sentence_end_table(tokenizer, tokenizer.get_vocab_size())
+        lane_bos_id = tokenizer.get_bos_token_id()
+        print0(f"[lanes] sentence-aligned: window {args.lane_align_window}, pad token {PAD_TOKEN}={lane_pad_id}, "
+               f"{int(lane_ends.sum())} sentence-end token ids")
+
+        class AlignedLaneBatches:
+            def __init__(self, batches, P):
+                self.batches, self.P = batches, P
+
+            def __iter__(self):
+                for _x, _y in self.batches:
+                    _xa, _ya, _, _ = aligned_lanes_rows(_x, _y, self.P, args.lanes, lane_token_id, lane_pad_id,
+                                                        lane_ends, lane_bos_id, args.lane_align_window)
+                    yield _xa, _ya
 token_bytes = get_token_bytes(device=device, tokenizer_dir=args.tokenizer_dir)
 vocab_size = tokenizer.get_vocab_size()
 print0(f"Vocab size: {vocab_size:,}")
 
 # -----------------------------------------------------------------------------
 # Initialize the Model
+
+# S13 class map: loaded before the model is built, since the class count sizes the class table.
+_class_map = None
+if getattr(args, 'splice', 0) > 0:
+    import numpy as _np
+    assert args.class_map and args.lanes > 0, '--splice needs --class-map and --lanes'
+    _class_map = torch.from_numpy(_np.load(args.class_map).astype('int64'))
+_class_k = int(_class_map.max()) + 1 if _class_map is not None else 0
+
 
 def build_model_meta(depth, apply_dim_override=True):
     """Build a model on meta device for a given depth (shapes/dtypes only, no data).
@@ -1445,9 +1582,44 @@ def build_model_meta(depth, apply_dim_override=True):
         sap_latent_dim=int(getattr(args, 'sap_latent_dim', 64)),
         sap_free_bits=float(getattr(args, 'sap_free_bits', 0.25)),
         sap_kl_anneal_steps=int(getattr(args, 'sap_kl_anneal_steps', 2000)),
+        sap_gumbel_tau=float(getattr(args, 'sap_gumbel_tau', 1.0)),
         sap_cp_components=int(getattr(args, 'sap_cp_components', 8)),
+        sap_field_rank=int(getattr(args, 'sap_field_rank', 8)),
+        sap_field_samples=int(getattr(args, 'sap_field_samples', 4)),
+        sap_field_energy_weight=float(getattr(args, 'sap_field_energy_weight', 0.25)),
+        sap_field_topk=int(getattr(args, 'sap_field_topk', 16)),
         sap_wta_k=int(getattr(args, 'sap_wta_k', 4)),
         sap_jacobi_sweeps=int(getattr(args, 'sap_jacobi_sweeps', 2)),
+        sap_sir_topk=int(getattr(args, 'sap_sir_topk', 16)),
+        sap_sir_rank=int(getattr(args, 'sap_sir_rank', 32)),
+        sap_sir_anchor_stride=int(getattr(args, 'sap_sir_anchor_stride', 16)),
+        sap_sir_fine_stride=int(getattr(args, 'sap_sir_fine_stride', 4)),
+        sap_sir_refine_frac=float(getattr(args, 'sap_sir_refine_frac', 0.25)),
+        sap_sir_tree_levels=int(getattr(args, 'sap_sir_tree_levels', 0)),
+        sap_sir_train_samples=int(getattr(args, 'sap_sir_train_samples', 4)),
+        sap_sir_policy_weight=float(getattr(args, 'sap_sir_policy_weight', 1.0)),
+        sap_sir_posterior_mix=float(getattr(args, 'sap_sir_posterior_mix', 0.5)),
+        sap_sir_draft_weight=float(getattr(args, 'sap_sir_draft_weight', 1.0)),
+        sap_sir_context_weight=float(getattr(args, 'sap_sir_context_weight', 0.25)),
+        sap_sir_energy_weight=float(getattr(args, 'sap_sir_energy_weight', 0.25)),
+        sap_trunk_grad=float(getattr(args, 'sap_trunk_grad', 1.0)),
+        sap_lattice_k=int(getattr(args, 'sap_lattice_k', 64)),
+        sap_pair_rank=int(getattr(args, 'sap_pair_rank', 32)),
+        sap_tt_rank=int(getattr(args, 'sap_tt_rank', 32)),
+        sap_cp_codes=int(getattr(args, 'sap_cp_codes', 256)),
+        sap_nce_props=int(getattr(args, 'sap_nce_props', 0)),
+        sap_nce_neg=int(getattr(args, 'sap_nce_neg', 4)),
+        sap_nce_weight=float(getattr(args, 'sap_nce_weight', 1.0)),
+        sap_table_path=str(getattr(args, 'sap_table_path', '') or ''),
+        sap_supp_min_count=int(getattr(args, 'sap_supp_min_count', 0)),
+        sap_supp_penalty=float(getattr(args, 'sap_supp_penalty', 20.0)),
+        sap_soft_eps=float(getattr(args, 'sap_soft_eps', 0.0)),
+        sap_code_classes=int(getattr(args, 'sap_code_classes', 128)),
+        sap_cut_pre_layers=int(getattr(args, 'sap_cut_pre_layers', 1)),
+        sap_depth_layers=int(getattr(args, 'sap_depth_layers', 2)),
+        sap_depth_share=int(getattr(args, 'sap_depth_share', 0)),
+        sap_depth_bottom=int(getattr(args, 'sap_depth_bottom', 0)),
+        splice_k=_class_k,
 
     )
     # Stash tokenizer_dir on config for lazy prior loading in EET
@@ -1483,6 +1655,10 @@ if args.seed >= 0:
     torch.cuda.manual_seed_all(args.seed)
     print0(f"Seeded weight init with --seed {args.seed}")
 model.init_weights() # 3) All tensors get initialized
+if _class_map is not None:                       # S13: the class map is part of the checkpoint
+    assert _class_map.numel() == model.config.vocab_size, (_class_map.numel(), model.config.vocab_size)
+    model.class_of_token.copy_(_class_map.to(model.class_of_token.device))
+    print0(f"[S13] class map {args.class_map}: {_class_k} classes, splice codes on")
 # 3b) Swap in the binary layers. AFTER init_weights because binarise_model_ copies
 # the donor weights in as latent values (and repairs zero-initialised rows, which
 # nanochat produces for every c_proj and which a detached mean|W| scale would
@@ -1662,6 +1838,27 @@ if resuming:
     model.load_state_dict(model_data, strict=True, assign=True)
     del model_data # free up this memory after the copy
     eet_ever_routed = meta_data.get("eet_ever_routed", False)
+
+# SAP v4 Stage 2: start from a trained dense model and train only the block head. With the
+# trunk frozen this is the detached regime (sap_trunk_grad=0) at its end point, so the head's
+# block bpb is measured on exactly the trunk a detached co-trained run would converge to.
+if getattr(args, "sap_init_trunk", "") and not resuming:
+    from nanochat.checkpoint_manager import find_last_step
+    _step = args.sap_init_step if args.sap_init_step >= 0 else find_last_step(args.sap_init_trunk)
+    _md, _, _ = load_checkpoint(args.sap_init_trunk, _step, device, load_optimizer=False, rank=ddp_rank)
+    _md = {k.removeprefix("_orig_mod."): v for k, v in _md.items()}
+    _missing, _unexpected = model.load_state_dict(_md, strict=False)
+    _bad = [k for k in _missing if not k.startswith("sap_head.")]
+    assert not _bad and not _unexpected, f"trunk checkpoint mismatch: missing {_bad[:5]}, unexpected {list(_unexpected)[:5]}"
+    model.sap_sync_depth_copies()      # depth_local's slot layers start as copies of the loaded trunk's
+    print0(f"[SAP] trunk loaded from {args.sap_init_trunk} step {_step}; {len(_missing)} head tensors start fresh")
+    del _md
+if getattr(args, "sap_freeze_trunk", 0):
+    assert model.sap_head is not None, "--sap-freeze-trunk needs a block head"
+    _head_ids = {id(p) for p in model.sap_head.parameters()}
+    for _p in model.parameters():
+        _p.requires_grad_(id(_p) in _head_ids)
+    print0(f"[SAP] trunk frozen: {sum(p.numel() for p in model.sap_head.parameters()):,} head parameters train")
 
 # -----------------------------------------------------------------------------
 # Inductor can hand a fused pointwise kernel a block size larger than its own
@@ -1917,6 +2114,15 @@ optimizer = orig_model.setup_optimizer(
     # Gate LR scale (default 0.3×; lower values slow gate learning relative to structural weights)
     gate_lr_scale=args.remix_gate_lr_scale,
 )
+
+if getattr(args, "sap_freeze_trunk", 0):
+    # requires_grad=False stops new gradients, but momentum or weight decay could still move a
+    # registered tensor: prune the frozen ones from the optimizer itself (as sap_synthetic does).
+    for _g in optimizer.param_groups:
+        _g["params"] = [p for p in _g["params"] if p.requires_grad]
+    for _p in list(optimizer.state):
+        if not _p.requires_grad:
+            del optimizer.state[_p]
 
 if resuming:
     optimizer.load_state_dict(optimizer_data)
@@ -2391,21 +2597,49 @@ while True:
                 else:
                     eval_kwargs['eet_do_route'] = False
                     eval_kwargs['eet_phase'] = 1
+            if args.prompt_window > 0:
+                eval_kwargs['lane_mask'] = prompt_window_mask(args.max_seq_len, args.prompt_len, args.prompt_window, device)
+            if two_stream:
+                val_loader = WBBatches(val_loader, wb_mask_id)
+                eval_kwargs['lane_mask'] = two_stream_mask(_wb_steps, device)
+                eval_kwargs['pos_ids'] = wb_pos_ids(args.max_seq_len, device)
+                eval_kwargs['head_from'] = args.max_seq_len
+            if args.sep_slots > 0:
+                val_loader = SeparatorBatches(val_loader, args.sep_split, args.sep_slots, sep_token_id)
+                if not args.sep_full:
+                    eval_kwargs['lane_mask'] = separator_mask(args.max_seq_len, args.sep_split, args.sep_slots, device)
+            if args.lanes > 0:
+                # Lane order on every row: the same tokens the dense model is scored on.
+                if args.splice > 0:                     # S13: the model builds the spliced layout itself
+                    eval_kwargs['splice'] = (lane_eval_prefix, args.lanes, lane_token_id)
+                else:
+                    val_loader = AlignedLaneBatches(val_loader, lane_eval_prefix) if args.lane_align_window > 0 \
+                        else LaneBatches(val_loader, lane_eval_prefix, args.lanes, lane_token_id)
+                    eval_kwargs['lane_mask'] = lane_mask(args.max_seq_len, lane_eval_prefix, args.lanes, device)
             val_bpb, val_loss = evaluate_bpb(model, val_loader, eval_steps, token_bytes, **eval_kwargs)
         print0(f"Step {step:05d} | Validation bpb: {val_bpb:.6f} | val_loss: {val_loss:.6f}")
         # SAP: the block head's bpb next to the trunk's next-token bpb on the same tokens.
         # Run on the uncompiled module: block shapes differ from the training shapes.
         if getattr(orig_model, 'sap_head', None) is not None and args.sap_eval_steps > 0:
             from nanochat.block_head import evaluate_block_bpb
-            with disable_fp8(model):
-                _sap_eval = evaluate_block_bpb(orig_model, build_val_loader(), args.sap_eval_steps, token_bytes)
-            _bb = _sap_eval["block_bpb"]
-            print0(f"Step {step:05d} | SAP block bpb: {'n/a' if _bb is None else f'{_bb:.6f}'} "
-                   f"| next-token bpb on the same tokens: {_sap_eval['ntp_bpb_same_tokens']:.6f} "
-                   f"| latent sensitivity: {_sap_eval['latent_sensitivity_nats']} nats")
-            print0(f"SAP_EVAL_JSON {json.dumps({'step': step, **_sap_eval})}")
-            wandb_run.log({"step": step, "total_training_flops": flops_so_far,
-                           **{f"sap/{k}": v for k, v in _sap_eval.items() if v is not None}})
+            try:
+                with disable_fp8(model):
+                    _sap_eval = evaluate_block_bpb(
+                        orig_model, build_val_loader(), args.sap_eval_steps, token_bytes)
+                _bb = _sap_eval["block_bpb"]
+                _ntp = _sap_eval["ntp_bpb_same_tokens"]
+                print0(f"Step {step:05d} | SAP block bpb: {'n/a' if _bb is None else f'{_bb:.6f}'} "
+                       f"| next-token bpb on the same tokens: {'n/a' if _ntp is None else f'{_ntp:.6f}'} "
+                       f"| latent sensitivity: {_sap_eval['latent_sensitivity_nats']} nats")
+                print0(f"SAP_EVAL_JSON {json.dumps({'step': step, **_sap_eval})}")
+                wandb_run.log({"step": step, "total_training_flops": flops_so_far,
+                               **{f"sap/{k}": v for k, v in _sap_eval.items() if v is not None}})
+            except Exception as e:
+                # SAP diagnostics are optional and must never discard a completed training run.
+                # The final checkpoint below remains usable for a repaired post-eval.
+                import traceback
+                print0(f"[SAP] diagnostics failed; checkpoint save will continue: {e}")
+                traceback.print_exc()
         # EET P02 T0B: per-layer vocabulary coverage of the routing policy
         if getattr(args, 'eet_coverage_diag', 0):
             _cov_model = model.module if hasattr(model, 'module') else model
@@ -2700,6 +2934,27 @@ while True:
                              eet_step=eet_step_tensor,
                              eet_total_steps=eet_total_steps_tensor,
                              eet_dense_x=eet_dense_x)
+        elif args.prompt_window > 0:
+            loss = model(x, y, lane_mask=prompt_window_mask(x.size(1), args.prompt_len, args.prompt_window, x.device))
+        elif two_stream:
+            loss = wb_forward(model, x, _wb_steps, wb_mask_id)
+        elif args.sep_slots > 0:
+            _xs, _ys = separator_batch(x, y, args.sep_split, args.sep_slots, sep_token_id)
+            loss = model(_xs, _ys) if args.sep_full else \
+                model(_xs, _ys, lane_mask=separator_mask(x.size(1), args.sep_split, args.sep_slots, x.device))
+        elif args.lanes > 0:
+            # Lane order with a fresh causal prefix length each micro-step (same mask shape, so
+            # the compiled graph is reused).
+            _P = sample_prefix_len(args.lane_prefix_max, args.lanes)
+            if args.lane_align_window > 0:
+                _xa, _ya, _, _ = aligned_lanes_rows(x, y, _P, args.lanes, lane_token_id, lane_pad_id, lane_ends,
+                                                    lane_bos_id, args.lane_align_window)
+                loss = model(_xa, _ya, lane_mask=lane_mask(x.size(1), _P, args.lanes, x.device))
+            elif args.splice > 0:
+                loss = model(x, y, splice=(_P, args.lanes, lane_token_id))
+            else:
+                loss = model(lane_inputs(x, _P, args.lanes, lane_token_id), y,
+                             lane_mask=lane_mask(x.size(1), _P, args.lanes, x.device))
         else:
             loss = model(x, y)
             
