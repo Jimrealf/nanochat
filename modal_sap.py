@@ -2807,3 +2807,133 @@ def s06_learned(steps: int = 8000, depth: int = 4, width: int = 128,
     print(compiled["text"])
     print(f"local compiled log: {os.path.abspath(out)}")
     print(f"volume compiled log: {compiled['path']}")
+
+
+# ----------------------------------------------------------------------------- S14: strict T=L
+# s14_sap_strict_tl_brainstorm.md. E0 (the order oracle) and E2a (the separator bound) score text
+# with any-order models from the Hugging Face hub, in images pinned to the transformers and torch
+# their model cards name: their remote code predates this repo's transformers. E1 needs no new
+# code: modal run modal_sap.py::s11_ladder --depth 8 --specs dense:1:1,wb:1:1:1,wb:16:1:1 --name s14_e1
+S14 = f"{VOL}/out/s14"
+S14_ORACLES = {"llada": "GSAI-ML/LLaDA-8B-Base", "dream": "Dream-org/Dream-v0-Base-7B"}
+
+
+def _s14_oracle_image(transformers):
+    return (
+        modal.Image.debian_slim(python_version="3.11")
+        .pip_install("torch==2.5.1", f"transformers=={transformers}", "numpy<2", "pyarrow", "sentencepiece",
+                     "protobuf", "einops")
+        .env({"PYTHONPATH": SRC, "PYTHONUNBUFFERED": "1", "TOKENIZERS_PARALLELISM": "false"})
+        .add_local_dir("nanochat", remote_path=f"{SRC}/nanochat", ignore=["**/__pycache__", "**/*.pyc"])
+        .add_local_dir("scripts", remote_path=f"{SRC}/scripts", ignore=["**/__pycache__", "**/*.pyc"])
+    )
+
+
+class _Tee:
+    """stdout to the Modal log and to a log file on the volume."""
+
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, s):
+        for st in self.streams:
+            st.write(s)
+        return len(s)
+
+    def flush(self):
+        for st in self.streams:
+            st.flush()
+
+
+def _s14_oracle_run(argv, name):
+    """One E0 shard in this process: every finished row is saved and committed to the volume, so a
+    rerun of the same command resumes where a lost container stopped."""
+    import contextlib
+    import traceback
+    try:
+        VOLUME.reload()
+    except Exception as e:
+        print(f"Notice: VOLUME.reload() skipped or failed: {e}")
+    if SRC not in sys.path:
+        sys.path.insert(0, SRC)
+    from scripts.sap_order_oracle import main
+    local_log, code = f"/tmp/{name}.log", 0           # no file stays open on the volume across commits
+    with open(local_log, "w") as log:
+        tee = _Tee(sys.stdout, log)
+        with contextlib.redirect_stdout(tee):
+            try:
+                main(argv, commit=VOLUME.commit)
+            except Exception:
+                traceback.print_exc(file=tee)
+                code = 1
+    text = open(local_log).read()
+    os.makedirs(f"{S14}/logs", exist_ok=True)
+    with open(f"{S14}/logs/{name}.log", "a") as f:
+        f.write(text)
+    VOLUME.commit()
+    return {"name": name, "returncode": code, "tail": text[-4000:]}
+
+
+@app.function(image=_s14_oracle_image("4.38.2"), gpu="H100", timeout=10 * 3600, volumes={VOL: VOLUME})
+def s14_oracle_llada(argv: list, name: str) -> dict:
+    return _s14_oracle_run(argv, name)
+
+
+@app.function(image=_s14_oracle_image("4.46.2"), gpu="H100", timeout=10 * 3600, volumes={VOL: VOLUME})
+def s14_oracle_dream(argv: list, name: str) -> dict:
+    return _s14_oracle_run(argv, name)
+
+
+@app.function(timeout=30 * 60, volumes={VOL: VOLUME})
+def s14_cpu_job(name: str, cmd: list) -> dict:
+    """A CPU step (merge, compare) in the work dir, logged to the volume."""
+    _workdir(S03_TOK_NAME)
+    code, text = _run_logged([sys.executable, "-m", *cmd], f"{S14}/logs/{name}.log")
+    VOLUME.commit()
+    return {"name": name, "returncode": code, "tail": text[-4000:]}
+
+
+@app.local_entrypoint()
+def s14_order_oracle(oracle: str = "llada", rows: int = 0, shards: int = 4, orders: str = "",
+                     ar_ref: str = "Qwen/Qwen2.5-7B", batch: int = 8, smoke: bool = False):
+    """S14 E0 + E2a: per-order TC (information) and gap (oracle difficulty) on real text, and the
+    bits a separator must carry, under an 8B any-order oracle (scripts/sap_order_oracle.py). Rows
+    are split over `shards` H100s; rerunning the same command resumes from the saved rows, then
+    merges into out/s14/s14_oracle_<oracle>.json.
+        modal run modal_sap.py::s14_order_oracle --smoke            # 2 short rows: images, paths, probes
+        modal run modal_sap.py::s14_order_oracle                    # LLaDA-8B-Base, 32 rows (primary)
+        modal run modal_sap.py::s14_order_oracle --oracle dream     # Dream-v0-Base-7B, 16 rows (check)
+        modal run modal_sap.py::s14_order_oracle_compare            # cross-oracle readings"""
+    fn = {"llada": s14_oracle_llada, "dream": s14_oracle_dream}[oracle]
+    rows = rows or (32 if oracle == "llada" else 16)
+    tag = f"s14_oracle_{oracle}"
+    argv = ["--oracle", S14_ORACLES[oracle], "--data-dir", f"{VOL}/data", "--rows", str(rows), "--batch", str(batch)]
+    argv += ["--ar-ref", ar_ref] if ar_ref else []
+    argv += ["--orders", orders] if orders else []
+    if smoke:
+        tag, rows, shards = tag + "_smoke", 2, 2
+        argv += ["--rows", "2", "--prefix", "32", "--block", "128", "--orders", "l2r,bisect1,lanes8,snap8,random6",
+                 "--sep-cut", "64", "--sep-span", "32", "--sep-windows", "0,1,4"]
+    jobs = [(argv + ["--shard", str(k), "--num-shards", str(shards), "--raw", f"{S14}/raw/{tag}_{k}of{shards}.pt"],
+             f"{tag}_{k}of{shards}") for k in range(shards)]
+    print(f"S14 E0 with {S14_ORACLES[oracle]}: {rows} rows over {shards} H100 shards")
+    failed = []
+    for (_, name), res in zip(jobs, fn.starmap(jobs, return_exceptions=True)):
+        if isinstance(res, BaseException) or res["returncode"] != 0:
+            failed.append(name)
+            print(f"--- {name} FAILED: {res!r}" if isinstance(res, BaseException) else f"--- {name} FAILED\n{res['tail']}")
+        else:
+            print(f"--- {name}\n{res['tail'][-1200:]}")
+    if failed:
+        raise SystemExit(f"shards failed: {failed}. Rerun the same command: finished rows are kept.")
+    res = s14_cpu_job.remote(f"{tag}_merge", ["scripts.sap_order_oracle", "--merge", *[a[-1] for a, _ in jobs],
+                                              "--out", f"{S14}/{tag}.json"])
+    print(res["tail"])
+
+
+@app.local_entrypoint()
+def s14_order_oracle_compare(a: str = "s14_oracle_llada", b: str = "s14_oracle_dream"):
+    """The cross-oracle E0 readings: Spearman of the orders' cost and bisection's gap in both."""
+    res = s14_cpu_job.remote("s14_oracle_compare", ["scripts.sap_order_oracle", "--compare", f"{S14}/{a}.json",
+                                                    f"{S14}/{b}.json", "--out", f"{S14}/s14_oracle_compare.json"])
+    print(res["tail"])

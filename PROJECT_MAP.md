@@ -738,6 +738,21 @@ scale modes behave, with `none` asserted to blow the output up because that is t
     - `scripts/sap_chunk_ae.py`: Q2 chunk autoencoder for SV-D's necessary condition.
     - Modal: `modal_sap.py::s11_ladder` spec `sp:L:MULT:SEED`, `s13_roofline`, `s13_chunk_ae`.
     - Tests: `tests/test_splice.py` (layout and visibility; the factorisation sums to 1 over every block).
+  - S14 (`s14_sap_strict_tl_brainstorm.md`), the strict seed:
+    - `scripts/sap_order_oracle.py`: the E0 order oracle and the E2a separator bound. Nothing is trained.
+      - An any-order masked diffusion LM (LLaDA-8B-Base or Dream-v0-Base-7B) scores real text in a generation order twice: in parallel per step, and as the order's exact chain (one token per pass) (`score_order`).
+      - TC = par − chain is same-step dependence. gap = chain(order) − chain(l2r) is the order's difficulty for the oracle.
+      - Orders (`order_steps`): l2r, `bisectN` (window bisection via `nanochat/bridge.py`), `lanesL`, `snapW` (anchors snapped to sentence starts, `snap_levels`), `randomR`.
+      - `separator_scores` and `separator_summary`: the NLL after a cut with the far past hidden, giving the bits any separator must carry.
+      - `MaskedLMOracle`: logit-shift detection and known mask ids. `context_probe` flags an oracle that ignores right context. `ar_reference_bpb`.
+      - `score_rows` / `finalize` / `readings`: sharded (`--shard`, `--num-shards`), resumable (`--raw`), `--merge`, and `--compare` (cross-oracle Spearman). Pre-registered `validity` and `readings` are written into the JSON.
+    - Modal: `modal_sap.py::s14_order_oracle` (shards on H100s in images pinned to each model card's transformers, then a merge) and `s14_order_oracle_compare`; the workers are `s14_oracle_llada`, `s14_oracle_dream` and `s14_cpu_job`. E1 reuses `s11_ladder` at depth 8.
+    - Tests: `tests/test_order_oracle.py`. It uses an exact Markov-chain oracle to check:
+      - every chain equals the block NLL;
+      - TC = 0 for independent tokens and for bisection of a Markov chain;
+      - one token separates a Markov chain;
+      - shift detection, and the causal-oracle probe;
+      - sharded and resumed runs merge to the single run.
   - Modal: `modal_sap.py::s10_toy`, which runs `s10_toy_run` jobs on L4 for arms x T x depth x seeds.
   - Tests: `tests/test_ptp.py` (45).
 - Trunk-depth slots (`nanochat/gpt.py`): `_sap_depth_tools` (gradient scaling and shared-or-copy blocks), `_sap_depth_entry` (slot entry state and x0: the trunk's state at the block start plus the token's embedding, or the `depth_mask` vector for a slot whose token is unknown), `_sap_depth_layers` (any slot set through the top m layers, reading the prefix keys/values at each layer under a slot-visibility mask), `_sap_depth_local_logprob` (exact chain rule), `_sap_depth_tree_logprob` (exact bisection-round factorisation; layout from `block_head.depth_tree_layout`), `_sap_depth_sample` / `_sap_depth_tree_sample` (graph-safe decoders that read the trunk's KV cache, or the trained copies' own cache from `sap_depth_copy_cache` / `sap_depth_extend_copy_cache`), `_sap_depth_loss` (training loss over per-row block starts).

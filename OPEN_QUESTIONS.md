@@ -1132,3 +1132,41 @@ The user asked to go back to the one-head T=L seed (`s13_sap_brainstorm.md`).
 
 **Decision for the user.** One pass (SV-D, true T=L, samples-only bar) or constant rounds (SV-A, exact bpb, S+1 rounds)? The Q3 timing above is the evidence for that choice.
 
+
+## SAP S14: is the strict seed limited by information or by computation? (open 2026-10-05)
+
+The user asked for the strict version of the seed (`s14_sap_strict_tl_brainstorm.md`):
+- 1920 tokens in at most 13 parallel levels;
+- exact likelihood or an honest bound;
+- from scratch, with no teacher;
+- bar: within 1.01x of dense-1x at ≤ 4x tokens, with ≥ 20x decode at batch 1.
+
+**Funnel.** 53 candidates → 5 mechanisms plus 3 ingredients:
+- PCB, pyramid-capacity bisection;
+- BSB, boundary-snapped bisection;
+- LSB, learned-separator Bridge LM;
+- CVL, per-level coordination variable;
+- VAR-T, temporal multi-scale codes.
+
+**Decisive unknown.** Every measured strict-order tax (window bisection 7.8 to 24%, lanes 3.9 to 10.7%) mixes same-step TC (information) with the learning/computation gap. Nothing has separated them on real text.
+
+**Stage 0, ready to run on Modal.** About 10 to 13 H100-hours.
+- E0 + E2a: `modal run modal_sap.py::s14_order_oracle` (LLaDA-8B-Base, 32 rows), `--oracle dream` (Dream-v0-Base-7B, 16 rows), then `s14_order_oracle_compare`.
+  - Measures TC and gap per order with bootstrap CIs.
+  - Measures the bits any single-position separator must carry (an information bound covering every code of B bits).
+- E1: `modal run modal_sap.py::s11_ladder --depth 8 --specs dense:1:1,wb:1:1:1,wb:16:1:1 --name s14_e1`.
+  - Measures whether the window-bisection tax shrinks from d4 to d8.
+- E2b (training with codes) runs only if E2a leaves a ≤ 48-bit separator possible.
+
+**Pre-registered readings** (in the brainstorm, §6):
+
+| reading | condition |
+|---|---|
+| Strict token orders closed on information | bisect1 TC ≥ 3% |
+| Exact strict orders closed on computation | bisect1 gap ≥ 5% in both oracles |
+| PCB is live | some ≤ 13-step order with TC ≤ 1% and gap ≤ 2% |
+| BSB is live | snapping cuts TC + gap by ≥ 15% |
+| LSB is dead | a single-position separator needs > 48 bits |
+| PCB is supported | tax(d8)/tax(d4) ≤ 0.7 |
+
+**Decision for the user.** None until Stage 0 returns. Then pick which Stage 1 gates to run.

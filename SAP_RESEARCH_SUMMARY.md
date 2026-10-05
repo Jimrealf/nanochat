@@ -28,6 +28,7 @@ The project investigated whether standard left-to-right autoregression ($T=1$ to
   Phase 4: Attack on the Seam Tax (S12, S13, and 2026-10-05 Audit)
   ↳ Eliminated: Padding, splice codes, continuous chunk-lanes (DCL), parareal draft, halos.
   ↳ Frontier: Unequal Error Protection (UEP) boundary loss weighting (M5) + long-context N >= 4096.
+  ↳ CORRECTION 2026-10-05: the 2026-10-05 audit is invalid (dense model scored as lanes); M5 is untested. See §4.
 ```
 
 ---
@@ -101,10 +102,10 @@ The project investigated whether standard left-to-right autoregression ($T=1$ to
   2. **Wavefront / Staggered Lanes (S12):** Sparse triangular context serializes generation without eliminating the cold start. **KILLED.**
   3. **Brown-Class Splice Codes (S13 Q1):** Predicting discrete syntactic classes at junctions cost 5.03 nats to encode, saving 0% net tax. **KILLED.**
   4. **Discrete Continuous Chunk-Lanes / DCL (S13 Audit):** Continuous latent MSE loss caused greedy decoding loops ("the reaction the reaction...") and word salad. Claims of 220× speedup were unmeasured pre-code estimates. **KILLED.**
-  5. **Parareal Micro-Draft Boundary (2026-10-05 Audit):** Prompt probe had **0.00% top-5 accuracy** predicting tokens 60+ steps ahead. Natural language entropy over long intervals prevents boundary guessing. **KILLED.**
-  6. **Ghost-Cell Halo Overlap (2026-10-05 Audit):** Unconditioned ghost tokens hallucinated divergent branches, increasing loss by 1.3 to 2.7 nats. **KILLED.**
-  7. **Speculative Start Verification (2026-10-05 Audit):** Top-1 speculative accuracy was **0.00%**, triggering 100% rollbacks. **KILLED.**
-  8. **Discardable Soliton Buffers (2026-10-05 Audit):** Proved zero improvement by the **Data Processing Inequality**. **KILLED.**
+  5. **Parareal Micro-Draft Boundary (2026-10-05 Audit):** *(audit invalid; untested, see §4 correction)* Prompt probe had **0.00% top-5 accuracy** predicting tokens 60+ steps ahead. Natural language entropy over long intervals prevents boundary guessing. **KILLED.**
+  6. **Ghost-Cell Halo Overlap (2026-10-05 Audit):** *(audit invalid; untested, see §4 correction)* Unconditioned ghost tokens hallucinated divergent branches, increasing loss by 1.3 to 2.7 nats. **KILLED.**
+  7. **Speculative Start Verification (2026-10-05 Audit):** *(audit invalid; untested, see §4 correction)* Top-1 speculative accuracy was **0.00%**, triggering 100% rollbacks. **KILLED.**
+  8. **Discardable Soliton Buffers (2026-10-05 Audit):** *(audit invalid; untested, see §4 correction)* Proved zero improvement by the **Data Processing Inequality**. **KILLED.**
 
 ---
 
@@ -126,6 +127,14 @@ Reviewers at NeurIPS / ICLR will contrast Plain Lanes with parallel generation m
 ---
 
 ## 4. The Surviving Frontier: UEP Boundary Weighting
+
+> **Correction (2026-10-05):** `scripts/validate_all_survivors.py` loaded only the dense checkpoint `S07_dense_L_s1` and scored it in lane layout.
+>
+> - M1 and M3 compared the prediction for position P with the token at P+S.
+> - M7 compared two identical calls.
+> - M5's 20% cut is assumed, and its "0.0457 bpb" is bits per token.
+>
+> Items 5 to 8 of §2 and this section are therefore untested, not killed or surviving. Details are in the correction at the top of `LEARNINGS.md`. The strict-thesis follow-up is `s14_sap_strict_tl_brainstorm.md`.
 
 From the 8 candidates evaluated on October 5, 2026 (`scripts/validate_all_survivors.py`):
 

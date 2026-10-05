@@ -4,6 +4,45 @@ Durable concepts learned and misunderstandings corrected during this project.
 
 ---
 
+## 2026-10-05: Correction: the lane-start survivor audit (`scripts/validate_all_survivors.py`) tests nothing it claims
+
+The "8 Lane-Start Tax Reduction Candidates" section near the end of this file (and `SAP_RESEARCH_SUMMARY.md` §2 items 5 to 8 and §4) reports kills and one survivor. Reading the script shows that none of them is evidence:
+
+- **The model.** `run_validation` loads only `--dense-dir` (`S07_dense_L_s1`). Every "plain lanes" number is that dense model fed lane inputs under a lane mask. No lanes-trained checkpoint was loaded, so nothing follows about trained lanes or about mechanisms that change training.
+- **M1 and M3 scored the wrong position.**
+  - The prompt's last state was compared with the token at P+S, lane 1's start. That state is the next-token prediction for position P, which is 60 positions earlier.
+  - "0.00% accuracy" measures that offset, not boundary predictability.
+  - M1's "linear probe" was the LM head, not a trained probe.
+- **M7 compared a call with itself.** `loss_0` and `loss_1` come from identical inputs (no dummy token is inserted), so the reported 0.0000 nats holds by construction.
+- **M5 was never measured.**
+  - The 20% boundary cut is assumed (`idealized_cut_nats = 0.20 * total_boundary_excess`).
+  - Reweighting a loss adds no information to the model (the S14 brainstorm drops level weighting for the same reason).
+  - "0.0457 bpb" is bits per token: nats per token divided by ln 2, never divided by bytes per token.
+- **M2, M4, M6 and M8** are inference-time edits of the same untrained-for-lanes dense model.
+
+**Status.** M1 to M8 are untested, neither killed nor surviving. The S14 plan relies on none of them.
+
+**The learning.** Before reading a number off an oracle, check three things:
+- which checkpoint produced it;
+- that the prediction and the target refer to the same position;
+- that the two arms of a comparison differ in their inputs.
+
+---
+
+## 2026-10-05: S14: two offline decompositions for parallel orders
+
+- **Information against computation.** For any exact generation order, NLL = H(X) + Σ over steps of TC(same-step draws | past) + gap. An any-order model (a masked diffusion LM) separates the terms on real text without training anything:
+  - parallel score (one pass per step) minus the order's own chain (one token per pass) = TC, the floor any model of that order pays;
+  - chain(order) minus chain(l2r) = the order's difficulty for that model;
+  - under an exact oracle every chain equals the block NLL, so the gap is zero.
+  - Bisection of a first-order Markov chain has TC = 0 exactly: each new midpoint is independent of its siblings given its brackets. The tests check this.
+- **Separator size is information-bounded.** A code C of B bits attached to a window gives I(future; C | window) ≤ H(C) ≤ B.
+  - Any such separator therefore costs at least I(future; far past | window) − B bits over full context, whether it is learned, clustered or hand-made.
+  - Hiding the far past from a strong LM estimates that information. One offline measurement then bounds a whole family of code designs, where a training run tests one code at a time.
+  - One caveat: the estimate uses the model's own cross-entropies. A weaker model tends to underuse long context, which makes the bound conservative for kills.
+
+---
+
 ## 2026-10-05: Post-Mortem & Verified Empirical Results: Flow Matching vs. Discrete Chunk-Lanes
 
 We trained Proposal D (OU Flow), Proposal B (Schrödinger Bridge), Proposal A (Continuous Chunk-Lanes Flow), and Discrete Chunk-Lanes (DCL) on H100 clusters (FineWeb-Edu, 196.6M tokens, d8 scale) and evaluated against the d8 baseline.
@@ -4779,6 +4818,8 @@ speed number or d8 BPB result should be reported for this instantiation.
 ---
 
 ## 2026-10-05: Empirical & Mathematical Validation of 8 Lane-Start Tax Reduction Candidates
+
+**INVALID (corrected 2026-10-05, see the correction entry at the top of this file):** the "plain lanes" model below is the dense checkpoint, M1 and M3 score the wrong position, M7 compares a call with itself, and M5 was never measured.
 
 Evaluated on `out/sap_flow_text_assets/dense_d4/S07_dense_L_s1` (32 validation rows of length 2048 from `/home/seqaeon/Drive-D/nanochat/data`, $P=128$, $L=32$, $S=60$). Full script: `scripts/validate_all_survivors.py`, output artifact: `scratch/validate_survivors_results.json`.
 
