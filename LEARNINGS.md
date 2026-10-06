@@ -4,6 +4,23 @@ Durable concepts learned and misunderstandings corrected during this project.
 
 ---
 
+## 2026-10-06: S16 closed: the lanes tax is not moved by mechanism or conversion; why extra training doesn't rescue it
+
+Data: `scratch/s16/` (noise control, conversion, S16-F). Details in `s16_lanes_recovery_brainstorm.md` §8.
+
+- **The parity multiple grows with scale unless the tax falls.**
+  - A lanes model matches a same-size dense model only after k = 2^(t/g) times the tokens, where t is the equal-token tax and g is dense's relative gain per doubling of data.
+  - At d12, t = 8.3% and g = 3.8%, so k ≈ 4.5. Runs from d4 to d12 sit around 4-6×.
+  - g shrinks with scale (diminishing returns per doubling), and t rose from d4 to d12. With t at 8%, k is roughly 20× at 1B parameters and 50-250× at 7B under typical scaling fits.
+  - "Give lanes 2-5× the tokens" is a fair trade in principle (pay training once, decode faster forever). It stays affordable only if t falls with scale, which is what a d16 pair measures.
+- **Initialising lanes from a trained dense model does not cut the tax.** At d8, T₁ = 7.75% against dense continued for the same tokens; from-scratch lanes cost 7.6%.
+- **Restarting the LR schedule at its peak breaks a short continuation.** Dense continued for 0.25x ended worse than its starting checkpoint (0.9476 against 0.9346). Conversions need a fine-tuning schedule.
+- **The token confound recurs.** Any lane report read against a reference with a different token budget books the general token gain as "recovery" (M0; the converted model's band of −3.05).
+- **The noise floor at d8, L = 64, is 0.24% (one standard deviation, three seeds).** Retraining on current code reproduced the dense model exactly (0.93463 against 0.93458), so there was no code shift.
+- **Bridged lanes lose at every step count.** One-stream (32, 8) at 100 steps is worse than plain L = 16 at 120 steps (+2.14%) and than plain L = 32 at 60 steps.
+
+---
+
 ## 2026-10-06: S16-C settlement: d8 lanes noise is 0.3-0.5%, so decide nothing at that size on two seeds
 
 Data: `scratch/s16/s16_score_d8_s16_c2_full.json`. Details in `s16_lanes_recovery_brainstorm.md` §7.

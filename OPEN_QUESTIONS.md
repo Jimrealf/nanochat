@@ -1206,7 +1206,7 @@ S14 closed the strict thesis. The user chose the plain-lanes paper (`s15_lanes_p
 
 **Decision for the user, after R1.** Which mechanism for the learnable lane-start cost (L1). At d8 about 85% of the per-lane loss is learnable.
 
-## SAP S16: can a training signal or architecture raise lanes' recovery? (open 2026-10-06)
+## SAP S16: can a training signal or architecture raise lanes' recovery? (CLOSED 2026-10-06: no)
 
 Details in `s16_lanes_recovery_brainstorm.md`.
 
@@ -1234,7 +1234,14 @@ Plus two ingredients, offset temperature and backward heads. S16-E (checkerboard
 - S16-C is worth at most about 0.1-0.3% and is not a recovery mechanism.
 - M0 is confirmed void by its file.
 
-**Decides next** (the user chose conversion first, then S16-F):
+**Closed (2026-10-06).** Details in §8 of the S16 doc.
+- Noise control: seed noise (0.24%), not a code shift.
+- S16-C: −0.37% against three baselines (t ≈ 2.0, p ≈ 0.14). Unresolved and immaterial.
+- Conversion: dead (T₁ = 7.75%).
+- S16-F: killed (+2.14% against plain L = 16).
+- The user closed the lanes line. "Bounded-k lanes" (is the parity multiple k stable with scale?) moves to S17 as a candidate.
+
+**Superseded plan** (kept for the record; the user chose conversion first, then S16-F):
 - Noise control: seed 1 of the dense and lanes baselines, retrained on current code. Did the code shift?
 - Conversion test at d8: L = 64 lanes from the trained dense, against dense continued for the same tokens.
   - Go if the tax at 0.25x tokens is ≤ 3%; dead if it is ≥ 6.5% at 1x.
@@ -1245,4 +1252,29 @@ Plus two ingredients, offset temperature and backward heads. S16-E (checkerboard
 **Frank status.** No from-scratch mechanism moves the 7-8% tax by more than noise. Conversion is the remaining large-effect bet. A* odds are about 10%, higher if conversion goes.
 
 **Option for the user.** S16-G, converting a pretrained model to lanes, changes the paper's claim and is the user's call.
+
+## SAP S17: what decodes faster than next-token at matched quality, given S14-S16? (open 2026-10-06)
+
+S14 closed the strict seed on information, and S16 closed the lanes-mechanism line.
+
+**The S17 brainstorm** (`s17_sap_brainstorm.md`) starts from three constraints:
+- the information floor (exact strict orders carry ≥ 13% same-step dependence);
+- the lanes tax curve (2.95-11.9% at equal tokens for L = 16-128 at d8; growing with size);
+- the parity multiple k = 2^(t/g).
+
+It searches for a direction that meets the main-track A* bar: a gain, or neutral quality plus a speedup, with numbers.
+
+**Brainstorm done (2026-10-06).** Pool of 44, four survivors, all low-odds.
+
+The seed is published as Parallel Token Prediction (ICLR 2026) and CALM; the lossless space is crowded; the lossy exact space is closed by our own data. The survivors:
+- S17-1, exact multi-token output units: an output-only n-gram inventory with an exact marginal over segmentations;
+- S17-2, bounded-k lanes at L = 16;
+- S17-3, distilled lanes (needs the no-teacher rule relaxed);
+- S17-4, exit-drafted self-speculation on EET.
+
+**Decides first.**
+- S17-1's offline coverage gate (CPU; kill below 1.25 tokens per unit).
+- S17-2's k gate (`ln:16:2:1` at d4 and d8, about 0.5 H100-hours).
+
+If both fail, the recommendation is to spend the remaining budget on the other CLAUDE.md directions rather than on SAP. A* odds for any S17 survivor: about 10%.
 

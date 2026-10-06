@@ -1,14 +1,8 @@
 # S16: raising lanes' recovery (the L1 mechanism for the lanes paper)
 
-Status 2026-10-06, after the S16-C settlement (§7).
-- S16-A (infill rows) is killed.
-- S16-B (any-L) is no worse at L ≤ 64 against the old baseline, but it is not a recovery mechanism.
-- S16-C (lane bias) is worth at most about 0.1-0.3% bpb. It is within the d8 noise and not a recovery mechanism.
-- d8 lanes vary by 0.3-0.5% between seeds or code versions (§7). The noise control is pre-registered in §7.
-- M0 is void (confirmed by its file, §7); the token-matched rerun is pending.
-- Next (user decision): the conversion test (§7), then S16-F, one-stream bridged lanes, which is coded.
-- Gates read recovery on the lookahead band (§6), not on the sign split.
-- S16-E (checkerboard lanes) was killed while coding: it is plain lanes relabelled (§3).
+**Status 2026-10-06: CLOSED (§8).**
+- No from-scratch mechanism (infill rows, any-L, lane bias, checkerboard, one-stream bridged lanes), and no conversion from a trained dense model, moves the plain-lanes tax at equal tokens beyond seed noise.
+- The user closed the lanes line and opened S17 (`s17_sap_brainstorm.md`).
 
 Inputs: `s15_lanes_paper_plan.md` §7 (Stage L0) and `s14_sap_strict_tl_brainstorm.md` §11 (the order oracle).
 
@@ -365,4 +359,43 @@ How to read it: nats per lane over lanes 1..63; band = `lookahead_band`; "traine
    - **Pass:** `S16bo32n8x1_s1` (100 steps) has bpb ≤ `S11ln16x1_s1` (120 steps, trained in the same call).
    - **Kill:** ≥ +0.5% against it.
    - **In between:** a second seed of both.
+
+## 8. Closure: noise control, conversion and S16-F (2026-10-06)
+
+Data: `scratch/s16/s11_ladder_bpb_d8_s16_noise.json`, `s11_ladder_bpb_d8_s16_g1.json` and `s11_ladder_bpb_d8_s16_f1.json`, from `Seqaeon/nanochat` 543fbc3. Setup: d8 at 1x tokens, 256 rows, against dense `S11dense_x1_s1` (0.9346).
+
+**Noise control: seed noise, not a code shift.**
+- The dense retrained on current code (`S11dense_x1_s1_cur`) scores 0.93463, against 0.93458 for the original.
+- The retrained L = 64 baseline (`S11ln64x1_s1_cur`) scores 1.0061. That is −0.15% from the old seed 1 (1.0076): between the ±0.1% "no shift" line and the ≤ 1.0046 "shift" line, so no verdict by the letter.
+- Read with seed 2 (1.0029), the three L = 64 baselines vary by 0.24% (one standard deviation) and average 1.0056: a 7.6% tax.
+
+**S16-C against all three baselines.**
+- The mean of 1.0018 is −0.37% (pooled t ≈ 2.0, 3 degrees of freedom, p ≈ 0.14). Both S16-C seeds sit below all three baselines; under no effect, that happens 1 time in 10.
+- The band gain is +0.35.
+- Small and unresolved. It is not a recovery mechanism. Attribution stays "no verdict".
+
+**Conversion: dead.**
+- T₁ = bpb(`S16cv64x1_s1`) / bpb(`S16dcx1_s1`) − 1 = 0.9867 / 0.9158 − 1 = **7.75%**. The kill line was ≥ 6.5%, and from-scratch lanes cost 7.6%.
+- Starting from a trained dense model buys no lanes advantage at d8.
+- **The 0.25x point is void.** `S16dcx0.25_s1` (0.9476) ended worse than the dense model it started from (0.9346), so the validity check fails: the learning rate restarted at its peak and damaged a short run. A conversion needs a fine-tuning schedule.
+- **The converted model's lane numbers are confounded.** Its band of −3.05 and offset-0 share of 80% are read against dense-1x, but `cv64x1` saw 2x tokens: M0's confound again. Only T₁ is token-matched.
+
+**S16-F, one-stream bridged lanes: killed.**
+- `S16bo32n8x1_s1` scores 0.9828 at 100 steps, against plain L = 16 (`S11ln16x1_s1`, trained in the same call) at 0.9622 at 120 steps: **+2.14%** (kill line ≥ +0.5%).
+- It even loses to plain L = 32 at 60 steps (0.9806), so it does worse at every step count tested.
+
+**The plain-lanes tax at d8**, against dense-1x at equal tokens:
+
+| L | steps | tax |
+|---|---|---|
+| 16 | 120 | 2.95% |
+| 32 | 60 | 4.9% |
+| 64 | 30 | 7.6% (three seeds) |
+| 128 | 15 | 11.9% |
+
+**Closing verdict.**
+- Nothing in S16 moved this tax beyond noise. At L = 64 it grew with model size, from 6.4% to 7.8% to 8.3% (d4 to d12).
+- Extra training buys parity only at a multiple k = 2^(t/g), where t is the tax and g is dense's gain per doubling of data. k is about 4.5 at d12, but it grows with scale unless t falls, because g shrinks (LEARNINGS 2026-10-06).
+- By the CLAUDE.md bar, the lanes line does not reach a main-track paper. The user closed it.
+- "Bounded-k lanes" is carried into S17 as an explicit candidate. Its decisive test is k at d16.
 

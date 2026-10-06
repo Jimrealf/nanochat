@@ -789,6 +789,10 @@ scale modes behave, with `none` asserted to blow the output up because that is t
       - `dc:MULT:SEED`: the same dense continued as dense.
 
       `s11_ladder(tag_suffix=...)` retrains existing tags (for example on current code).
+    - Closed 2026-10-06 (S16 §8). Results: `scratch/s16/` (M1, settlement, noise control, conversion, S16-F).
+  - S17 (`s17_sap_brainstorm.md`), after lanes:
+    - a brainstorm (44 candidates, 4 survivors) with a prior-art map of 2024-2026 parallel decoding;
+    - no code yet. The S17-1 offline gate (`scripts/sap_unit_coverage.py`) and its unit head are written once the user picks.
     - Tests in `tests/test_lanes.py`:
       - the infill layout reads only earlier draws, except at the cold slots;
       - infill rows are a normalised distribution, and leaving a cold slot's input in place breaks the sum;
