@@ -437,8 +437,13 @@ VAR-T was not tested. The diagnosis below disfavours it, and it is not run.
    - The far past carries 135 to 152 bits about the next 256 tokens.
    - 89 to 95 bits of that sit beyond a 16-token window.
 5. **The gap depends on how the oracle was trained.** Dream, AR-adapted, has about 2x the gap of LLaDA, which was trained on any order.
-6. **S13's open question is answered: the unrecovered junction loss is mostly learnability.**
+6. **S13's open question is answered: the unrecovered junction loss is mostly learnability.** Refined in S15 §7.2: the lane-start deficit is information, and the learnable part is recovery.
    - d8 L=64 loses 2.38 average-token losses per lane, about 7 nats at about 3.0 nats per token. S15 R1 measures this exactly.
    - The 8B oracle's total is about 1.7 nats per lane, of which about 1.0 is TC.
    - So about 85% of d8's lane tax is learnable.
+
+**E1, run anyway (2026-10-05, d8, matched tokens with `S11dense_x1_s1`).** Moot after the closure; recorded for completeness (`scratch/s15/s11_ladder_bpb_d8_s14_e1.json`).
+- Window bisection n=1: +28.5% (d4 +24%).
+- n=16: +7.0% (d4 +7.8%).
+- tax(d8) / tax(d4): 1.19 for n=1 and 0.90 for n=16, against the pre-registered 0.7 line for "shrinking".
 

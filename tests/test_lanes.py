@@ -160,4 +160,6 @@ def test_lane_offset_report_gives_absolute_nats_per_lane():
     rep = lane_offset_report(N, P, L, (own, ref), (ref, ref), n_rows=R)
     assert rep["extra nats per lane"] == pytest.approx(2.0) and rep["reference nats per token"] == pytest.approx(2.0)
     assert rep["0"] == pytest.approx(2.5) and rep["share of the lanes' extra nats at offset 0"] == pytest.approx(1.5)
+    assert rep["deficit nats per lane"] == pytest.approx(3.0) and rep["recovery nats per lane"] == pytest.approx(-1.0)
+    assert rep["extra nats per lane by offset"] == pytest.approx([3.0, 0.0, 0.0, -1.0])
 

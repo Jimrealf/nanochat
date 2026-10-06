@@ -1,6 +1,12 @@
 # S15: can plain lanes reach the A* bar?
 
-Status 2026-10-05. Opened after S14 closed the strict thesis on information (`s14_sap_strict_tl_brainstorm.md` §11). The user chose the plain-lanes paper, with S14's order oracle as its foundation.
+Status 2026-10-06: Stage L0 is done (§7).
+- R1 is in between (0.944), so a d16 tiebreak is set up.
+- R3 fails as run.
+- Speed and the equal-step oracle comparison are strong.
+- The learnable gap is lanes' recovery, not their lane starts, so L1 targets recovery (`s16_lanes_recovery_brainstorm.md`).
+
+Opened 2026-10-05, after S14 closed the strict thesis on information (`s14_sap_strict_tl_brainstorm.md` §11). The user chose the plain-lanes paper, with S14's order oracle as its foundation.
 
 ## 1. Frank assessment: not at the A* main-track bar yet
 
@@ -114,3 +120,95 @@ modal run modal_sap.py::s14_order_oracle --block 1920 --sep-cut 0 --rows 16 --na
 - R1 compares numbers from the same updated report at every depth. Reference tags and token budgets are named in every ratio.
 - Each model is scored in its own order, and its val bpb is checked against training (±0.5%).
 - Every per-position JSON must print the row hash `ae01832e4bf20262`: the same 256 rows and tokenizer at every depth.
+
+## 7. Stage L0 results (2026-10-06)
+
+All numbers below are from `scratch/s15/`.
+- Rows hash `ae01832e4bf20262`: 256 rows, block positions 128 to 2047, one seed per arm.
+- Oracle rows hash `6bcd550836218394`: LLaDA-8B-Base, 16 rows of 128 + 1921.
+
+I checked the bundled `s15_stage_l0_comprehensive_report.md`: its numbers match the files, but its diagnosis and parts of its framing do not (§7.3).
+
+### 7.1 Readings
+
+| reading | result | verdict |
+|---|---|---|
+| R1: extra nats per lane (L=64, 1x), d4 / d8 / d12 | 7.408 / 7.562 / 7.136; d12 / d8 = **0.944** | in between: the d16 tiebreak (§7.4) applies |
+| R2: block bpb, dense-1x / lanes64-1x | d4 1.1232 / 1.1946 (+6.36%); d8 0.9346 / 1.0076 (+7.81%); d12 0.8367 / 0.9058 (**+8.26%**) | — |
+| R2: lanes32-1x | d4 1.1662 (+3.82%); d8 0.9805 (+4.92%); d12 trained to step 2204/2205 but not scored | — |
+| R2: parity multiple at d12 | dense-2x 0.8049, so 3.80% per doubling; k = 2^(8.26 / 3.80) ≈ **4.5x** (about 4 to 5x at d4 and d8 too) | — |
+| R3: samples at d12, temperature 1, scored by dense-2x | reference ppl next-token 56.78, lanes64 87.82 (**1.55x**); unigram entropy 6.100 and 6.158; distinct 3-grams 0.962 and 0.979; real text 14.27 at entropy 5.881 | **fails ≤ 1.2x as run**; at real-text entropy, not measured yet (§7.4) |
+| R4: tokens/s ratio to next-token, H100, CUDA graphs, 1920 tokens | L=64: **54.3x / 30.7x / 16.4x** at batch 1 / 16 / 64; L=32: 28.5x / 17.9x / 10.7x | strong at d12 |
+| L0b: lanes64 against random30 at 31 steps | total 2.42% against 9.09% (**3.8x lower**) | `lanes64_beats_random30` |
+| L0b: lanes64 against conf30, lanes32 against conf60 | 2.42% against 84.6%; 1.15% against 72.7% | beats, but conf is a weak baseline (§7.3) |
+| L0b: floor at T = 1920 | lanes32 TC 0.51%, total 1.15%; lanes64 TC 1.41% (0.94 nats per lane), total 2.42% (1.61 nats per lane); lanes128 TC 3.39%, total 5.11% | — |
+| L0b: bridged lanes (32, 8), 101 steps | TC **0.07%**, total 0.86% | the most information-efficient structure measured |
+| E1 at d8 (moot after S14) | window bisection n=1 +28.5% (d4 +24%); n=16 +7.0% (d4 +7.8%) | — |
+
+**Iso-quality point.** Lanes64 at d12 (0.906 block bpb) beats dense at d8 (0.935), while decoding 54x faster than d12's own next-token decoder at batch 1.
+
+### 7.2 Where the per-lane cost sits: deficit against recovery
+
+Approximate, from the offset-group ratios times reference nats per token. The oracle's figures use par minus the block-average l2r. The exact per-offset values come from the new report fields (`deficit` / `recovery nats per lane`, `lane_profile`).
+
+| L=64, nats per lane | deficit (offsets 0-15) | recovery (offsets 16-29) | net |
+|---|---|---|---|
+| d4 | 9.0 | −1.8 | 7.3 |
+| d8 | 11.4 | −4.0 | 7.4 |
+| d12 | 11.9 | −5.0 | 6.9 |
+| LLaDA-8B oracle, T = 1920 | 11.3 | −9.7 | 1.6 |
+
+**The deficit is information.**
+- Early offsets are decided with no left context in their lane.
+- The trained models' deficit stopped growing (+0.5 from d8 to d12) and already matches what an 8B any-order model pays.
+
+**The learnable gap is recovery.**
+- Late offsets read the next lane's early tokens (lookahead).
+- d12 recovers 5.0 nats per lane; the oracle recovers 9.7.
+- Recovery grows with scale (1.8 → 4.0 → 5.0), which is the turn in R1.
+
+**Consequence: the L1 mechanism must raise recovery.** A lane-start inductive bias targets the part that cannot shrink.
+
+### 7.3 Corrections to the bundled report
+
+1. **"Lanes crush confidence decoding by 35 to 63x."**
+   - True as measured, but the baseline is pathological: global confidence unmasking of 64 tokens per step over a fully masked 1920-token span.
+   - Its same-step TC stays at 47 to 164 nats per step to the last step, as hard spans cluster and are unmasked together.
+   - LLaDA is run in semi-autoregressive blocks in practice.
+   - The robust claim is against random-order decoding, 3.8x at equal steps. Report conf as "naive global confidence decoding".
+2. **"An inductive bias at lane starts closes the gap."** No: the deficit is at the information level (§7.2), and the gap is recovery.
+3. **R3 fails its pre-registered bar as run** (1.55x > 1.2x). The report leaves this out.
+   - The S11 d4 result (parallel samples better at real-text entropy) came from a d4 next-token sampler that loops.
+   - At d12 the next-token sampler no longer loops (distinct 3-grams 0.962), and lanes sample worse.
+4. **Batch 16 and 64 speedups are a small-model regime.**
+   - d12 is latency-bound, so 64 rows per step cost about as much as one.
+   - At 7B the batch-64 gain should shrink (not measured).
+   - My own earlier "the advantage mostly disappears at batch ≥ 16" was wrong for d12.
+5. **The proposed title overclaims.** The 54x is batch 1 on 110M parameters, with an 8.3% equal-token bpb tax.
+
+### 7.4 Next runs, readings pre-registered before running
+
+```
+modal run modal_sap.py::s11_ladder --depth 16 --specs dense:1:1,ln:64:1:1 --name s15_d16                        # ~9 H100-h
+modal run modal_sap.py::s08_gen --depth 12 --tags S11ln64x1_s1:64 --ar-tag S11dense_x1_s1 --ref-tag S11dense_x2_s1 \
+    --gen-tokens 1985 --temperatures 0.85,0.9,0.95                                                                # ~1.5 H100-h
+modal run modal_sap.py::s14_order_oracle --merge-only --block 1920 --sep-cut 0 --rows 16 --name t1920            # CPU, minutes
+modal run modal_sap.py::s11_score --depth 12 --tags S11dense_x1_s1,S11ln64x1_s1 --name s15_d12b                 # exact deficit/recovery
+modal run modal_sap.py::s11_score --depth 8 --tags S11dense_x1_s1,S11ln64x1_s1,S11ln32x1_s1 --name s15_d8b
+```
+
+- **d16, the R1 tiebreak.** Extra nats per lane (L=64, 1x):
+
+  | outcome | meaning |
+  |---|---|
+  | ≤ 6.81 (0.90 x d8) | go |
+  | ≥ 7.14 (no decline from d12) | no-go for plain lanes as the core |
+  | in between | the scale trend alone is too slow; L1 decides |
+
+- **Mechanistic prediction at d16.**
+  - The deficit stays within ±5% of d12's (exact value from `s15_d12b`), and recovery grows past d12's.
+  - If the deficit keeps rising instead, the information-level reading of §7.2 is wrong.
+- **R3 at real-text entropy.** Interpolate log reference ppl to entropy 5.88 for both samplers.
+  - Lanes / next-token ≤ 1.2x passes.
+  - Above 1.5x fails.
+  - In between is reported as is.

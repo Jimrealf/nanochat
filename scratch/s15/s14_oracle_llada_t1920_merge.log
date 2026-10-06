@@ -1,0 +1,15 @@
+GSAI-ML/LLaDA-8B-Base: 16 rows of 128 + 1921 tokens, row hash 6bcd550836218394
+
+order      steps     par   chain          TC % of l2r                gap %              total %
+l2r         1921  2.2167  2.2167   0.00 [ 0.00, 0.00]   0.00 [ 0.00, 0.00]   0.00 [ 0.00, 0.00]
+lanes32       61  2.2422  2.2309   0.51 [ 0.41, 0.63]   0.64 [ 0.29, 1.01]   1.15 [ 0.77, 1.60]
+lanes64       31  2.2705  2.2391   1.41 [ 1.17, 1.70]   1.01 [ 0.56, 1.52]   2.42 [ 1.90, 3.08]
+lanes128      16  2.3299  2.2548   3.39 [ 2.75, 4.16]   1.72 [ 1.17, 2.48]   5.11 [ 4.03, 6.52]
+bl32_8       101  2.2357  2.2340   0.07 [ 0.02, 0.13]   0.78 [ 0.41, 1.20]   0.86 [ 0.50, 1.27]
+random30      31  2.4182  2.3034   5.18 [ 4.61, 5.87]   3.91 [ 2.99, 5.16]   9.09 [ 7.69,10.99]
+conf30        31  4.0917  2.2654  82.39 [72.45,94.83]   2.19 [ 1.67, 2.89]  84.58 [74.39,97.48]
+conf60        61  3.8272  2.2583  70.78 [62.82,79.99]   1.88 [ 1.29, 2.71]  72.65 [64.55,82.37]
+oracle l2r bpb 0.6950, Qwen/Qwen2.5-7B 0.6232 (ratio 1.115)
+validity (pass): {"tc_nonnegative": {"l2r": true, "lanes32": true, "lanes64": true, "lanes128": true, "bl32_8": true, "random30": true, "conf30": true, "conf60": true}, "right_context_used": true, "oracle_within_20pct_of_ar": true}
+readings: {"strict_orders": [], "PCB_live_orders": [], "lanes32_over_conf60_total": 0.01584866989869883, "lanes32_beats_conf60": true, "lanes64_over_random30_total": 0.26677014121069637, "lanes64_beats_random30": true, "lanes64_over_conf30_total": 0.028668669008868608, "lanes64_beats_conf30": true}
+wrote /vol/out/s14/s14_oracle_llada_t1920.json

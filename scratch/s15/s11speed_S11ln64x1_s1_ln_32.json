@@ -1,0 +1,29 @@
+{
+  "mode": "lanes",
+  "lanes": 32,
+  "lane_len": 60,
+  "gen_tokens": 1920,
+  "prompt_len": 128,
+  "device": "cuda",
+  "graph_temperature": 1.0,
+  "rows": [
+    {
+      "batch": 1,
+      "graph_ar_tok_per_s": 359.99032159270604,
+      "graph_lane_tok_per_s": 10270.90540085283,
+      "graph_speedup": 28.531059822417557
+    },
+    {
+      "batch": 16,
+      "graph_ar_tok_per_s": 5179.005315613037,
+      "graph_lane_tok_per_s": 92553.54517090952,
+      "graph_speedup": 17.870911406846854
+    },
+    {
+      "batch": 64,
+      "graph_ar_tok_per_s": 13791.860501124334,
+      "graph_lane_tok_per_s": 147909.3906783835,
+      "graph_speedup": 10.724397238960304
+    }
+  ]
+}

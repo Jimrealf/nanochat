@@ -750,7 +750,10 @@ scale modes behave, with `none` asserted to blow the output up because that is t
       - `score_rows` / `finalize` / `readings`: sharded (`--shard`, `--num-shards`), resumable (`--raw`), `--merge`, and `--compare` (cross-oracle Spearman). Pre-registered `validity` and `readings` are written into the JSON.
     - Modal: `modal_sap.py::s14_order_oracle` (shards on H100s in images pinned to each model card's transformers, then a merge; `block`, `prefix`, `sep_cut` and `name` set the run) and `s14_order_oracle_compare`. The workers are `s14_oracle_llada`, `s14_oracle_dream` and `s14_cpu_job`. Results: `scratch/s14/`.
   - S15 (`s15_lanes_paper_plan.md`), the lanes paper:
-    - `scripts/sap_position_bpb.py::lane_offset_report(..., n_rows)` adds absolute extra nats per lane and the reference's nats per token, so the R1 scale test compares model sizes in the same units as the S14 oracle.
+    - `scripts/sap_position_bpb.py::lane_offset_report(..., n_rows)` adds absolute extra nats per lane, the reference's nats per token, and the per-lane excess by offset with its deficit (positive part) and recovery (negative part). The R1 scale test compares model sizes in the same units as the S14 oracle.
+    - `scripts/sap_order_oracle.py::lane_profile`: the same per-offset deficit and recovery for `lanesL` orders in the oracle (the order's par minus the l2r chain at the same positions, lanes 1..L-1).
+    - `modal_sap.py::s14_order_oracle --merge-only` re-merges a finished run's raw shards on CPU, for example to add `lane_profile`.
+    - Results: `scratch/s15/`.
     - Runs reuse `s11_ladder`, `s11_score`, `s08_gen` and `s11_speed` at depth 12.
     - Tests: `tests/test_order_oracle.py`. It uses an exact Markov-chain oracle to check:
       - every chain equals the block NLL;

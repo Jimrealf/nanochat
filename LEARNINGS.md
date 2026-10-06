@@ -4,6 +4,29 @@ Durable concepts learned and misunderstandings corrected during this project.
 
 ---
 
+## 2026-10-06: S15 Stage L0: lanes' lane-start cost is information; the learnable gap is recovery
+
+Data: `scratch/s15/` (d4 / d8 / d12 plain lanes against dense at 1x tokens; the LLaDA-8B oracle at T = 1920). Details in `s15_lanes_paper_plan.md` §7.
+
+- **Split a lane's cost into deficit and recovery before choosing a mechanism.**
+  - Per lane (L = 64), the early offsets cost more than dense (the deficit): 9.0 → 11.4 → 11.9 nats from d4 to d12. The 8B oracle's deficit is 11.3, so the trained models have reached the information level.
+  - The late offsets cost less (the recovery, from reading the next lane's early tokens): 1.8 → 4.0 → 5.0 nats, against the oracle's 9.7.
+  - So the whole learnable gap is recovery. "Most extra nats sit at offset 0" (65% at d12) is true but points at the part that cannot shrink.
+  - Approximate from offset groups. `lane_offset_report` now reports exact `deficit` / `recovery nats per lane`, and the oracle reports `lane_profile`.
+- **Percent tax and absolute per-lane nats move differently with scale.**
+  - Per-lane nats fell 5.6% from d8 to d12 (R1 0.944).
+  - The equal-token tax still rose (7.81 → 8.26%), because dense's nats per token fell faster (3.13 → 2.80).
+  - The parity multiple stayed about 4.5x (dense gains 3.8% per doubling at d12).
+- **A sampler comparison is only as fair as its weakest sampler.**
+  - S11's d4 finding (parallel samples better than next-token at real-text entropy) came from a d4 next-token sampler that loops.
+  - At d12 the next-token sampler does not loop, and lanes sample 1.55x worse at temperature 1, near matched entropy.
+- **Naive global confidence decoding is pathological at 64 tokens per step.**
+  - Over a fully masked 1920-token span, LLaDA's confidence order keeps same-step TC at 47 to 164 nats per step to the last step: total 85% against random order's 9%.
+  - Use random or semi-autoregressive decoding as the diffusion baseline, not this.
+- **Correction (mine).** I said lanes' speed advantage "mostly disappears at batch ≥ 16". At d12 it is 31x at batch 16 and 16x at batch 64, because a 110M model is latency-bound. The claim may hold at 7B; it is not measured.
+
+---
+
 ## 2026-10-05: S14 E0 results: same-step dependence in text is local, and lanes are the efficient parallel order
 
 Measured with two 8B any-order oracles (LLaDA-8B-Base, 32 rows; Dream-v0-Base-7B, 16 rows) on FineWeb-Edu. Every validity check passed. Data in `scratch/s14/`; details in `s14_sap_strict_tl_brainstorm.md` §11.

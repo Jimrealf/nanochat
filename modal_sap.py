@@ -2896,7 +2896,7 @@ def s14_cpu_job(name: str, cmd: list) -> dict:
 @app.local_entrypoint()
 def s14_order_oracle(oracle: str = "llada", rows: int = 0, shards: int = 4, orders: str = "",
                      ar_ref: str = "Qwen/Qwen2.5-7B", batch: int = 8, block: int = 1024, prefix: int = 128,
-                     sep_cut: int = 512, name: str = "", smoke: bool = False):
+                     sep_cut: int = 512, name: str = "", merge_only: bool = False, smoke: bool = False):
     """S14 E0 + E2a: per-order TC (information) and gap (oracle difficulty) on real text, and the
     bits a separator must carry, under an 8B any-order oracle (scripts/sap_order_oracle.py). Rows
     are split over `shards` H100s; rerunning the same command resumes from the saved rows, then
@@ -2908,7 +2908,9 @@ def s14_order_oracle(oracle: str = "llada", rows: int = 0, shards: int = 4, orde
     S15 L0b (s15_lanes_paper_plan.md), the paper's 1920-token block, no separator bound:
         modal run modal_sap.py::s14_order_oracle --block 1920 --sep-cut 0 --rows 16 --name t1920 \
             --orders l2r,lanes32,lanes64,lanes128,bl32_8,random30,conf30,conf60
-    `name` keeps a run's raw files and result apart (out/s14/s14_oracle_<oracle>_<name>.json)."""
+    `name` keeps a run's raw files and result apart (out/s14/s14_oracle_<oracle>_<name>.json).
+    --merge-only re-merges a finished run's raw shard files on CPU (no model load), e.g. to add a
+    newer summary such as the lanes deficit/recovery profile."""
     fn = {"llada": s14_oracle_llada, "dream": s14_oracle_dream}[oracle]
     rows = rows or (32 if oracle == "llada" else 16)
     tag = f"s14_oracle_{oracle}" + (f"_{name}" if name else "")
@@ -2922,9 +2924,10 @@ def s14_order_oracle(oracle: str = "llada", rows: int = 0, shards: int = 4, orde
                  "--sep-cut", "64", "--sep-span", "32", "--sep-windows", "0,1,4"]
     jobs = [(argv + ["--shard", str(k), "--num-shards", str(shards), "--raw", f"{S14}/raw/{tag}_{k}of{shards}.pt"],
              f"{tag}_{k}of{shards}") for k in range(shards)]
-    print(f"S14 E0 with {S14_ORACLES[oracle]}: {rows} rows over {shards} H100 shards")
+    print(f"S14 E0 with {S14_ORACLES[oracle]}: {rows} rows over {shards} H100 shards" +
+          (" (merge only)" if merge_only else ""))
     failed = []
-    for (_, name), res in zip(jobs, fn.starmap(jobs, return_exceptions=True)):
+    for (_, name), res in zip(jobs, [] if merge_only else fn.starmap(jobs, return_exceptions=True)):
         if isinstance(res, BaseException) or res["returncode"] != 0:
             failed.append(name)
             print(f"--- {name} FAILED: {res!r}" if isinstance(res, BaseException) else f"--- {name} FAILED\n{res['tail']}")

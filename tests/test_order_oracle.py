@@ -13,7 +13,7 @@ import torch.nn.functional as F
 
 from nanochat.bridge import bisection_levels
 from scripts.sap_order_oracle import (MaskedLMOracle, _groups, compare, confidence_steps, context_probe, finalize,
-                                      order_steps, score_order, score_rows, separator_scores, snap_levels)
+                                      lane_profile, order_steps, score_order, score_rows, separator_scores, snap_levels)
 
 
 class MarkovOracle:
@@ -125,6 +125,22 @@ def test_orders_are_complete_schedules(order):
     assert level == sorted(level)
     if order == "lanes4":                                            # junctions last, lane starts first
         assert steps[1 + torch.arange(7, Tb, 8)].eq(n - 1).all() and steps[1 + torch.arange(0, Tb, 8)].eq(1).all()
+
+
+def test_lane_profile_reads_lanes_by_offset():
+    L, S = 4, 3
+    T = 1 + L * S
+    ref = [{"chain": torch.full((T,), 2.0, dtype=torch.float64)}]
+    par = torch.full((T,), 2.0, dtype=torch.float64)
+    chain = par.clone()
+    for j in range(L):
+        par[1 + j * S] += 3.0                                    # a lane start costs 3 nats more
+        par[1 + j * S + 2] -= 1.0                                # its last token 1 less (it reads the next lane)
+        chain[1 + j * S] += 1.0                                  # 2 of the 3 are same-step dependence
+        chain[1 + j * S + 2] -= 1.0
+    prof = lane_profile([{"par": par, "chain": chain}], ref, L)
+    assert prof["excess_by_offset"] == pytest.approx([3.0, 0.0, -1.0]) and prof["lane_len"] == S
+    assert (prof["deficit"], prof["recovery"], prof["net"], prof["tc"]) == pytest.approx((3.0, -1.0, 2.0, 2.0))
 
 
 def test_bisection_and_snap_levels():
@@ -253,5 +269,6 @@ def test_command_line_run_and_sharded_merge(tmp_path, monkeypatch):
                                                                                    "snap4", "random4"}
     assert single["orders"]["bisect1"]["steps_max"] == 6 and "bisect1_TC_ge_3pct" in single["readings"]
     assert "lanes4_over_random4_total" in single["readings"]                     # equal steps: 5 each
+    assert len(single["orders"]["lanes4"]["lane_profile"]["excess_by_offset"]) == 4
     assert single["separator"]["1"]["8"]["far_past_info_bits"] == pytest.approx([0.0] * 3, abs=1e-9)
     assert not single["readings"]["LSB_dead"] and single["validity"]["separator_info_nonnegative"]

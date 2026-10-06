@@ -94,7 +94,9 @@ def lane_offset_report(N, P, L, own, ref, n_rows=0):
     first prediction, made from the lane-start token with no left context of its own; offset S-1
     predicts the next lane's first token, after that lane's later tokens are known. With n_rows,
     also the extra nats per lane in absolute units (S15 R1, comparable across model sizes and with
-    the order oracle's per-lane TC) and the reference's nats per token."""
+    the order oracle's per-lane TC), the reference's nats per token, and the per-lane excess by
+    offset split into the deficit (offsets that cost more than the reference) and the recovery
+    (offsets that cost less: late tokens that read the next lane's early ones)."""
     S = (N - P) // L
     p = torch.arange(N)
     s, j = (p - P) % S, (p - P) // S
@@ -114,6 +116,11 @@ def lane_offset_report(N, P, L, own, ref, n_rows=0):
     if n_rows > 0:
         out["extra nats per lane"] = tax / (n_rows * (L - 1))
         out["reference nats per token"] = float(ref[0][lanes].sum()) / (n_rows * int(lanes.sum()))
+        by_offset = [float(own[0][lanes & (s == k)].sum() - ref[0][lanes & (s == k)].sum()) / (n_rows * (L - 1))
+                     for k in range(S)]
+        out["deficit nats per lane"] = sum(v for v in by_offset if v > 0)
+        out["recovery nats per lane"] = sum(v for v in by_offset if v < 0)
+        out["extra nats per lane by offset"] = by_offset
     return out
 
 
@@ -316,7 +323,7 @@ def main():
                                      n_rows=result.get("within_doc_rows", len(rows)))
             result["models"][name]["lane_offsets"] = rep
             print(f"{name}: nats ratio to {names[0]} by offset within a lane (lanes 1..{ln - 1}): " +
-                  ", ".join(f"{k} {v:.3f}" for k, v in rep.items()))
+                  ", ".join(f"{k} {v:.3f}" for k, v in rep.items() if not isinstance(v, list)))
     if args.out:
         with open(args.out, "w") as f:
             json.dump(result, f, indent=2)

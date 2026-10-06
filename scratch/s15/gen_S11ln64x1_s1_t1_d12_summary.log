@@ -1,0 +1,6 @@
+256 prefixes, 1985 tokens each, 64 lanes
+  reference ppl  next-token    56.78 | block    87.82
+  distinct 3-grams  next-token 0.962 | block 0.979
+  unigram entropy  next-token 6.100 | block 6.158
+  real continuation  reference ppl    14.27 | distinct 3-grams 0.916 | unigram entropy 5.881
+  pairs for the LLM judge: /vol/out/s03_sap/gen_S11ln64x1_s1_t1_S11dense_x1_s1_t-1_p1_r1.jsonl

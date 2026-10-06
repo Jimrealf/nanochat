@@ -439,6 +439,28 @@ def rows_hash(rows):
 
 
 # ----------------------------------------------------------------------------- summary
+def lane_profile(rs, ref_rs, L):
+    """S15: per lane (lanes 1..L-1, mean over rows) and by offset within the lane, the lanes order's
+    parallel NLL minus the reference chain's at the same positions. Its positive part is the
+    deficit (early offsets, decided without left context), its negative part the recovery (late
+    offsets, which read the next lane's early tokens); tc_by_offset is the order's own same-step
+    share. In the units of sap_position_bpb's lane report for trained models."""
+    Tb = rs[0]["par"].numel() - 1
+    S = Tb // L
+    k = torch.arange(Tb)
+    sel = k // S >= 1
+    off = (k % S)[sel]
+    ex = torch.zeros(S, dtype=torch.float64)
+    tc = torch.zeros(S, dtype=torch.float64)
+    for r, q in zip(rs, ref_rs):
+        ex.index_add_(0, off, (r["par"][1:] - q["chain"][1:])[sel])
+        tc.index_add_(0, off, (r["par"][1:] - r["chain"][1:])[sel])
+    ex, tc = ex / (len(rs) * (L - 1)), tc / (len(rs) * (L - 1))
+    return {"lane_len": S, "deficit": float(ex.clamp(min=0).sum()), "recovery": float(ex.clamp(max=0).sum()),
+            "net": float(ex.sum()), "tc": float(tc.sum()), "excess_by_offset": ex.tolist(),
+            "tc_by_offset": tc.tolist()}
+
+
 def summarize(per_row, block_bytes, ref="l2r", n_boot=1000, seed=0):
     """per_row[order] = list over rows of score_rows records. Returns, per order, NLL per token,
     TC, gap and their sum as % of the reference chain NLL ([estimate, 95% row-bootstrap low,
@@ -480,6 +502,9 @@ def summarize(per_row, block_bytes, ref="l2r", n_boot=1000, seed=0):
                 for k, v in sorted(levels.items())}
         if o.startswith("snap"):
             out[o]["note"] = "order depends on the text and its offset decisions are not scored: a necessary condition only"
+        m = re.fullmatch(r"lanes(\d+)", o)
+        if m and int(m.group(1)) > 1:
+            out[o]["lane_profile"] = lane_profile(rs, per_row[ref], int(m.group(1)))
     out[ref]["bpb"] = float(den.sum()) / math.log(2) / block_bytes
     return out
 
@@ -599,6 +624,11 @@ def report(result, log=print):
     for o, s in result["orders"].items():
         log(f"{o:10s} {s['steps_max']:5d} {s['par_nats_per_token']:7.4f} {s['chain_nats_per_token']:7.4f} "
             f"{fmt(s['TC_pct']):>20s} {fmt(s['gap_pct']):>20s} {fmt(s['total_pct']):>20s}")
+    for o, s in result["orders"].items():
+        lp = s.get("lane_profile")
+        if lp:
+            log(f"{o}: per lane (lanes 1..L-1) deficit {lp['deficit']:.2f}, recovery {lp['recovery']:.2f}, "
+                f"net {lp['net']:.2f} nats (same-step TC {lp['tc']:.2f})")
     line = f"oracle l2r bpb {result['orders']['l2r']['bpb']:.4f}"
     if "ar_ref" in result:
         line += f", {result['ar_ref']['name']} {result['ar_ref']['bpb']:.4f} (ratio {result['ar_ref']['oracle_l2r_bpb_ratio']:.3f})"

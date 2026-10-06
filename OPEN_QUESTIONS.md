@@ -1180,6 +1180,15 @@ The user asked for the strict version of the seed (`s14_sap_strict_tl_brainstorm
 
 ## SAP S15: does the plain-lanes tax turn down with scale? (open 2026-10-05)
 
+**Stage L0 (2026-10-06).** Details in `s15_lanes_paper_plan.md` §7.
+- R1 in between: extra nats per lane 7.41 / 7.56 / 7.14 at d4 / d8 / d12 (d12 / d8 = 0.944), so the d16 tiebreak is pre-registered.
+- Equal-token tax 6.4 → 7.8 → 8.3%; parity about 4.5x.
+- Samples 1.55x worse at temperature 1; at real-text entropy, pending.
+- Speed 54x / 31x / 16x at batch 1 / 16 / 64.
+- Lanes beat random-order decoding 3.8x at equal steps under the oracle.
+- **New target for L1: recovery.** The lane-start deficit is at the 8B oracle's information level; recovery is 5.0 against 9.7 nats per lane.
+- Open: d16 (R1), R3 at real-text entropy, and the L1 brainstorm (`s16_lanes_recovery_brainstorm.md`).
+
 S14 closed the strict thesis. The user chose the plain-lanes paper (`s15_lanes_paper_plan.md`).
 
 **Frank status: not at the A* bar yet.**
