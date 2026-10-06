@@ -761,6 +761,20 @@ scale modes behave, with `none` asserted to blow the output up because that is t
       - one token separates a Markov chain;
       - shift detection, and the causal-oracle probe;
       - sharded and resumed runs merge to the single run.
+  - S16 (`s16_lanes_recovery_brainstorm.md`), mechanisms that raise lanes' recovery:
+    - `nanochat/lanes.py::infill_layout` / `infill_rows` (S16-A, position-preserving infill rows):
+      - one middle span per chunk; slots outside every middle in position order, then the middles;
+      - true rotary positions via `pos_ids`, and a causal mask over the reordered row;
+      - the first slot after each middle holds the lane-start token, so the row is an exact order.
+    - `scripts/base_train.py`:
+      - `--lane-infill-frac` / `--lane-infill-span` / `--lane-infill-gap`: that fraction of micro-steps trains on infill rows instead of lane rows;
+      - `--lanes-mix` (S16-B, any-L lanes): each micro-step draws its lane count from the list.
+    - Modal:
+      - `modal_sap.py::s11_ladder` specs `ppi:L:F:MULT:SEED` and `mix:L1+L2+..:MULT:SEED`. Its scoring keeps an earlier run's dense reference when the call does not retrain it.
+      - `modal_sap.py::s16_score`: scores checkpoints at any lane count (`TAG@L`) against one dense reference, with the deficit/recovery report.
+    - Tests in `tests/test_lanes.py`:
+      - the infill layout reads only earlier draws, except at the cold slots;
+      - infill rows are a normalised distribution, and leaving a cold slot's input in place breaks the sum.
   - Modal: `modal_sap.py::s10_toy`, which runs `s10_toy_run` jobs on L4 for arms x T x depth x seeds.
   - Tests: `tests/test_ptp.py` (45).
 - Trunk-depth slots (`nanochat/gpt.py`): `_sap_depth_tools` (gradient scaling and shared-or-copy blocks), `_sap_depth_entry` (slot entry state and x0: the trunk's state at the block start plus the token's embedding, or the `depth_mask` vector for a slot whose token is unknown), `_sap_depth_layers` (any slot set through the top m layers, reading the prefix keys/values at each layer under a slot-visibility mask), `_sap_depth_local_logprob` (exact chain rule), `_sap_depth_tree_logprob` (exact bisection-round factorisation; layout from `block_head.depth_tree_layout`), `_sap_depth_sample` / `_sap_depth_tree_sample` (graph-safe decoders that read the trunk's KV cache, or the trained copies' own cache from `sap_depth_copy_cache` / `sap_depth_extend_copy_cache`), `_sap_depth_loss` (training loss over per-row block starts).

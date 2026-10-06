@@ -87,6 +87,36 @@ def sample_prefix_len(max_prefix, L, generator=None):
     return k * L
 
 
+def infill_layout(N, lo=2, hi=64, gap=128, first=64, generator=None):
+    """S16-A position-preserving infill rows. One middle span of lo..hi slots inside every gap-slot
+    chunk after the first `first` slots, with at least one slot outside on either side. Returns
+    (perm, cold): perm (N,) lists the slots outside every middle in position order, then every middle
+    in position order; cold lists the first slot after each middle. Every slot still predicts its own
+    target, so a model run in perm order with true rotary positions scores an exact factorisation
+    in which each middle is drawn after its whole right context (the lookahead lanes' late offsets
+    need). A cold slot's own input is the middle's last target, drawn later, so it holds the
+    lane-start token, like a lane start."""
+    mid = torch.zeros(N, dtype=torch.bool)
+    for c in range(first, N, gap):
+        room = min(c + gap, N) - c - 2
+        if room < lo:
+            break
+        m = int(torch.randint(lo, min(hi, room) + 1, (1,), generator=generator))
+        a = c + 1 + int(torch.randint(0, room - m + 1, (1,), generator=generator))
+        mid[a:a + m] = True
+    perm = torch.cat([(~mid).nonzero().flatten(), mid.nonzero().flatten()])
+    cold = (mid[:-1] & ~mid[1:]).nonzero().flatten() + 1
+    return perm, cold
+
+
+def infill_rows(x, y, perm, cold, lane_token):
+    """(inputs, targets, pos_ids) for infill_layout: run the model on these with a causal mask over
+    the reordered sequence and pos_ids as the rotary positions."""
+    x = x.clone()
+    x[:, cold] = lane_token
+    return x[:, perm], y[:, perm], perm
+
+
 class LaneBatches:
     """Wraps (x, y) batches for evaluate_bpb: lane-start inputs swapped in at a fixed prefix."""
 

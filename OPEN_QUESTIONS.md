@@ -1187,7 +1187,7 @@ The user asked for the strict version of the seed (`s14_sap_strict_tl_brainstorm
 - Speed 54x / 31x / 16x at batch 1 / 16 / 64.
 - Lanes beat random-order decoding 3.8x at equal steps under the oracle.
 - **New target for L1: recovery.** The lane-start deficit is at the 8B oracle's information level; recovery is 5.0 against 9.7 nats per lane.
-- Open: d16 (R1), R3 at real-text entropy, and the L1 brainstorm (`s16_lanes_recovery_brainstorm.md`).
+- Open: d16 (R1) and R3 at real-text entropy. The L1 brainstorm moved to S16 (below).
 
 S14 closed the strict thesis. The user chose the plain-lanes paper (`s15_lanes_paper_plan.md`).
 
@@ -1205,4 +1205,25 @@ S14 closed the strict thesis. The user chose the plain-lanes paper (`s15_lanes_p
 **In parallel (L0b).** The S14 oracle at T=1920: lanes' floor per L, and lanes against confidence-ordered diffusion decoding at equal steps (win if lanes' total ≤ 0.5x).
 
 **Decision for the user, after R1.** Which mechanism for the learnable lane-start cost (L1). At d8 about 85% of the per-lane loss is learnable.
+
+## SAP S16: can a training signal or architecture raise lanes' recovery? (open 2026-10-06)
+
+Details in `s16_lanes_recovery_brainstorm.md`.
+
+**Target.** Raise recovery by about 2 to 4 nats per lane at L = 64 (d12: 5.0; 8B oracle: 9.7), with no extra decode steps and ≤ 10% FLOPs. The deficit is information (S15 L0), so mechanisms aimed at lane starts are out.
+
+**Survivors.** From a pool of 42:
+- S16-A, position-preserving infill rows (the lead);
+- S16-B, any-L lanes;
+- S16-C, lane-relative attention bias;
+- S16-D, offset-routed capacity;
+- S16-F, one-stream bridged lanes.
+
+Plus two ingredients, offset temperature and backward heads. S16-E (checkerboard lanes) was plain lanes relabelled and is killed.
+
+**Decides next.**
+- M0, eval-only: does recovery grow with training tokens (d4, 1x against 4x)? That picks training signal (A, B) or capacity (D).
+- M1, d8 gates: S16-A at f = 0.25 and S16-B, read in deficit and recovery nats per lane against `S11ln64x1_s1`. Pre-registered bars and kills are in each card.
+
+**Option for the user.** S16-G, converting a pretrained model to lanes, changes the paper's claim and is the user's call.
 

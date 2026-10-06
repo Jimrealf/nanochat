@@ -4,6 +4,20 @@ Durable concepts learned and misunderstandings corrected during this project.
 
 ---
 
+## 2026-10-06: S16 coding: an order is its step table; check a proposed order against the plain ones
+
+- **An order is fully defined by the step at which each position is drawn.**
+  - "Checkerboard lanes" (2L lanes of S/2 tokens; the odd lanes in lockstep, then the even lanes with both neighbours known) draw position 2j(S/2) + o at step o + 1. That is exactly plain `lanes{L}`.
+  - Every token sees the same set, so the oracle total is the same and a trained model gets the same mask.
+  - It was in the S16 pool as a survivor, at about 35% to pass its oracle gate. It was caught only when the oracle code produced plain lanes' step table, before any run.
+  - Before proposing an order, write down its step table and compare it with lanes, bisection and bridged lanes.
+- **`s11_ladder` scored against the wrong reference whenever a call did not retrain the dense model.**
+  - It put `ref` first only if this call had trained it. A lanes-only call made the first lanes model the reference, so the lane report's deficit and recovery were read against a lanes model.
+  - It now keeps an earlier run's reference at that depth (except in smoke runs).
+  - The printed "ratio to NAME" line always named the reference actually used, so an affected log is recognisable.
+
+---
+
 ## 2026-10-06: S15 Stage L0: lanes' lane-start cost is information; the learnable gap is recovery
 
 Data: `scratch/s15/` (d4 / d8 / d12 plain lanes against dense at 1x tokens; the LLaDA-8B oracle at T = 1920). Details in `s15_lanes_paper_plan.md` §7.

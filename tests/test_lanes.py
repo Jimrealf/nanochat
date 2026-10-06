@@ -6,7 +6,7 @@ import pytest
 import torch
 
 from nanochat.gpt import GPT, GPTConfig
-from nanochat.lanes import generate_lanes, lane_inputs, lane_layout, lane_mask, lane_rank
+from nanochat.lanes import generate_lanes, infill_layout, infill_rows, lane_inputs, lane_layout, lane_mask, lane_rank
 
 
 def _model(V=16, layers=2, seq=32):
@@ -163,3 +163,57 @@ def test_lane_offset_report_gives_absolute_nats_per_lane():
     assert rep["deficit nats per lane"] == pytest.approx(3.0) and rep["recovery nats per lane"] == pytest.approx(-1.0)
     assert rep["extra nats per lane by offset"] == pytest.approx([3.0, 0.0, 0.0, -1.0])
 
+
+
+def test_infill_layout_reads_only_earlier_draws_except_at_cold_slots():
+    """S16-A: perm lists every slot once (outside slots, then the middles, each in position order);
+    one middle of lo..hi slots per chunk, with a slot outside on either side inside the chunk; and
+    the only slots whose input is drawn later in perm order are the cold slots right after each
+    middle (their input is the middle's last target), which hold the lane-start token."""
+    from nanochat.lanes import infill_layout
+    N, lo, hi, gap, first = 2048, 2, 64, 128, 64
+    for seed in range(5):
+        perm, cold = infill_layout(N, lo, hi, gap, first, generator=torch.Generator().manual_seed(seed))
+        assert sorted(perm.tolist()) == list(range(N))
+        down = (perm[1:] < perm[:-1]).nonzero().flatten()
+        assert down.numel() == 1                                     # two increasing runs: outside, middles
+        mid = torch.zeros(N, dtype=torch.bool)
+        mid[perm[int(down) + 1:]] = True
+        starts = (mid[1:] & ~mid[:-1]).nonzero().flatten() + 1
+        assert torch.equal(cold, (mid[:-1] & ~mid[1:]).nonzero().flatten() + 1)
+        c = first + gap * torch.arange(starts.numel())
+        assert starts.numel() == len(range(first, N, gap))           # every chunk has room at N = 2048
+        assert ((cold - starts >= lo) & (cold - starts <= hi)).all()
+        assert (starts > c).all() and (cold < torch.clamp(c + gap, max=N)).all()
+        rank = torch.empty(N, dtype=torch.long)
+        rank[perm] = torch.arange(N)
+        later = rank[:-1] > rank[1:]                                 # slot k's input t_k is slot k-1's target
+        is_cold = torch.zeros(N, dtype=torch.bool)
+        is_cold[cold] = True
+        assert torch.equal(later, is_cold[1:])
+
+
+def _infill_total(model, perm, cold, V=4, N=8):
+    seqs = torch.tensor(list(itertools.product(range(V), repeat=N - 1)))  # t_2 .. t_8 after t_0 t_1 = 1 2
+    full = torch.cat([torch.tensor([1, 2]).expand(seqs.size(0), 2), seqs], dim=1)
+    x, y = full[:, :N], full[:, 1:].clone()
+    y[:, 0] = -1                                    # t_1 is part of the fixed prefix
+    causal = torch.ones(N, N, dtype=torch.bool).tril()[None, None]
+    lls = []
+    with torch.no_grad():
+        for xs, ys in zip(x.split(2048), y.split(2048)):
+            xi, yi, pid = infill_rows(xs, ys, perm, cold, V - 1)
+            nll = model(xi, yi, loss_reduction="none", lane_mask=causal, pos_ids=pid).view(yi.shape)
+            lls.append(-(nll * (yi >= 0)).sum(-1))
+    return torch.logsumexp(torch.cat(lls).double(), 0).item()
+
+
+def test_infill_rows_are_a_normalised_distribution():
+    """Enumerate every continuation (V=4, eight slots, one middle) run in infill order with true
+    rotary positions and a causal mask over the reordered row: the probabilities sum to one. Leaving
+    the cold slot's input in place (it is the middle's last target) breaks the sum."""
+    model = _model(V=4, seq=16)
+    perm, cold = infill_layout(8, lo=2, hi=3, gap=8, first=1, generator=torch.Generator().manual_seed(0))
+    assert cold.numel() == 1 and perm.tolist() != list(range(8))
+    assert _infill_total(model, perm, cold) == pytest.approx(0.0, abs=1e-3)      # measured ~1e-8
+    assert abs(_infill_total(model, perm, cold[:0])) > 5e-3                       # measured ~0.1

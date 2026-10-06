@@ -861,6 +861,13 @@ parser.add_argument("--sap-depth-bottom", type=int, default=0, help="SAP depth s
 parser.add_argument("--lanes", type=int, default=0, help="train and evaluate in lane order with this many lockstep lanes (0 = ordinary causal LM)")
 parser.add_argument("--lane-prefix-max", type=int, default=256, help="lanes: causal prefix length drawn uniformly from multiples of L up to this per step")
 parser.add_argument("--lane-eval-prefix", type=int, default=128, help="lanes: fixed causal prefix for the lane-order val bpb (rounded down to a multiple of L)")
+parser.add_argument("--lanes-mix", type=str, default="",
+                    help="S16-B any-L lanes: comma list of lane counts; each micro-step draws its L from it (val stays at --lanes)")
+parser.add_argument("--lane-infill-frac", type=float, default=0.0,
+                    help="S16-A: with --lanes, this fraction of micro-steps trains on position-preserving infill rows "
+                         "(nanochat/lanes.py infill_layout) instead of lane rows")
+parser.add_argument("--lane-infill-span", type=str, default="2,64", help="S16-A: middle span length range lo,hi (slots)")
+parser.add_argument("--lane-infill-gap", type=int, default=128, help="S16-A: one middle per this many slots")
 parser.add_argument("--class-map", type=str, default="",
                     help="S13: Brown class map (.npy, one class id per token id, scripts/sap_brown_classes.py)")
 parser.add_argument("--splice", type=int, default=0,
@@ -1020,6 +1027,15 @@ if args.lanes > 0:
     lane_eval_prefix = (args.lane_eval_prefix // args.lanes) * args.lanes
     print0(f"[lanes] L={args.lanes}, lane-start token {LANE_TOKEN}={lane_token_id}, train prefix <= "
            f"{args.lane_prefix_max}, eval prefix {lane_eval_prefix}")
+    lanes_mix = [int(v) for v in args.lanes_mix.split(",") if v]
+    if lanes_mix or args.lane_infill_frac > 0:
+        assert args.lane_align_window == 0 and args.splice == 0, "--lanes-mix / --lane-infill-frac use plain lanes"
+        assert all(args.max_seq_len % v == 0 for v in lanes_mix), "every --lanes-mix L must divide the row"
+        print0(f"[lanes] S16: lane counts {lanes_mix or [args.lanes]}, infill fraction {args.lane_infill_frac} "
+               f"(spans {args.lane_infill_span}, one per {args.lane_infill_gap} slots)")
+    if args.lane_infill_frac > 0:
+        from nanochat.lanes import infill_layout, infill_rows
+        infill_span = tuple(int(v) for v in args.lane_infill_span.split(","))
     if args.lane_align_window > 0:
         from nanochat.lanes import PAD_TOKEN, aligned_lanes_rows, sentence_end_table
         lane_pad_id = tokenizer.encode_special(PAD_TOKEN)
@@ -2944,17 +2960,24 @@ while True:
                 model(_xs, _ys, lane_mask=separator_mask(x.size(1), args.sep_split, args.sep_slots, x.device))
         elif args.lanes > 0:
             # Lane order with a fresh causal prefix length each micro-step (same mask shape, so
-            # the compiled graph is reused).
-            _P = sample_prefix_len(args.lane_prefix_max, args.lanes)
-            if args.lane_align_window > 0:
+            # the compiled graph is reused). S16: a lane count drawn from --lanes-mix, or an
+            # infill micro-step (true positions, causal mask over the reordered row).
+            _L = lanes_mix[int(torch.randint(len(lanes_mix), (1,)))] if lanes_mix else args.lanes
+            _P = sample_prefix_len(args.lane_prefix_max, _L)
+            if args.lane_infill_frac > 0 and float(torch.rand(())) < args.lane_infill_frac:
+                _perm, _cold = infill_layout(x.size(1), *infill_span, gap=args.lane_infill_gap)
+                _xi, _yi, _pid = infill_rows(x, y, _perm.to(x.device), _cold.to(x.device), lane_token_id)
+                _causal = torch.ones(x.size(1), x.size(1), dtype=torch.bool, device=x.device).tril()[None, None]
+                loss = model(_xi, _yi, lane_mask=_causal, pos_ids=_pid)
+            elif args.lane_align_window > 0:
                 _xa, _ya, _, _ = aligned_lanes_rows(x, y, _P, args.lanes, lane_token_id, lane_pad_id, lane_ends,
                                                     lane_bos_id, args.lane_align_window)
                 loss = model(_xa, _ya, lane_mask=lane_mask(x.size(1), _P, args.lanes, x.device))
             elif args.splice > 0:
                 loss = model(x, y, splice=(_P, args.lanes, lane_token_id))
             else:
-                loss = model(lane_inputs(x, _P, args.lanes, lane_token_id), y,
-                             lane_mask=lane_mask(x.size(1), _P, args.lanes, x.device))
+                loss = model(lane_inputs(x, _P, _L, lane_token_id), y,
+                             lane_mask=lane_mask(x.size(1), _P, _L, x.device))
         else:
             loss = model(x, y)
             

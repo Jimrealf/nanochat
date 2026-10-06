@@ -1590,6 +1590,9 @@ def s11_ladder(specs: str = "dense:1:1", depth: int = 4, prefix: int = 128, rows
         la:L:W:MULT:SEED     S12 sentence-aligned lanes, cut within the last W slots (scored by s12_aligned_eval)
         sp:L:MULT:SEED       S13 SV-A splice codes: lanes whose junction classes are drawn first
                              (Brown classes at {VOL}/out/s13/brown256.npy; nanochat/splice.py)
+        ppi:L:F:MULT:SEED    S16-A plain lanes with a fraction F of position-preserving infill micro-steps
+        mix:L1+L2+..:MULT:SEED  S16-B any-L lanes (each micro-step draws L from the list; scored at the largest
+                             listed L <= 64, the paper's default; s16_score scores it at every L)
     Every model trained here is scored per position on identical targets, as a ratio to `ref`.
     Bar (user decision 2026-10-04): within 1% of dense-1x bpb at <= 4x tokens with >= 10x fewer
     sequential decode steps; the gap at equal tokens is reported alongside."""
@@ -1629,6 +1632,17 @@ def s11_ladder(specs: str = "dense:1:1", depth: int = 4, prefix: int = 128, rows
             tag, ev = f"S13sp{L}x{mult:g}_s{seed}", f":sp{L}"
             a += ["--lanes", L, "--lane-prefix-max", "256", "--lane-eval-prefix", str(prefix),
                   "--splice", "1", "--class-map", f"{VOL}/out/s13/brown256.npy"]
+        elif kind == "ppi":                               # S16-A: ppi:L:F:MULT:SEED
+            L, F = v[0], float(v[1])
+            tag, ev = f"S16ppi{round(F * 100)}L{L}x{mult:g}_s{seed}", f":ln{L}"
+            a += ["--lanes", L, "--lane-prefix-max", "256", "--lane-eval-prefix", str(prefix),
+                  "--lane-infill-frac", str(F)]
+        elif kind == "mix":                               # S16-B: mix:16+32+64+128:MULT:SEED
+            Ls = [int(x) for x in v[0].split("+")]
+            L = max([x for x in Ls if x <= 64] or Ls)
+            tag, ev = f"S16mix{'_'.join(map(str, Ls))}x{mult:g}_s{seed}", f":ln{L}"
+            a += ["--lanes", str(L), "--lanes-mix", ",".join(map(str, Ls)), "--lane-prefix-max", "256",
+                  "--lane-eval-prefix", str(prefix)]
         elif kind in ("lo", "sd"):                        # two-stream plain lanes / seeded middle-out lanes
             L = v[0]
             m = v[1] if kind == "sd" and len(v) == 4 else "1"     # sd:K:M:MULT:SEED (seed window M) or sd:K:MULT:SEED
@@ -1652,8 +1666,11 @@ def s11_ladder(specs: str = "dense:1:1", depth: int = 4, prefix: int = 128, rows
         if res.get("returncode") == 0:
             ok.append(res["tag"])
     d = f"{S03}/d{depth}{'_smoke' if smoke else ''}"
-    order = ([ref] if ref in ok else []) + sorted(t for t in ok if t != ref and evspec[t] is not None)
-    models = [f"--model={t}:{d}/{t}{evspec[t]}" for t in order]      # aligned lanes: s12_aligned_eval
+    # The reference goes first (the lane reports read every lanes model against it): this run's, or,
+    # when the specs do not retrain it, an earlier run's at this depth.
+    keep_ref = ref in ok or (ref not in evspec and not smoke)
+    order = ([ref] if keep_ref else []) + sorted(t for t in ok if t != ref and evspec[t] is not None)
+    models = [f"--model={t}:{d}/{t}{evspec.get(t, '')}" for t in order]      # aligned lanes: s12_aligned_eval
     edges = f"0,{prefix},{prefix + 128},{prefix + 384},1024,2047"
     out_name = f"s11_ladder_bpb_d{depth}_{name}{'_smoke' if smoke else ''}"
     res = s03_job.remote(out_name, ["scripts.sap_position_bpb", "--tokenizer-dir", S03_TOK, "--data-dir",
@@ -2938,6 +2955,24 @@ def s14_order_oracle(oracle: str = "llada", rows: int = 0, shards: int = 4, orde
     res = s14_cpu_job.remote(f"{tag}_merge", ["scripts.sap_order_oracle", "--merge", *[a[-1] for a, _ in jobs],
                                               "--out", f"{S14}/{tag}.json"])
     print(res["tail"])
+
+
+@app.local_entrypoint()
+def s16_score(models: str, depth: int = 8, ref: str = "S11dense_x1_s1", prefix: int = 128, rows: int = 256,
+              name: str = "gates"):
+    """S16 (s16_lanes_recovery_brainstorm.md): score lane checkpoints at any lane count against one
+    dense reference, with the deficit/recovery lane report. models: comma list of TAG@L (e.g.
+    S16mix16_32_64_128x1_s1@32,S11ln64x1_s1@64). Eval only."""
+    specs = [f"--model={ref}:{S03}/d{depth}/{ref}"]
+    for m in [x for x in models.split(",") if x]:
+        tag, L = m.split("@")
+        specs.append(f"--model={tag}@{L}:{S03}/d{depth}/{tag}:ln{L}")
+    edges = f"0,{prefix},{prefix + 128},{prefix + 384},1024,2047"
+    out = f"s16_score_d{depth}_{name}"
+    res = s03_job.remote(out, ["scripts.sap_position_bpb", "--tokenizer-dir", S03_TOK, "--data-dir", f"{VOL}/data",
+                               "--rows", str(rows), "--wb-prefix", str(prefix), "--edges", edges,
+                               "--out", f"{S03}/{out}.json", *specs])
+    print(res["tail"][-4000:])
 
 
 @app.local_entrypoint()
