@@ -4,6 +4,28 @@ Durable concepts learned and misunderstandings corrected during this project.
 
 ---
 
+## 2026-10-06: S16 Stage M1: read lookahead on a band, match references to token budgets, state the signs
+
+Data: `scratch/s16/`. Details in `s16_lanes_recovery_brainstorm.md` §6.
+
+- **Read a lookahead mechanism on the band it targets, not on the sign of the excess.**
+  - The deficit/recovery split sums the per-offset excess by sign. Mid-lane offsets (8-15 at S = 30) still cost more than dense, yet they already read the next lane's first tokens.
+  - S16-C's gain sat entirely at offsets 8-28 (−0.30 at 8-15, −0.27 at 16-28). The split called it "deficit −0.32, recovery +0.22", and its pre-registered recovery bar killed it.
+  - The band metric (`lookahead_band`: offsets ⌈S/4⌉..S−2) gives +0.57. It is the gate metric from now on; my pre-registered metric was the error.
+- **A reference must match the token budget of the model read against it.**
+  - M0 scored 4x-token lanes against dense-1x. The general gain from 4x tokens (net −8.2 nats per lane) then shows up by sign as "recovery +5.655".
+  - Token-matched, the net tax is flat. The "training-signal limited" conclusion is void.
+- **State the sign convention of every delta.** The bundled report gave S16-A's and S16-B's recovery changes as gains (+0.10, +0.07); both were losses. Write Δ with its definition next to every table.
+- **Quote a gate whole.** S16-C was reported as passing "the ≥ 0.3% bpb gate". Its card also required recovery ≥ +0.7, and killed it below +0.3.
+- **"0 extra FLOPs" is not "free".** The lane bias materialises a float (T, T) bias per head in every layer, and training wall-clock rose 32%.
+- **Every scored mechanism needs a decoder path before speed or sample claims.** The KV-cache lane decoder passes no lane mask, so an LRB model decodes without its bias and offset embeddings.
+- **Results.**
+  - Infill rows: killed. Recovery fell 0.10 and bpb rose 0.29%.
+  - Any-L: within 0.3% of single-L at L ≤ 64 and +1.09% at 128, with no recovery gain.
+  - Lane bias: −0.51% bpb on one seed, +0.57 on the band. It is between kill and go, and its settlement runs are pre-registered.
+
+---
+
 ## 2026-10-06: S16 coding: an order is its step table; check a proposed order against the plain ones
 
 - **An order is fully defined by the step at which each position is drawn.**

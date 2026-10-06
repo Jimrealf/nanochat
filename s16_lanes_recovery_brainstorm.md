@@ -1,10 +1,12 @@
 # S16: raising lanes' recovery (the L1 mechanism for the lanes paper)
 
-Status 2026-10-06.
-- Brainstorm done.
-- Coded in this commit: the S16-A and S16-B training arms (`--lane-infill-frac`, `--lanes-mix`), and `s16_score` for scoring at any lane count. Stage M0 needs no new code.
+Status 2026-10-06, after Stage M1 (results and verdicts in §6).
+- S16-A (infill rows) is killed.
+- S16-B (any-L) is no worse at L ≤ 64, but it is not a recovery mechanism.
+- S16-C (lane bias) is −0.51% bpb on one seed. It is between kill and go on the corrected metric, and its settlement runs are pre-registered in §6.
+- M0 is void: its reference did not match the token budget. Rerun with the corrected commands in §4.
+- From now on, gates read recovery on the lookahead band (§6), not on the sign split.
 - S16-E (checkerboard lanes) was killed while coding: it is plain lanes relabelled (§3).
-- The rest are designed but not coded.
 
 Inputs: `s15_lanes_paper_plan.md` §7 (Stage L0) and `s14_sap_strict_tl_brainstorm.md` §11 (the order oracle).
 
@@ -113,7 +115,11 @@ All gates are read in the same units:
 - **Kill.** Recovery gain < 0.3.
 - **Nearest work.** T5 relative biases, ALiBi, LCLM's line-staggered RoPE (positions only).
 - **Delta.** Lane-role attention biases for cross-lane lookahead.
-- Not coded yet: it touches the attention kernel path and the decoder.
+- **Coded** by the user's agent in `Seqaeon/nanochat` (80101b8) and ported unchanged:
+  - `nanochat/lanes.py::compute_lrb_buckets`: 44 buckets per head, made of 5 lane roles × 7 offset-gap buckets, 8 prefix-distance buckets, and 1 lane-to-prefix bucket;
+  - `GPT.lane_rel_bias` and `lane_offset_embed`.
+- **Control** (added here): `--lane-rel-bias-roles 0` (ladder spec `lrbd`) collapses the roles.
+- **Not yet in the KV-cache decoder.** Result: §6.
 
 **S16-D. Offset-routed recovery capacity (ORC).**
 - **Mechanism.** Positions at offsets ≥ S/2 (where recovery happens) pass through one extra MLP expert per layer (deterministic routing by offset), or k extra top layers.
@@ -164,10 +170,14 @@ All gates are read in the same units:
 
 **Stage M0: eval-only (CPU, plus well under 1 H100-hour)**
 1. **The oracle's exact per-offset profile.** This is S15 §7.4's `--merge-only` re-merge of t1920 (CPU, no model load). It gives the oracle's deficit, recovery and per-step TC at L = 32, 64 and 128 on the same rows, which is the reference every recovery number is read against.
-2. **Recovery against training tokens.** Rescore d4 plain lanes at L = 64 at 1x and 4x (two seeds), with the new report:
+2. **Recovery against training tokens.** Rescore d4 plain lanes at L = 64 at 1x and 4x (two seeds), each token budget against its own dense model:
 
-   `modal run modal_sap.py::s16_score --depth 4 --name tokens --models S11ln64x1_s1@64,S11ln64x4_s1@64,S11ln64x4_s2@64`
+   `modal run modal_sap.py::s16_score --depth 4 --name tokens1x --models S11ln64x1_s1@64,S11ln32x1_s1@32`
 
+   `modal run modal_sap.py::s16_score --depth 4 --name tokens4x --ref S11dense_x4_s2 --models S11ln64x4_s1@64,S11ln64x4_s2@64,S11ln32x4_s1@32`
+
+   - **Corrected 2026-10-06.** As first written, this step was one call that scored the 4x models against dense-1x. That books the general gain from 4x tokens as recovery (§6, M0).
+   - Read the change on the lookahead band (§6) and on recovery.
    - If recovery grows by ≥ 2 nats per lane from 1x to 4x (≥ 1 per doubling of tokens), recovery is sample-limited, and the training-signal mechanisms (S16-A, B) get priority.
    - If it grows by < 0.5, the capacity mechanism (S16-D) gets priority.
    - In between, both stay in.
@@ -200,7 +210,84 @@ All gates are read in the same units:
 
 | what | my estimate |
 |---|---|
-| PPI (S16-A) passes its d8 gate | about 40% |
-| Any-L (S16-B) passes "no worse" | about 70%; a recovery gain, about 30% |
-| Some survivor closes ≥ 50% of the recovery gap at d12 | about 25% |
-| The resulting paper reaches A* (it still needs scale and the protocol) | about 15 to 25% |
+| PPI (S16-A) passes its d8 gate | about 40% → **killed** (§6) |
+| Any-L (S16-B) passes "no worse" | about 70%; a recovery gain, about 30% → **no worse at L ≤ 64; no recovery gain** |
+| Some survivor closes ≥ 50% of the recovery gap at d12 | about 25% → about 15% (the best so far, S16-C, closes about 12% at d8, on one seed) |
+| The resulting paper reaches A* (it still needs scale and the protocol) | about 15 to 25% → **about 10 to 15%** |
+
+## 6. Stage M1 results (2026-10-06)
+
+**Data.**
+- Files: `scratch/s16/`, copied from `Seqaeon/nanochat` (`scratch/sync_d8/` and `scratch/`).
+- Setup: d8 models at 1x tokens (440.4M), 256 rows, against dense `S11dense_x1_s1` (0.9346).
+- Checks passed:
+  - the baseline reproduces S15 exactly (1.0076 bpb; 7.562 extra nats per lane);
+  - every arm has the same hyperparameters and 1,680 steps;
+  - the report's numbers match the JSONs.
+
+| model | L | block bpb | against single-L | extra nats/lane | deficit | recovery | lookahead band (gain) |
+|---|---|---|---|---|---|---|---|
+| `S11ln32x1_s1` | 32 | 0.9806 | — | 10.434 | 15.756 | −5.322 | −1.864 |
+| `S11ln64x1_s1` | 64 | 1.0076 | — | 7.562 | 11.652 | −4.090 | −1.118 |
+| `S11ln128x1_s1` | 128 | 1.0457 | — | 5.663 | 8.872 | −3.209 | −0.555 |
+| `S16ppi25L64x1_s1` (S16-A) | 64 | 1.0105 | +0.29% | 7.823 | 11.811 | −3.989 | −1.116 (−0.002) |
+| `S16mix16_32_64_128x1_s1` (S16-B) | 32 | 0.9834 | +0.29% | 10.970 | 16.382 | −5.412 | −1.274 (−0.590) |
+| same | 64 | 1.0081 | +0.05% | 7.563 | 11.585 | −4.023 | −1.134 (+0.016) |
+| same | 128 | 1.0571 | +1.09% | 6.241 | 9.059 | −2.817 | −0.180 (−0.376) |
+| `S16lrbL64x1_s1` (S16-C) | 64 | 1.0025 | **−0.51%** | 7.018 | 11.333 | −4.314 | −1.684 (**+0.566**) |
+
+**How to read the table.**
+- All nats are per lane, over lanes 1..L-1.
+- The lookahead band (`lookahead_band`) is the excess summed over offsets ⌈S/4⌉..S−2. Its gain is the single-L model's band minus the arm's, so a positive gain means more lookahead benefit.
+
+**Verdicts.**
+- **S16-A (infill rows): kill.**
+  - Recovery fell by 0.10 (the bundled report gave it as a +0.10 gain), and bpb is 0.29% worse. The band is unchanged.
+  - Its costs are at offsets 0-7 (+0.14 nats per lane) and at the junction (+0.12).
+- **S16-B (any-L): neither go nor kill.**
+  - At L = 64 it is no worse (+0.05%) but gains nothing: recovery −0.07, band +0.02.
+  - At 32 it is +0.29%. At 128 it is +1.09%, which fails the 0.5% clause.
+  - Lookahead drops at the lane counts other than 64 (band −0.59 at 32, −0.38 at 128).
+  - Keep it as a speed/quality dial for L ≤ 64, not as a recovery mechanism.
+- **S16-C (lane bias plus offset embedding): a kill by the pre-registered letter, between kill and go on the corrected metric.**
+  - Its card needed recovery ≥ +0.7 and bpb ≥ 0.3% lower to go, and killed it at recovery < +0.3. Measured recovery was +0.22. The bundled report quoted only the bpb half of the gate.
+  - **The metric was the flaw.** S16-C's whole gain is at offsets 8-28: −0.30 nats per lane at 8-15 and −0.27 at 16-28; all other offsets sum to +0.02. That is the band §0 names as the learnable shortfall. The sign split books offsets 8-15 as deficit, because their excess is still positive.
+  - **On the band it is +0.57**: above the kill (0.3), below the go (0.7).
+  - **The bpb gain is probably real.** The any-L arm, on the same code and machines, lands within 0.05% of the baseline at L = 64, and the seed spread at d4 is 0.04-0.1%.
+  - **Not yet counted:**
+    - it is one seed;
+    - it has no decoder support. `generate_lanes` and `lane_step` pass no lane mask, so the bias and the offset embeddings are skipped at decode. Samples would not come from the scored model, and the 30-step speed is unmeasured;
+    - training wall-clock rose 32% (1,027 s against 777 s);
+    - the bias also covers prefix-to-prefix distances, so part of the gain may be a generic relative-position bias (the prefix bucket moved 0.4%).
+
+**Metric correction (pre-registered from now).**
+- S16 gates read recovery on `lookahead nats per lane` (`scripts/sap_position_bpb.py::lookahead_band`), with the same bars: go ≥ +0.7, kill < +0.3.
+- The deficit/recovery split stays as a diagnostic.
+
+**M0: void.**
+- The single call first written in §4 scored the 4x lanes against dense-1x. Lanes-4x is 0.993 of dense-1x, so its net excess against dense-1x is about −0.8 nats per lane, against +7.4 at 1x. The sign split books most of that general gain as recovery: the reported +5.655 is what this looks like.
+- Token-matched, the net tax is flat (1.0655 against 1.063 at 1x). A +5.7 recovery gain would then need a d4 deficit near 14 nats; d12's is 11.9 and the 8B oracle's 11.3.
+- Neither repo holds a JSON or log of the run.
+- Rerun with the corrected commands in §4. M1 already shows that the two training-signal arms do not move recovery.
+
+**S16-C settlement (about 1 H100-hour), pre-registered before the runs:**
+```
+modal run modal_sap.py::s11_ladder --depth 8 --name s16_c2 --specs lrb:64:1:2,ln:64:1:2,lrbd:64:1:1
+```
+- **Real.** The two-seed mean of `S16lrbL64x1_s1/_s2` is ≥ 0.3% lower bpb than that of `S11ln64x1_s1/_s2`, and both seeds are lower.
+- **Recovery mechanism**, on the two-seed mean band gain:
+  - ≥ 0.7: go to d12;
+  - 0.3 to 0.7: a free add-on, not a headline;
+  - < 0.3: drop the recovery claim.
+- **Attribution** (`S16lrbdL64x1_s1`, lane roles collapsed into offset-gap buckets):
+  - if it keeps ≥ 80% of seed 1's bpb gain, the gain is a generic relative bias. There is then no lane-addressing claim, and dense needs the same bias as a fair baseline;
+  - if it keeps ≤ 50%, the lane roles carry the gain.
+- Decoder support (bias rows and offset embeddings in `lane_step`, plus a decoder-matches-training test) comes only if S16-C survives this.
+
+**Paper status (frank).**
+- No mechanism closes recovery yet. S16-C cuts the d8 L = 64 tax from 7.8% to 7.3%, about 12% of the roughly 4.7 nats per lane that a ≤ 3% tax needs.
+- **Remaining levers:**
+  - S16-F, one-stream bridged lanes: the oracle's most efficient order, 0.86% total at 101 steps, about 19 tokens per pass. It is to be coded after the settlement runs; its gate is unchanged;
+  - S16-G, converting a pretrained model: the user's call;
+  - scale: d16 costs about 9 of the roughly 12.7 H100-hours left.
+- **Not now:** d16, the R3 samples sweep, S16-D.

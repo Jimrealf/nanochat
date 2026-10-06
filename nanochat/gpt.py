@@ -43,6 +43,12 @@ class GPTConfig:
     n_kv_head: int = 6 # number of key/value heads (GQA)
     n_embd: int = 768
 
+    # S16-C: Lane-Relative Attention Bias (LRB) and Offset Embedding
+    lane_rel_bias: bool = False
+    lane_offset_embed: bool = False
+    lane_max_offsets: int = 256
+    lane_rel_bias_roles: bool = True    # False: the roles-collapsed control (offset-gap buckets only)
+
     # Research branches
     use_moe: bool = False
     use_perm: bool = False
@@ -10292,6 +10298,14 @@ class GPT(nn.Module):
             self.register_buffer("class_of_token", torch.zeros(config.vocab_size, dtype=torch.long))
             print0(f"[S13] splice codes: K={config.splice_k} "
                    f"params={sum(p.numel() for p in self.splice.parameters()):,}")
+        # S16-C: Lane-Relative Attention Bias (LRB) and Offset Embedding
+        self.lane_rel_bias = None
+        if getattr(config, 'lane_rel_bias', False):
+            self.lane_rel_bias = nn.Parameter(torch.empty(config.n_head, 44))
+        self.lane_offset_embed = None
+        if getattr(config, 'lane_offset_embed', False):
+            self.lane_offset_embed = nn.Embedding(getattr(config, 'lane_max_offsets', 256), config.n_embd)
+
         # Design 10 (auxiliary objective): lightweight head predicts boundary or entropy from
         # the mean context vector across all RemixedBlocks. Forces context to encode
         # non-trivial information and prevents gradient-collapse to identity.
@@ -10861,6 +10875,10 @@ class GPT(nn.Module):
             torch.nn.init.normal_(self.splice.emb.weight, mean=0.0, std=1.0)
             torch.nn.init.normal_(self.splice.head.weight, mean=0.0, std=0.001)
             self.class_of_token.zero_()                 # base_train loads the class map after init
+        if getattr(self, 'lane_rel_bias', None) is not None:
+            self.lane_rel_bias.zero_()
+        if getattr(self, 'lane_offset_embed', None) is not None:
+            torch.nn.init.normal_(self.lane_offset_embed.weight, mean=0.0, std=0.02)
 
         # Cast embeddings to COMPUTE_DTYPE: optimizer can tolerate reduced-precision
         # embeddings and it saves memory. Exception: fp16 requires fp32 embeddings
@@ -10871,6 +10889,8 @@ class GPT(nn.Module):
             # master weights stay fp32 like every other matrix in the model.
             if isinstance(self.transformer.wte, nn.Embedding):
                 self.transformer.wte.to(dtype=COMPUTE_DTYPE)
+            if getattr(self, 'lane_offset_embed', None) is not None:
+                self.lane_offset_embed.to(dtype=COMPUTE_DTYPE)
             for ve in self.value_embeds.values():
                 ve.to(dtype=COMPUTE_DTYPE)
 
@@ -10991,6 +11011,10 @@ class GPT(nn.Module):
         wte_numel = sum(p.numel() for p in self.transformer.wte.parameters())
         nparams_exclude = (wte_numel + wpe_numel + value_embeds_numel +
                           self.resid_lambdas.numel() + self.x0_lambdas.numel())
+        if getattr(self, 'lane_offset_embed', None) is not None:
+            nparams_exclude += sum(p.numel() for p in self.lane_offset_embed.parameters())
+        if getattr(self, 'lane_rel_bias', None) is not None:
+            nparams_exclude += self.lane_rel_bias.numel()
         # Binary per-channel scales (log_alpha / theta / log_g) are elementwise
         # rescales of the output, not matmul weights, so the 6N proxy overcharges
         # them. Tiny in absolute terms (512 floats against 3.1M matrix params per
@@ -11198,6 +11222,10 @@ class GPT(nn.Module):
             research += sum(p.numel() for p in self.sap_head.parameters())
         if getattr(self, 'splice', None) is not None:     # S13 splice code table and head
             research += sum(p.numel() for p in self.splice.parameters())
+        if getattr(self, 'lane_offset_embed', None) is not None:
+            research += sum(p.numel() for p in self.lane_offset_embed.parameters())
+        if getattr(self, 'lane_rel_bias', None) is not None:
+            research += self.lane_rel_bias.numel()
         # AG-CCL: ctx_from_attn and ctx_ema_gate live inside transformer.h (RemixedBlock)
         # and are already counted in transformer_matrices above.
         scalars = self.resid_lambdas.numel() + self.x0_lambdas.numel()
@@ -11474,6 +11502,10 @@ class GPT(nn.Module):
         # S13 splice codes: the code table trains like an embedding, the code head like lm_head.
         if getattr(self, 'splice', None) is not None:
             sap_embedding_params.append(self.splice.emb.weight)
+        if getattr(self, 'lane_offset_embed', None) is not None:
+            sap_embedding_params.append(self.lane_offset_embed.weight)
+        if getattr(self, 'lane_rel_bias', None) is not None:
+            struct_adamw_params.append(self.lane_rel_bias)
 
         research_adamw_params = gate_adamw_params + struct_adamw_params
 
@@ -11733,7 +11765,7 @@ class GPT(nn.Module):
 
     def forward(self, idx, targets=None, kv_cache=None, loss_reduction='mean',
                 skip_logits=False, return_hidden=False, sap_capture=False, lane_mask=None, pos_ids=None,
-                head_from=0, extra_embed=None, splice=None):
+                head_from=0, extra_embed=None, splice=None, lane_params=None):
         """skip_logits returns the final normalised hidden states (B, T, d) without the
         lm_head, which is all block decoding needs from a trunk pass. return_hidden makes
         the inference path return (logits, hidden). pos_ids (T,) gives each input its rotary
@@ -11784,6 +11816,13 @@ class GPT(nn.Module):
             x, _ = self.embedding_model(idx)
         if extra_embed is not None:                     # S13 splice: code embeddings on lane-first inputs
             x = x + extra_embed.to(x.dtype)
+        if lane_mask is not None and getattr(self.config, 'lane_offset_embed', False) and getattr(self, 'lane_offset_embed', None) is not None:
+            from nanochat.lanes import deduce_lane_layout, get_lrb_cache
+            _lp_P, _lp_L = lane_params if lane_params is not None else deduce_lane_layout(lane_mask)
+            _, _, _offsets = get_lrb_cache(x.size(1), _lp_P, _lp_L, device=x.device,
+                                           roles=getattr(self.config, 'lane_rel_bias_roles', True))
+            _max_o = getattr(self.config, 'lane_max_offsets', 256)
+            x = x + self.lane_offset_embed(_offsets.clamp(max=_max_o - 1))
         if "wpe" in self.transformer:
             if T_total is None:  # graph-safe decode: positions already on the device
                 positions = pos
@@ -11841,6 +11880,15 @@ class GPT(nn.Module):
                           and (sap_capture or (kv_cache is None and self.training and targets is not None)))
             _sap_ids = set(self.sap_head.depth_capture_ids) if _sap_depth else set()
             _sap_states = {}
+            _lrb_mask = lane_mask
+            if lane_mask is not None and getattr(self.config, 'lane_rel_bias', False) and getattr(self, 'lane_rel_bias', None) is not None:
+                from nanochat.lanes import deduce_lane_layout, get_lrb_cache
+                _lp_P, _lp_L = lane_params if lane_params is not None else deduce_lane_layout(lane_mask)
+                _vis, _buckets, _ = get_lrb_cache(x.size(1), _lp_P, _lp_L, device=x.device,
+                                                  roles=getattr(self.config, 'lane_rel_bias_roles', True))
+                _dt = torch.bfloat16 if x.is_cuda else x.dtype
+                _bias = self.lane_rel_bias[:, _buckets.clamp(min=0)][None].to(_dt)
+                _lrb_mask = torch.where(_vis[None, None], _bias, torch.tensor(float('-inf'), device=x.device, dtype=_dt))
             for i, block in enumerate(self.transformer.h):
                 # 19E: Apply depth-dependent x0 decay
                 x0_w = self.x0_lambdas[i]
@@ -11853,7 +11901,7 @@ class GPT(nn.Module):
                 if self.use_remix_linear:
                     x, prev_ctx = block(x, ve, cos_sin, self.window_sizes[i], kv_cache, prev_ctx, p24_global_signal=p24_global_signal)
                 elif lane_mask is not None:
-                    x = block(x, ve, cos_sin, self.window_sizes[i], kv_cache, attn_mask=lane_mask)
+                    x = block(x, ve, cos_sin, self.window_sizes[i], kv_cache, attn_mask=_lrb_mask)
                 else:
                     x = block(x, ve, cos_sin, self.window_sizes[i], kv_cache)
                 # Tier 0 test 2: make this layer prediction-readable through the shared head.

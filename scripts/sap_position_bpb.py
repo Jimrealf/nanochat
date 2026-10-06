@@ -87,6 +87,15 @@ def bucket_bpb(model, rows, token_bytes, edges, mask=None, batch=8, prep=None, w
     return bpb, pos_nats, pos_bytes
 
 
+def lookahead_band(by_offset):
+    """S16: a lane's excess summed over offsets ceil(S/4)..S-2 (8-28 at S = 30), where the next
+    lane's first tokens are 2 to about 3S/4 positions ahead. Lookahead gains there straddle the
+    sign of the excess, so the deficit/recovery split books part of them as deficit (S16-C's gain
+    at offsets 8-15 was); from 2026-10-06 this band is the recovery metric for S16 gates."""
+    S = len(by_offset)
+    return sum(by_offset[-(-S // 4):S - 1])
+
+
 def lane_offset_report(N, P, L, own, ref, n_rows=0):
     """S08 plain lanes: the cost against the reference by input offset within a lane (step s),
     pooled over lanes 1..L-1 (lane 0 continues the prefix directly and is reported alone). own,
@@ -96,7 +105,8 @@ def lane_offset_report(N, P, L, own, ref, n_rows=0):
     also the extra nats per lane in absolute units (S15 R1, comparable across model sizes and with
     the order oracle's per-lane TC), the reference's nats per token, and the per-lane excess by
     offset split into the deficit (offsets that cost more than the reference) and the recovery
-    (offsets that cost less: late tokens that read the next lane's early ones)."""
+    (offsets that cost less: late tokens that read the next lane's early ones), and the lookahead
+    band (lookahead_band)."""
     S = (N - P) // L
     p = torch.arange(N)
     s, j = (p - P) % S, (p - P) // S
@@ -120,6 +130,7 @@ def lane_offset_report(N, P, L, own, ref, n_rows=0):
                      for k in range(S)]
         out["deficit nats per lane"] = sum(v for v in by_offset if v > 0)
         out["recovery nats per lane"] = sum(v for v in by_offset if v < 0)
+        out["lookahead nats per lane"] = lookahead_band(by_offset)
         out["extra nats per lane by offset"] = by_offset
     return out
 

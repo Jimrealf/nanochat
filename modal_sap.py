@@ -1593,6 +1593,8 @@ def s11_ladder(specs: str = "dense:1:1", depth: int = 4, prefix: int = 128, rows
         ppi:L:F:MULT:SEED    S16-A plain lanes with a fraction F of position-preserving infill micro-steps
         mix:L1+L2+..:MULT:SEED  S16-B any-L lanes (each micro-step draws L from the list; scored at the largest
                              listed L <= 64, the paper's default; s16_score scores it at every L)
+        lrb:L:MULT:SEED      S16-C lane-relative attention bias + input offset embedding
+        lrbd:L:MULT:SEED     S16-C control: the same with the lane roles collapsed (offset-gap buckets only)
     Every model trained here is scored per position on identical targets, as a ratio to `ref`.
     Bar (user decision 2026-10-04): within 1% of dense-1x bpb at <= 4x tokens with >= 10x fewer
     sequential decode steps; the gap at equal tokens is reported alongside."""
@@ -1643,6 +1645,13 @@ def s11_ladder(specs: str = "dense:1:1", depth: int = 4, prefix: int = 128, rows
             tag, ev = f"S16mix{'_'.join(map(str, Ls))}x{mult:g}_s{seed}", f":ln{L}"
             a += ["--lanes", str(L), "--lanes-mix", ",".join(map(str, Ls)), "--lane-prefix-max", "256",
                   "--lane-eval-prefix", str(prefix)]
+        elif kind in ("lrb", "lrbd"):                     # S16-C: lrb:L:MULT:SEED; lrbd: roles collapsed
+            L = v[0]
+            tag, ev = f"S16{kind}L{L}x{mult:g}_s{seed}", f":ln{L}"
+            a += ["--lanes", L, "--lane-prefix-max", "256", "--lane-eval-prefix", str(prefix),
+                  "--lane-rel-bias", "1", "--lane-offset-embed", "1"]
+            if kind == "lrbd":
+                a += ["--lane-rel-bias-roles", "0"]
         elif kind in ("lo", "sd"):                        # two-stream plain lanes / seeded middle-out lanes
             L = v[0]
             m = v[1] if kind == "sd" and len(v) == 4 else "1"     # sd:K:M:MULT:SEED (seed window M) or sd:K:MULT:SEED

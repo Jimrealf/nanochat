@@ -868,6 +868,12 @@ parser.add_argument("--lane-infill-frac", type=float, default=0.0,
                          "(nanochat/lanes.py infill_layout) instead of lane rows")
 parser.add_argument("--lane-infill-span", type=str, default="2,64", help="S16-A: middle span length range lo,hi (slots)")
 parser.add_argument("--lane-infill-gap", type=int, default=128, help="S16-A: one middle per this many slots")
+parser.add_argument("--lane-rel-bias", type=int, default=0, choices=[0, 1],
+                    help="S16-C: learned per-head relative attention bias across lane roles and offset gaps")
+parser.add_argument("--lane-rel-bias-roles", type=int, default=1, choices=[0, 1],
+                    help="S16-C control: 0 collapses the lane roles, so the bias keeps only offset-gap buckets")
+parser.add_argument("--lane-offset-embed", type=int, default=0, choices=[0, 1],
+                    help="S16-C: learned input embedding of a token's offset within its lane")
 parser.add_argument("--class-map", type=str, default="",
                     help="S13: Brown class map (.npy, one class id per token id, scripts/sap_brown_classes.py)")
 parser.add_argument("--splice", type=int, default=0,
@@ -1117,6 +1123,9 @@ def build_model_meta(depth, apply_dim_override=True):
         remix_basis_size=args.remix_basis_size,
         use_pos_embed=args.use_pos_embed,
         moe_use_abs_pos_embed=bool(args.moe_use_abs_pos_embed),
+        lane_rel_bias=bool(getattr(args, 'lane_rel_bias', 0)),
+        lane_offset_embed=bool(getattr(args, 'lane_offset_embed', 0)),
+        lane_rel_bias_roles=bool(getattr(args, 'lane_rel_bias_roles', 1)),
         remixed_linear_kwargs=dict(
             use_basis_gate=bool(args.remix_use_basis_gate),
             use_output_gate=bool(args.remix_use_output_gate),
@@ -2632,6 +2641,7 @@ while True:
                     val_loader = AlignedLaneBatches(val_loader, lane_eval_prefix) if args.lane_align_window > 0 \
                         else LaneBatches(val_loader, lane_eval_prefix, args.lanes, lane_token_id)
                     eval_kwargs['lane_mask'] = lane_mask(args.max_seq_len, lane_eval_prefix, args.lanes, device)
+                    eval_kwargs['lane_params'] = (lane_eval_prefix, args.lanes)
             val_bpb, val_loss = evaluate_bpb(model, val_loader, eval_steps, token_bytes, **eval_kwargs)
         print0(f"Step {step:05d} | Validation bpb: {val_bpb:.6f} | val_loss: {val_loss:.6f}")
         # SAP: the block head's bpb next to the trunk's next-token bpb on the same tokens.
@@ -2977,7 +2987,8 @@ while True:
                 loss = model(x, y, splice=(_P, args.lanes, lane_token_id))
             else:
                 loss = model(lane_inputs(x, _P, _L, lane_token_id), y,
-                             lane_mask=lane_mask(x.size(1), _P, _L, x.device))
+                             lane_mask=lane_mask(x.size(1), _P, _L, x.device),
+                             lane_params=(_P, _L))
         else:
             loss = model(x, y)
             

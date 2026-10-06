@@ -1221,9 +1221,19 @@ Details in `s16_lanes_recovery_brainstorm.md`.
 
 Plus two ingredients, offset temperature and backward heads. S16-E (checkerboard lanes) was plain lanes relabelled and is killed.
 
+**Stage M1 (2026-10-06).** Details in §6 of the S16 doc; data in `scratch/s16/`.
+- S16-A (infill rows) is killed.
+- S16-B (any-L) is no worse at L ≤ 64 (+1.09% at 128), with no recovery gain.
+- S16-C (lane bias plus offset embedding, built by the user's agent) is −0.51% bpb on one seed and +0.57 nats per lane on the lookahead band. It is between kill and go.
+- M0 is void: its 4x models were read against dense-1x.
+- Gates now read recovery on the lookahead band.
+
 **Decides next.**
-- M0, eval-only: does recovery grow with training tokens (d4, 1x against 4x)? That picks training signal (A, B) or capacity (D).
-- M1, d8 gates: S16-A at f = 0.25 and S16-B, read in deficit and recovery nats per lane against `S11ln64x1_s1`. Pre-registered bars and kills are in each card.
+- S16-C settlement: seed 2 of the lane bias and of the baseline, plus the roles-collapsed control (`lrbd`). The readings are pre-registered in §6.
+- M0 again, token-matched (eval only).
+- Then S16-F, one-stream bridged lanes. S16-G (conversion) stays the user's call; d16 waits.
+
+**Frank status.** No mechanism closes recovery yet. The best closes about 12% of what a ≤ 3% tax at L = 64 needs. A* odds are about 10 to 15%.
 
 **Option for the user.** S16-G, converting a pretrained model to lanes, changes the paper's claim and is the user's call.
 

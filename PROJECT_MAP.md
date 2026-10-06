@@ -772,9 +772,18 @@ scale modes behave, with `none` asserted to blow the output up because that is t
     - Modal:
       - `modal_sap.py::s11_ladder` specs `ppi:L:F:MULT:SEED` and `mix:L1+L2+..:MULT:SEED`. Its scoring keeps an earlier run's dense reference when the call does not retrain it.
       - `modal_sap.py::s16_score`: scores checkpoints at any lane count (`TAG@L`) against one dense reference, with the deficit/recovery report.
+    - S16-C, the lane-relative attention bias (from `Seqaeon/nanochat` 80101b8):
+      - `nanochat/lanes.py`: `compute_lrb_buckets` (44 buckets per head: 5 lane roles × 7 offset gaps, 8 prefix distances, 1 lane-to-prefix bucket; `roles=False` for the control), `get_lrb_cache` and `deduce_lane_layout` (P and L from a lane mask);
+      - `GPTConfig.lane_rel_bias` / `lane_offset_embed` / `lane_rel_bias_roles`, and `GPT.forward(lane_params=(P, L))`. The bias goes into the SDPA mask, the offset embedding into the input;
+      - `scripts/base_train.py --lane-rel-bias / --lane-offset-embed / --lane-rel-bias-roles`;
+      - ladder specs `lrb:L:MULT:SEED` and `lrbd` (roles collapsed);
+      - not in the KV-cache decoder yet.
+    - `scripts/sap_position_bpb.py::lookahead_band`: the lane report's `lookahead nats per lane` (offsets ⌈S/4⌉..S−2), the S16 recovery metric. Results: `scratch/s16/`.
     - Tests in `tests/test_lanes.py`:
       - the infill layout reads only earlier draws, except at the cold slots;
-      - infill rows are a normalised distribution, and leaving a cold slot's input in place breaks the sum.
+      - infill rows are a normalised distribution, and leaving a cold slot's input in place breaks the sum;
+      - the lane-bias model is a normalised distribution with gradients into both parameters, and stays one with the roles collapsed (offset-gap buckets only);
+      - the lookahead band's offsets at L = 32, 64 and 128.
   - Modal: `modal_sap.py::s10_toy`, which runs `s10_toy_run` jobs on L4 for arms x T x depth x seeds.
   - Tests: `tests/test_ptp.py` (45).
 - Trunk-depth slots (`nanochat/gpt.py`): `_sap_depth_tools` (gradient scaling and shared-or-copy blocks), `_sap_depth_entry` (slot entry state and x0: the trunk's state at the block start plus the token's embedding, or the `depth_mask` vector for a slot whose token is unknown), `_sap_depth_layers` (any slot set through the top m layers, reading the prefix keys/values at each layer under a slot-visibility mask), `_sap_depth_local_logprob` (exact chain rule), `_sap_depth_tree_logprob` (exact bisection-round factorisation; layout from `block_head.depth_tree_layout`), `_sap_depth_sample` / `_sap_depth_tree_sample` (graph-safe decoders that read the trunk's KV cache, or the trained copies' own cache from `sap_depth_copy_cache` / `sap_depth_extend_copy_cache`), `_sap_depth_loss` (training loss over per-row block starts).

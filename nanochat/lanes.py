@@ -308,3 +308,106 @@ def generate_lanes(model, prompt, L, S, lane_token, temperature=1.0, generator=N
         out[:, :, s] = nxt
         ids = nxt
     return torch.cat([first[:, None], out.reshape(B, L * S)], dim=1)
+
+
+_LRB_CACHE = {}
+
+
+def deduce_lane_layout(m):
+    """Deduce (P, L) from a bool lane_mask tensor of shape (1, 1, N, N), (1, N, N), or (N, N)."""
+    if m.dim() == 4:
+        m = m[0, 0]
+    elif m.dim() == 3:
+        m = m[0]
+    N = m.size(0)
+    row_counts = m.sum(dim=-1)
+    expected_causal = torch.arange(1, N + 1, device=m.device)
+    is_causal_row = row_counts == expected_causal
+    non_causal = (~is_causal_row).nonzero(as_tuple=True)[0]
+    P = non_causal[0].item() if len(non_causal) > 0 else N
+    if P == N:
+        return P, 1
+    tr_at_P = row_counts[P].item()
+    L = tr_at_P - P
+    return P, max(1, L)
+
+
+def compute_lrb_buckets(N, P, L, device=None, roles=True):
+    """S16-C: Lane-Relative Attention Bias (LRB) bucket mapping and offset layout. roles=False is
+    the attribution control: the five lane roles collapse into one, so lane-to-lane pairs keep only
+    their offset-gap bucket (0..6) and the bias can no longer tell the next lane from its own.
+    Returns:
+        vis: (N, N) bool, visibility mask under lockstep lanes.
+        buckets: (N, N) int64, bucket index in [0, 43] for visible pairs, -1 where masked.
+        offsets: (N,) int64, intra-lane token offset in [0, S-1] (0 for prefix).
+    """
+    S = (N - P) // L
+    p = torch.arange(N, device=device)
+    lane = torch.where(p < P, torch.full_like(p, -1), (p - P) // S)
+    offset = torch.where(p < P, torch.zeros_like(p), (p - P) % S)
+    rank = torch.where(p < P, p, P + offset)
+    vis = rank[None, :] <= rank[:, None]
+
+    def dist_bucket(d):
+        b = torch.zeros_like(d)
+        b = torch.where(d == 0, 0, b)
+        b = torch.where(d == 1, 1, b)
+        b = torch.where(d == 2, 2, b)
+        b = torch.where(d == 3, 3, b)
+        b = torch.where((d >= 4) & (d <= 7), 4, b)
+        b = torch.where((d >= 8) & (d <= 15), 5, b)
+        b = torch.where(d >= 16, 6, b)
+        return b
+
+    q_lane = lane[:, None]
+    k_lane = lane[None, :]
+    q_off = offset[:, None]
+    k_off = offset[None, :]
+
+    q_is_pre = q_lane < 0
+    k_is_pre = k_lane < 0
+
+    # Lane-to-lane relationships
+    dl = k_lane - q_lane
+    d_off = (q_off - k_off).clamp(min=0)
+    db = dist_bucket(d_off)
+
+    lane_role = torch.zeros_like(dl)
+    lane_role = torch.where(dl == 0, 0, lane_role)
+    lane_role = torch.where(dl == 1, 1, lane_role)
+    lane_role = torch.where(dl == -1, 2, lane_role)
+    lane_role = torch.where(dl >= 2, 3, lane_role)
+    lane_role = torch.where(dl <= -2, 4, lane_role)
+    if not roles:
+        lane_role = torch.zeros_like(dl)
+
+    bucket_lane_lane = lane_role * 7 + db
+
+    # Prefix-to-prefix relationships: 8 distance buckets
+    d_pre = (p[:, None] - p[None, :]).clamp(min=0)
+    pb = torch.where(d_pre == 0, 0,
+         torch.where(d_pre == 1, 1,
+         torch.where(d_pre == 2, 2,
+         torch.where(d_pre == 3, 3,
+         torch.where((d_pre >= 4) & (d_pre <= 7), 4,
+         torch.where((d_pre >= 8) & (d_pre <= 15), 5,
+         torch.where((d_pre >= 16) & (d_pre <= 31), 6, 7)))))))
+    bucket_pre_pre = 35 + pb
+
+    # Lane-to-prefix relationship: bucket 43
+    bucket_lane_pre = torch.full_like(dl, 43)
+
+    buckets = torch.where(q_is_pre & k_is_pre, bucket_pre_pre,
+              torch.where(~q_is_pre & k_is_pre, bucket_lane_pre,
+              torch.where(~q_is_pre & ~k_is_pre, bucket_lane_lane, -1)))
+    buckets = torch.where(vis, buckets, -1)
+    return vis, buckets, offset
+
+
+def get_lrb_cache(N, P, L, device=None, roles=True):
+    """Cached retrieve for LRB tensors to avoid repeated allocations."""
+    key = (N, P, L, str(device), roles)
+    if key not in _LRB_CACHE:
+        _LRB_CACHE[key] = compute_lrb_buckets(N, P, L, device=device, roles=roles)
+    return _LRB_CACHE[key]
+
