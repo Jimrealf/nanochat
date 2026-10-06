@@ -4,6 +4,24 @@ Durable concepts learned and misunderstandings corrected during this project.
 
 ---
 
+## 2026-10-06: S16-C settlement: d8 lanes noise is 0.3-0.5%, so decide nothing at that size on two seeds
+
+Data: `scratch/s16/s16_score_d8_s16_c2_full.json`. Details in `s16_lanes_recovery_brainstorm.md` §7.
+
+- **Measure the noise before setting a bar.**
+  - The two seeds of the d8 L = 64 baseline differ by 0.47% bpb and by 0.55 nats per lane on the lookahead band. That is as large as every S16 effect.
+  - I had set the S16 bars assuming 0.04-0.1% (a d4 dense seed pair). A two-seed rule cannot resolve 0.3% at this noise (S16-C: Welch t ≈ 1.4).
+  - From now on, a gate below 1% needs a measured noise floor, or four or more seeds per arm.
+- **Never read new-code arms against a baseline trained on old code.**
+  - `S11ln64x1_s1` was trained before the Oct 5 code (its saved config lacks that day's fields). It is the worst of the five plain-lanes and S16-C models on every metric, including the plain causal prefix bucket.
+  - Against the same-code seed (`s2`), S16-C's gain shrinks from 0.51% to 0.04-0.18%.
+  - Train the baseline in the same call as the arms. The noise control (`--tag-suffix _cur`) tells whether the code shifted.
+- **A "pass by the letter" is not evidence when the letter was set without a noise model.** Report the letter's verdict, and next to it the same-code reading and the noise.
+- **An attribution between the pre-registered bars is no verdict.** The bundled report rounded 78% into "generic" (bar: ≥ 80%).
+- **M0 was confirmed void by its own file.** Against dense-1x, the 4x models' net extra cost is negative (−0.51, −0.56 nats per lane), and their "recovery" grew by 5.66 nats per lane: the general token gain, split by sign.
+
+---
+
 ## 2026-10-06: S16 Stage M1: read lookahead on a band, match references to token budgets, state the signs
 
 Data: `scratch/s16/`. Details in `s16_lanes_recovery_brainstorm.md` §6.

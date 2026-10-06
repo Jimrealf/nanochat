@@ -779,11 +779,22 @@ scale modes behave, with `none` asserted to blow the output up because that is t
       - ladder specs `lrb:L:MULT:SEED` and `lrbd` (roles collapsed);
       - not in the KV-cache decoder yet.
     - `scripts/sap_position_bpb.py::lookahead_band`: the lane report's `lookahead nats per lane` (offsets ⌈S/4⌉..S−2), the S16 recovery metric. Results: `scratch/s16/`.
+    - S16-F, one-stream bridged lanes:
+      - `nanochat/lanes.py`: `bridged_slot_steps` (`wbisect.bridged_lanes_steps` read on slot targets), `step_inputs` (a slot whose input is drawn later holds the lane token), `step_mask` (step_k ≤ step_q) and `StepBatches`. It is a generic one-stream order and reproduces plain lanes on their ranks;
+      - `scripts/base_train.py --lane-bridge N` (training and eval);
+      - `scripts/sap_position_bpb.py` spec `boL_N`;
+      - ladder spec `bo:L:N:MULT:SEED`.
+    - Conversion (S16-G at d8), ladder specs:
+      - `cv:L:MULT:SEED`: lanes trained from the trained dense `ref`, via `--sap-init-trunk`;
+      - `dc:MULT:SEED`: the same dense continued as dense.
+
+      `s11_ladder(tag_suffix=...)` retrains existing tags (for example on current code).
     - Tests in `tests/test_lanes.py`:
       - the infill layout reads only earlier draws, except at the cold slots;
       - infill rows are a normalised distribution, and leaving a cold slot's input in place breaks the sum;
       - the lane-bias model is a normalised distribution with gradients into both parameters, and stays one with the roles collapsed (offset-gap buckets only);
-      - the lookahead band's offsets at L = 32, 64 and 128.
+      - the lookahead band's offsets at L = 32, 64 and 128;
+      - the generic step order reproduces plain lanes; one-stream bridged lanes are a normalised distribution (and break without the cold-slot inputs); their only cold slots are the separator windows' first slots.
   - Modal: `modal_sap.py::s10_toy`, which runs `s10_toy_run` jobs on L4 for arms x T x depth x seeds.
   - Tests: `tests/test_ptp.py` (45).
 - Trunk-depth slots (`nanochat/gpt.py`): `_sap_depth_tools` (gradient scaling and shared-or-copy blocks), `_sap_depth_entry` (slot entry state and x0: the trunk's state at the block start plus the token's embedding, or the `depth_mask` vector for a slot whose token is unknown), `_sap_depth_layers` (any slot set through the top m layers, reading the prefix keys/values at each layer under a slot-visibility mask), `_sap_depth_local_logprob` (exact chain rule), `_sap_depth_tree_logprob` (exact bisection-round factorisation; layout from `block_head.depth_tree_layout`), `_sap_depth_sample` / `_sap_depth_tree_sample` (graph-safe decoders that read the trunk's KV cache, or the trained copies' own cache from `sap_depth_copy_cache` / `sap_depth_extend_copy_cache`), `_sap_depth_loss` (training loss over per-row block starts).

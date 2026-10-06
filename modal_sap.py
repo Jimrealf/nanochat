@@ -1577,7 +1577,7 @@ def s11_blanes(depth: int = 4, configs: str = "128:4,64:4,64:8,32:8,16:8", prefi
 
 @app.local_entrypoint()
 def s11_ladder(specs: str = "dense:1:1", depth: int = 4, prefix: int = 128, rows: int = 256, device_batch: int = 8,
-               ref: str = "S11dense_x1_s1", name: str = "ladder", smoke: bool = False):
+               ref: str = "S11dense_x1_s1", name: str = "ladder", smoke: bool = False, tag_suffix: str = ""):
     """S11 real-text ladder in one app (the SAP longer-training protocol, s11_sap_tl_brainstorm.md).
     specs, comma separated:
         dense:MULT:SEED      dense causal model at MULT x the compute-optimal tokens
@@ -1595,6 +1595,11 @@ def s11_ladder(specs: str = "dense:1:1", depth: int = 4, prefix: int = 128, rows
                              listed L <= 64, the paper's default; s16_score scores it at every L)
         lrb:L:MULT:SEED      S16-C lane-relative attention bias + input offset embedding
         lrbd:L:MULT:SEED     S16-C control: the same with the lane roles collapsed (offset-gap buckets only)
+        cv:L:MULT:SEED       S16 conversion: L-lane training started from the trained dense `ref` at this depth
+        dc:MULT:SEED         its control: the same dense `ref` continued as dense for the same tokens
+        bo:L:N:MULT:SEED     S16-F one-stream bridged lanes (L intervals, N-slot separator windows)
+    tag_suffix is appended to every tag of the call, so existing tags can be retrained (for example on
+    current code: a full run skips any tag whose checkpoint exists).
     Every model trained here is scored per position on identical targets, as a ratio to `ref`.
     Bar (user decision 2026-10-04): within 1% of dense-1x bpb at <= 4x tokens with >= 10x fewer
     sequential decode steps; the gap at equal tokens is reported alongside."""
@@ -1652,6 +1657,18 @@ def s11_ladder(specs: str = "dense:1:1", depth: int = 4, prefix: int = 128, rows
                   "--lane-rel-bias", "1", "--lane-offset-embed", "1"]
             if kind == "lrbd":
                 a += ["--lane-rel-bias-roles", "0"]
+        elif kind in ("cv", "dc"):                        # S16 conversion: cv:L:MULT:SEED / dc:MULT:SEED
+            a += ["--sap-init-trunk", f"{S03}/d{depth}/{ref}"]  # both start from the trained dense `ref`
+            if kind == "cv":
+                L = v[0]
+                tag, ev = f"S16cv{L}x{mult:g}_s{seed}", f":ln{L}"
+                a += ["--lanes", L, "--lane-prefix-max", "256", "--lane-eval-prefix", str(prefix)]
+            else:
+                tag, ev = f"S16dcx{mult:g}_s{seed}", ""
+        elif kind == "bo":                                # S16-F: bo:L:N:MULT:SEED
+            L, n = v[0], v[1]
+            tag, ev = f"S16bo{L}n{n}x{mult:g}_s{seed}", f":bo{L}_{n}"
+            a += ["--lanes", L, "--lane-bridge", n, "--lane-prefix-max", "256", "--lane-eval-prefix", str(prefix)]
         elif kind in ("lo", "sd"):                        # two-stream plain lanes / seeded middle-out lanes
             L = v[0]
             m = v[1] if kind == "sd" and len(v) == 4 else "1"     # sd:K:M:MULT:SEED (seed window M) or sd:K:MULT:SEED
@@ -1663,6 +1680,7 @@ def s11_ladder(specs: str = "dense:1:1", depth: int = 4, prefix: int = 128, rows
             a[a.index("--device-batch-size") + 1] = str(device_batch)
         else:
             raise ValueError(spec)
+        tag += tag_suffix
         jobs.append((tag, a, smoke, depth))
         evspec[tag] = ev
     print(f"S11 ladder at d{depth}: {len(jobs)} runs (x1 = {tokens:,} tokens)")

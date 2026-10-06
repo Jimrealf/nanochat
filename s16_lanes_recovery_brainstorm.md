@@ -1,11 +1,13 @@
 # S16: raising lanes' recovery (the L1 mechanism for the lanes paper)
 
-Status 2026-10-06, after Stage M1 (results and verdicts in §6).
+Status 2026-10-06, after the S16-C settlement (§7).
 - S16-A (infill rows) is killed.
-- S16-B (any-L) is no worse at L ≤ 64, but it is not a recovery mechanism.
-- S16-C (lane bias) is −0.51% bpb on one seed. It is between kill and go on the corrected metric, and its settlement runs are pre-registered in §6.
-- M0 is void: its reference did not match the token budget. Rerun with the corrected commands in §4.
-- From now on, gates read recovery on the lookahead band (§6), not on the sign split.
+- S16-B (any-L) is no worse at L ≤ 64 against the old baseline, but it is not a recovery mechanism.
+- S16-C (lane bias) is worth at most about 0.1-0.3% bpb. It is within the d8 noise and not a recovery mechanism.
+- d8 lanes vary by 0.3-0.5% between seeds or code versions (§7). The noise control is pre-registered in §7.
+- M0 is void (confirmed by its file, §7); the token-matched rerun is pending.
+- Next (user decision): the conversion test (§7), then S16-F, one-stream bridged lanes, which is coded.
+- Gates read recovery on the lookahead band (§6), not on the sign split.
 - S16-E (checkerboard lanes) was killed while coding: it is plain lanes relabelled (§3).
 
 Inputs: `s15_lanes_paper_plan.md` §7 (Stage L0) and `s14_sap_strict_tl_brainstorm.md` §11 (the order oracle).
@@ -291,3 +293,76 @@ modal run modal_sap.py::s11_ladder --depth 8 --name s16_c2 --specs lrb:64:1:2,ln
   - S16-G, converting a pretrained model: the user's call;
   - scale: d16 costs about 9 of the roughly 12.7 H100-hours left.
 - **Not now:** d16, the R3 samples sweep, S16-D.
+
+## 7. S16-C settlement, the noise floor, and what runs next (2026-10-06)
+
+**Data.**
+- Files: `scratch/s16/s16_score_d8_s16_c2_full.json` and `scratch/s16/s16_score_d4_tokens.json`, from `Seqaeon/nanochat` 733ae88.
+- Setup: d8 at 1x, 256 rows, against dense `S11dense_x1_s1` (0.9346). The report's numbers match the JSON.
+
+| model | trained on | block bpb | extra nats/lane | deficit | recovery | band | prefix bucket [0, 128) |
+|---|---|---|---|---|---|---|---|
+| `S11ln64x1_s1` | code before Oct 5 | 1.0076 | 7.562 | 11.652 | −4.090 | −1.118 | 1.1733 |
+| `S11ln64x1_s2` | current code | 1.0029 | 7.046 | 11.393 | −4.347 | −1.666 | 1.1653 |
+| `S16lrbL64x1_s1` | current | 1.0025 | 7.018 | 11.333 | −4.314 | −1.684 | 1.1688 |
+| `S16lrbL64x1_s2` | current | 1.0011 | 6.877 | 11.345 | −4.469 | −1.710 | 1.1669 |
+| `S16lrbdL64x1_s1` (roles collapsed) | current | 1.0036 | 7.155 | 11.436 | −4.280 | −1.543 | 1.1681 |
+
+How to read it: nats per lane over lanes 1..63; band = `lookahead_band`; "trained on" comes from the config fields saved with each checkpoint.
+
+**Verdicts by the pre-registered letter (§6).**
+- **Real: pass.** The two-seed mean is −0.343%, and both seeds are lower.
+- **Recovery: free add-on.** The band gain is +0.305 (seed 1 +0.566, seed 2 +0.044): 0.005 above the drop line.
+- **Attribution: no verdict.** The roles-collapsed control keeps 78% (bpb) or 75% (band) of seed 1's gain, between the 50% and 80% bars. The bundled report rounded it to "generic".
+
+**What the letter hides.**
+- The two baseline seeds differ by 0.47% bpb and 0.55 on the band, as large as every effect above. The two-seed comparison has Welch t ≈ 1.4.
+- The outlier is `S11ln64x1_s1`, the only model trained on code from before Oct 5. It is the worst of the five on every column, including the plain causal prefix bucket.
+- Against the same-code baseline `S11ln64x1_s2`:
+  - S16-C gains −0.04% and −0.18% bpb, and +0.02 and +0.04 on the band;
+  - the roles-collapsed control is +0.07% (worse) and −0.12 on the band.
+- **So S16-C is worth at most about 0.1-0.3%.** It is not a recovery mechanism. Keep it off by default.
+- My "seed spread 0.04-0.1%" in §6 came from d4 dense and was wrong for d8 lanes.
+- If the old code is what separates `s1`, the M1 readings shift as well:
+  - infill rows: +0.29% → +0.76% against `s2`, still a kill;
+  - any-L at 64: +0.05% → +0.52%.
+
+  The noise control decides which applies.
+
+**M0 is void, confirmed by its file.**
+- Against dense-1x, the 4x models score −0.510 and −0.564 extra nats per lane, better than the reference.
+- Their deficit falls from 9.338 to 7.083 and 7.013, and "recovery" from −1.930 to −7.593 and −7.578. That is the general gain from 4x tokens, split by sign.
+- The token-matched rerun (§4) is pending.
+
+**Next: the user chose conversion first, then S16-F.** Pre-registered before the runs:
+
+1. **Noise control:**
+
+   `modal run modal_sap.py::s11_ladder --depth 8 --name s16_noise --tag-suffix _cur --specs dense:1:1,ln:64:1:1`
+
+   This retrains seed 1 of both baselines on current code (`tag_suffix` sidesteps the skip-if-exists rule).
+   - `S11ln64x1_s1_cur` within ±0.1% of 1.0076: no code shift. The 0.47% is seed noise, and effects under 0.5% need four or more seeds per arm.
+   - ≤ 1.0046: a code shift. Every reading against the old `S11ln64x1_s1`, `S11ln32x1_s1` or old dense is void and is re-read against same-code baselines.
+   - The same rule applies to `S11dense_x1_s1_cur` against 0.9346, on which the d8 tax numbers rest.
+2. **Conversion (S16-G at d8, in-house):**
+
+   `modal run modal_sap.py::s11_ladder --depth 8 --name s16_g1 --specs cv:64:0.25:1,dc:0.25:1,cv:64:1:1,dc:1:1`
+
+   - `cv` starts L = 64 lanes training from the trained dense `S11dense_x1_s1` (`--sap-init-trunk`). `dc` continues the same dense, as dense, for the same tokens. Both use the default LR schedule.
+   - T_m = bpb(`cv_m`) / bpb(`dc_m`) − 1. From-scratch lanes sit at 7.3-7.8% at 1x.
+   - **Validity:** both `dc` arms must land below 0.9346, or the continuation schedule is broken and the test is void.
+   - **Go:** T_0.25 ≤ 3.0%. A public pretrained model then becomes the paper's core, and the claim changes to conversion.
+   - **Promising:** T_1 ≤ 4.5%, one more probe.
+   - **Dead:** T_1 ≥ 6.5%. Then run S16-F.
+3. **S16-F, one-stream bridged lanes (coded):**
+   - `nanochat/lanes.py::bridged_slot_steps`, `step_inputs`, `step_mask`; `scripts/base_train.py --lane-bridge N`; scoring spec `boL_N`.
+   - Each slot runs at its target's step, and a slot whose input is drawn later holds the lane token.
+   - In bridged lanes, the only such slots are the separator windows' first slots (32 at L = 32); every fill starts warm. That is 100 steps at (2048, 128, 32, 8).
+   - On plain lanes' steps it reproduces `lane_mask` and `lane_inputs` exactly. There is no decoder until it passes.
+
+   `modal run modal_sap.py::s11_ladder --depth 8 --name s16_f1 --specs bo:32:8:1:1,ln:16:1:1`
+
+   - **Pass:** `S16bo32n8x1_s1` (100 steps) has bpb ≤ `S11ln16x1_s1` (120 steps, trained in the same call).
+   - **Kill:** ≥ +0.5% against it.
+   - **In between:** a second seed of both.
+

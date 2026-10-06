@@ -288,3 +288,52 @@ def test_lookahead_band_runs_from_a_quarter_of_the_lane_to_before_the_junction()
     assert lookahead_band(list(range(15))) == sum(range(4, 14))      # L = 128: offsets 4-13
     assert lookahead_band(list(range(60))) == sum(range(15, 59))     # L = 32: offsets 15-58
 
+
+
+def test_step_order_reproduces_plain_lanes():
+    """S16-F's generic one-stream order (each slot runs at its target's step; a slot whose input is
+    drawn later is cold and holds the lane token) is plain lanes exactly on plain lanes' ranks."""
+    from nanochat.lanes import step_inputs, step_mask
+    for N, P, L in [(24, 6, 3), (32, 8, 4), (64, 0, 8)]:
+        ys = lane_rank(N, P, L) - P
+        x = torch.randint(0, 50, (2, N), generator=torch.Generator().manual_seed(N))
+        assert torch.equal(step_mask(ys), lane_mask(N, P, L))
+        assert torch.equal(step_inputs(x, ys, 99), lane_inputs(x, P, L, 99))
+
+
+def test_one_stream_bridged_lanes_cold_slots_are_the_separator_starts():
+    """At (2048, 128, 32, 8): 100 steps, and the only cold slots are the 32 separator windows'
+    first slots; every fill starts warm, after its left neighbour's separator."""
+    from nanochat.lanes import bridged_slot_steps
+    ys = bridged_slot_steps(2048, 128, 32, 8)
+    cold = torch.zeros(2048, dtype=torch.bool)
+    cold[1:] = ys[:-1] >= ys[1:]
+    assert int(ys.max()) + 1 == (5 + 1) * 8 + (60 - 8)
+    assert torch.equal(cold.nonzero().flatten(), 128 + 60 * torch.arange(32) + 52)
+
+
+def _order_total(model, ysteps, cold=True, V=4, N=8):
+    from nanochat.lanes import step_inputs, step_mask
+    seqs = torch.tensor(list(itertools.product(range(V), repeat=N - 1)))   # t_2 .. t_8 after t_0 t_1 = 1 2
+    full = torch.cat([torch.tensor([1, 2]).expand(seqs.size(0), 2), seqs], dim=1)
+    x, y = full[:, :N], full[:, 1:].clone()
+    y[:, 0] = -1                                    # t_1 is part of the fixed prefix
+    mask = step_mask(ysteps)
+    lls = []
+    with torch.no_grad():
+        for xs, ys in zip(x.split(2048), y.split(2048)):
+            xi = step_inputs(xs, ysteps, V - 1) if cold else xs
+            nll = model(xi, ys, loss_reduction="none", lane_mask=mask).view(ys.shape)
+            lls.append(-(nll * (ys >= 0)).sum(-1))
+    return torch.logsumexp(torch.cat(lls).double(), 0).item()
+
+
+def test_one_stream_bridged_lanes_are_a_normalised_distribution():
+    """Every continuation (V=4, eight slots, two intervals with one-slot separators) in the
+    one-stream bridged order sums to one; feeding the cold slots their true inputs breaks it."""
+    from nanochat.lanes import bridged_slot_steps
+    model = _model(V=4, seq=16)
+    ys = bridged_slot_steps(8, 2, 2, 1)
+    assert ys.tolist() != list(range(-2, 6))                         # not left to right
+    assert _order_total(model, ys) == pytest.approx(0.0, abs=1e-3)                # measured ~2e-7
+    assert abs(_order_total(model, ys, cold=False)) > 5e-3                         # measured ~0.08

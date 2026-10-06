@@ -867,6 +867,9 @@ parser.add_argument("--lane-infill-frac", type=float, default=0.0,
                     help="S16-A: with --lanes, this fraction of micro-steps trains on position-preserving infill rows "
                          "(nanochat/lanes.py infill_layout) instead of lane rows")
 parser.add_argument("--lane-infill-span", type=str, default="2,64", help="S16-A: middle span length range lo,hi (slots)")
+parser.add_argument("--lane-bridge", type=int, default=0,
+                    help="S16-F: with --lanes L, one-stream bridged lanes: each of L intervals' last N slots (its "
+                         "separator window) drawn first, coarse to fine, then the intervals filled in lockstep")
 parser.add_argument("--lane-infill-gap", type=int, default=128, help="S16-A: one middle per this many slots")
 parser.add_argument("--lane-rel-bias", type=int, default=0, choices=[0, 1],
                     help="S16-C: learned per-head relative attention bias across lane roles and offset gaps")
@@ -1042,6 +1045,22 @@ if args.lanes > 0:
     if args.lane_infill_frac > 0:
         from nanochat.lanes import infill_layout, infill_rows
         infill_span = tuple(int(v) for v in args.lane_infill_span.split(","))
+    if args.lane_bridge > 0:
+        assert not lanes_mix and args.lane_infill_frac == 0 and args.lane_align_window == 0 and args.splice == 0 \
+            and not getattr(args, "lane_rel_bias", 0) and not getattr(args, "lane_offset_embed", 0), \
+            "--lane-bridge is its own order"
+        from nanochat.lanes import StepBatches, bridged_slot_steps, step_inputs, step_mask
+        _bridge_cache = {}
+
+        def bridge_steps(P, device):
+            """Target step of every slot for a prefix of P, cached on the device."""
+            if (P, str(device)) not in _bridge_cache:
+                _bridge_cache[(P, str(device))] = bridged_slot_steps(args.max_seq_len, P, args.lanes,
+                                                                     args.lane_bridge).to(device)
+            return _bridge_cache[(P, str(device))]
+        _ys = bridge_steps(lane_eval_prefix, "cpu")
+        print0(f"[lanes] S16-F one-stream bridged lanes: {args.lanes} intervals, {args.lane_bridge}-slot separator "
+               f"windows, {int(_ys.max()) + 1} steps at the eval prefix")
     if args.lane_align_window > 0:
         from nanochat.lanes import PAD_TOKEN, aligned_lanes_rows, sentence_end_table
         lane_pad_id = tokenizer.encode_special(PAD_TOKEN)
@@ -2637,6 +2656,9 @@ while True:
                 # Lane order on every row: the same tokens the dense model is scored on.
                 if args.splice > 0:                     # S13: the model builds the spliced layout itself
                     eval_kwargs['splice'] = (lane_eval_prefix, args.lanes, lane_token_id)
+                elif args.lane_bridge > 0:              # S16-F: the bridged order at the eval prefix
+                    val_loader = StepBatches(val_loader, bridge_steps(lane_eval_prefix, device), lane_token_id)
+                    eval_kwargs['lane_mask'] = step_mask(bridge_steps(lane_eval_prefix, device))
                 else:
                     val_loader = AlignedLaneBatches(val_loader, lane_eval_prefix) if args.lane_align_window > 0 \
                         else LaneBatches(val_loader, lane_eval_prefix, args.lanes, lane_token_id)
@@ -2974,7 +2996,10 @@ while True:
             # infill micro-step (true positions, causal mask over the reordered row).
             _L = lanes_mix[int(torch.randint(len(lanes_mix), (1,)))] if lanes_mix else args.lanes
             _P = sample_prefix_len(args.lane_prefix_max, _L)
-            if args.lane_infill_frac > 0 and float(torch.rand(())) < args.lane_infill_frac:
+            if args.lane_bridge > 0:
+                _ys = bridge_steps(_P, x.device)
+                loss = model(step_inputs(x, _ys, lane_token_id), y, lane_mask=step_mask(_ys))
+            elif args.lane_infill_frac > 0 and float(torch.rand(())) < args.lane_infill_frac:
                 _perm, _cold = infill_layout(x.size(1), *infill_span, gap=args.lane_infill_gap)
                 _xi, _yi, _pid = infill_rows(x, y, _perm.to(x.device), _cold.to(x.device), lane_token_id)
                 _causal = torch.ones(x.size(1), x.size(1), dtype=torch.bool, device=x.device).tril()[None, None]

@@ -38,9 +38,11 @@ def rows_hash(rows):
 
 
 @torch.no_grad()
-def bucket_bpb(model, rows, token_bytes, edges, mask=None, batch=8, prep=None, wb=None, lanes=None, splice=None):
+def bucket_bpb(model, rows, token_bytes, edges, mask=None, batch=8, prep=None, wb=None, lanes=None, splice=None,
+               xform=None):
     """bpb per [edges[i], edges[i+1]) input-position bucket over the (x, y) rows. prep(x, y), if
-    given, rewrites each batch (the S11 separator layout and its ignored targets)."""
+    given, rewrites each batch (the S11 separator layout and its ignored targets); xform(x)
+    rewrites the inputs of a one-stream order (S16-F step_inputs)."""
     nats = torch.zeros(len(edges) - 1, dtype=torch.float64)
     nbytes = torch.zeros(len(edges) - 1, dtype=torch.float64)
     pos_nats = pos_bytes = None                         # per input position, summed over rows
@@ -54,6 +56,8 @@ def bucket_bpb(model, rows, token_bytes, edges, mask=None, batch=8, prep=None, w
         if lanes is not None:                           # S08 plain lanes: lane-start inputs, lane mask
             from nanochat.lanes import lane_inputs
             x = lane_inputs(x, *lanes)
+        if xform is not None:
+            x = xform(x)
         if wb is not None:                              # window bisection: query k scores token k
             from nanochat.wbisect import wb_forward     # = the dense model's position k - 1 target
             steps, mask_token = wb
@@ -178,6 +182,7 @@ def main():
                         "name:checkpoint_dir:wbN for a window-bisection model with N-token windows, or "
                         "name:checkpoint_dir:blL_N for bridged lanes (L intervals, N-token separators), or "
                         "name:checkpoint_dir:lnL for S08 plain lanes (prefix --wb-prefix), or "
+                        "name:checkpoint_dir:boL_N for S16-F one-stream bridged lanes, or "
                         "name:checkpoint_dir:loL for plain lanes trained as a two-stream order, or "
                         "name:checkpoint_dir:sdK or sdK_M for seeded middle-out lanes (K intervals, M-token seed window)")
     p.add_argument("--wb-prefix", type=int, default=128, help="S11: left-to-right prefix of window-bisection models")
@@ -239,7 +244,7 @@ def main():
     global args_last_ignored
     args_last_ignored = any(len(sp) > 2 and sp[2].startswith(("wb", "bl", "lo", "sd")) for sp in specs)
     lane_token = None
-    if any(len(sp) > 2 and sp[2].startswith("ln") for sp in specs):
+    if any(len(sp) > 2 and sp[2].startswith(("ln", "bo")) for sp in specs):
         from nanochat.lanes import LANE_TOKEN
         lane_token = tok.encode_special(LANE_TOKEN)
     wb_mask_token = None
@@ -252,12 +257,13 @@ def main():
         wbn = int(spec[2][2:]) if len(spec) > 2 and spec[2].startswith("wb") else 0
         bl = tuple(int(v) for v in spec[2][2:].split("_")) if len(spec) > 2 and spec[2].startswith("bl") else None
         ln = int(spec[2][2:]) if len(spec) > 2 and spec[2].startswith("ln") else 0
+        bo = tuple(int(v) for v in spec[2][2:].split("_")) if len(spec) > 2 and spec[2].startswith("bo") else None
         spl = int(spec[2][2:]) if len(spec) > 2 and spec[2].startswith("sp") else 0
         lo = int(spec[2][2:]) if len(spec) > 2 and spec[2].startswith("lo") else 0
         sd = tuple(int(v) for v in spec[2][2:].split("_")) if len(spec) > 2 and spec[2].startswith("sd") else None
         sep = spec[2] if len(spec) > 2 and spec[2].startswith("sep") else ""
         window = int(spec[2]) if len(spec) > 2 and not sep and not wbn and not bl and not ln and not lo and not sd \
-            and not spl else 0
+            and not spl and not bo else 0
         m = int(sep[3:].replace("full", "")) if sep else 0
 
         def prep(x, y, m=m):
@@ -296,12 +302,18 @@ def main():
             from nanochat.lanes import lane_mask
             mask = lane_mask(N, args.wb_prefix, ln, device)
             lanes = (args.wb_prefix, ln, lane_token)
+        xform = None
+        if bo:
+            from nanochat.lanes import bridged_slot_steps, step_inputs, step_mask
+            ys = bridged_slot_steps(N, args.wb_prefix, bo[0], bo[1])
+            mask = step_mask(ys, device)
+            xform = lambda x, ys=ys: step_inputs(x, ys, lane_token)
         splice = None
         if spl:
             from nanochat.lanes import LANE_TOKEN
             splice = (args.wb_prefix, spl, tok.encode_special(LANE_TOKEN))
         bpb, pn, pb = bucket_bpb(model, rows, token_bytes, edges, mask, prep=prep if sep_max else None, wb=wb,
-                                 lanes=lanes, splice=splice)
+                                 lanes=lanes, splice=splice, xform=xform)
         per_pos[name] = (pn, pb)
         blk = lambda a: float(pn[a:].sum() / (pb[a:].sum() * math.log(2)))
         result["models"][name] = {"checkpoint": ckdir, "window": window, "separator": sep, "wb_window": wbn,

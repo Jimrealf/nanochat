@@ -1228,12 +1228,21 @@ Plus two ingredients, offset temperature and backward heads. S16-E (checkerboard
 - M0 is void: its 4x models were read against dense-1x.
 - Gates now read recovery on the lookahead band.
 
-**Decides next.**
-- S16-C settlement: seed 2 of the lane bias and of the baseline, plus the roles-collapsed control (`lrbd`). The readings are pre-registered in §6.
-- M0 again, token-matched (eval only).
-- Then S16-F, one-stream bridged lanes. S16-G (conversion) stays the user's call; d16 waits.
+**S16-C settlement (2026-10-06).** Details in §7 of the S16 doc.
+- By the letter: the gain is "real", and the band (+0.305) makes it an add-on; attribution has no verdict.
+- But the baseline's two seeds differ by 0.47%, and the outlier was trained on older code. Against the same-code seed, S16-C gains 0.04-0.18%.
+- S16-C is worth at most about 0.1-0.3% and is not a recovery mechanism.
+- M0 is confirmed void by its file.
 
-**Frank status.** No mechanism closes recovery yet. The best closes about 12% of what a ≤ 3% tax at L = 64 needs. A* odds are about 10 to 15%.
+**Decides next** (the user chose conversion first, then S16-F):
+- Noise control: seed 1 of the dense and lanes baselines, retrained on current code. Did the code shift?
+- Conversion test at d8: L = 64 lanes from the trained dense, against dense continued for the same tokens.
+  - Go if the tax at 0.25x tokens is ≤ 3%; dead if it is ≥ 6.5% at 1x.
+  - A go changes the paper's claim to converting pretrained models.
+- S16-F, one-stream bridged lanes (coded): run if conversion is dead. It passes if 100 steps beat plain L = 16 at 120 steps.
+- M0 again, token-matched.
+
+**Frank status.** No from-scratch mechanism moves the 7-8% tax by more than noise. Conversion is the remaining large-effect bet. A* odds are about 10%, higher if conversion goes.
 
 **Option for the user.** S16-G, converting a pretrained model to lanes, changes the paper's claim and is the user's call.
 

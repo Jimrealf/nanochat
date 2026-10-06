@@ -117,6 +117,34 @@ def infill_rows(x, y, perm, cold, lane_token):
     return x[:, perm], y[:, perm], perm
 
 
+def bridged_slot_steps(N, P, L, n):
+    """S16-F one-stream bridged lanes: (N,) step at which each slot's target is drawn. Slot k holds
+    x_k and predicts x_{k+1}; nanochat/wbisect.py's bridged_lanes_steps is read on the targets:
+    the prefix slots causally (negative steps), then each of L intervals' last n slots (its
+    separator window) coarse to fine, then every interval filled left to right in lockstep."""
+    from nanochat.wbisect import bridged_lanes_steps
+    return bridged_lanes_steps(N, P, L, n)
+
+
+def step_inputs(x, ysteps, lane_token):
+    """Inputs of a one-stream order given each slot's target step ysteps (N,): slot k's input x_k
+    is slot k-1's target, known only if that is drawn at an earlier step; otherwise the slot is
+    cold and holds the lane-start token. Plain lanes are ysteps = lane_rank - P."""
+    cold = torch.zeros(ysteps.numel(), dtype=torch.bool)
+    cold[1:] = (ysteps[:-1] >= ysteps[1:]).cpu()
+    x = x.clone()
+    x[:, cold.to(x.device)] = lane_token
+    return x
+
+
+def step_mask(ysteps, device=None):
+    """(1, 1, N, N) visibility for step_inputs: slot q reads slot k iff k's target is drawn no
+    later than q's. Same-step slots read each other's inputs, which were drawn earlier, so with
+    step_inputs every input a slot reads precedes its step: an exact factorisation."""
+    s = ysteps.to(device)
+    return (s[None, :] <= s[:, None])[None, None]
+
+
 class LaneBatches:
     """Wraps (x, y) batches for evaluate_bpb: lane-start inputs swapped in at a fixed prefix."""
 
@@ -126,6 +154,17 @@ class LaneBatches:
     def __iter__(self):
         for x, y in self.batches:
             yield lane_inputs(x, self.P, self.L, self.lane_token), y
+
+
+class StepBatches:
+    """Wraps (x, y) batches for evaluate_bpb: step_inputs of a fixed one-stream order."""
+
+    def __init__(self, batches, ysteps, lane_token):
+        self.batches, self.ysteps, self.lane_token = batches, ysteps, lane_token
+
+    def __iter__(self):
+        for x, y in self.batches:
+            yield step_inputs(x, self.ysteps, self.lane_token), y
 
 
 PAD_TOKEN = "<|output_start|>"   # never occurs in pretraining text; fills a sentence-aligned lane after its last sentence
